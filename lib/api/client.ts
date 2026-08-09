@@ -9,9 +9,12 @@ import type {
   ErrorCode,
   JoinRoomRequest,
   JoinRoomResponse,
+  CatalogPageResponse,
   PuzzleDetailResponse,
+  RetirePuzzleResponse,
   RoomStateResponse,
 } from '@/types/api';
+import type { SortOrder } from '@/types/catalog';
 import type { PieceCountOption } from '@/types/puzzle';
 
 /**
@@ -105,6 +108,18 @@ export function createPuzzle(input: {
   // `multipart/form-data` y no JSON con base64: base64 infla el cuerpo un 33 % y obligaría a
   // materializar los 10 MB antes de poder mirarlos.
   return request<CreatePuzzleResponse>('/api/puzzles', { method: 'POST', body: form });
+}
+
+export function fetchCatalog(sort: SortOrder, cursor?: string): Promise<CatalogPageResponse> {
+  const params = new URLSearchParams({ sort });
+  if (cursor) params.set('cursor', cursor);
+  return request<CatalogPageResponse>(`/api/catalog?${params}`, { method: 'GET' });
+}
+
+export function retirePuzzle(id: string): Promise<RetirePuzzleResponse> {
+  return request<RetirePuzzleResponse>(`/api/puzzles/${encodeURIComponent(id)}/retire`, {
+    method: 'POST',
+  });
 }
 
 export function fetchPuzzle(id: string): Promise<PuzzleDetailResponse> {
