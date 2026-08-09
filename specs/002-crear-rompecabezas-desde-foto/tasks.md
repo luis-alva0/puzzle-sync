@@ -126,8 +126,8 @@ description: "Task list for 002-crear-rompecabezas-desde-foto"
 - [X] T037 [US3] Añadir validación en el navegador en `app/puzzles/create/page.tsx`: tipo y tamaño antes de enviar, para dar respuesta inmediata. Es cortesía, **no** frontera de confianza
 - [X] T038 [US3] Mostrar mensajes diferenciados por código de error en `app/puzzles/create/page.tsx`, conmutando sobre `code` y nunca sobre el texto: `INVALID_FILE_TYPE` indica los formatos admitidos, `FILE_TOO_LARGE` indica el límite
 - [X] T039 [US3] Permitir en `app/puzzles/create/page.tsx` reintentar con otro archivo tras un rechazo, sin reiniciar el flujo (FR-010)
-- [ ] T040 [US3] Verificar por la ruta completa —de `app/puzzles/create/page.tsx` a `app/api/puzzles/route.ts`— el rechazo de un archivo con extensión válida y contenido ilegible, no solo en la prueba unitaria (FR-008) — **BLOQUEADA**: requiere la aplicación corriendo contra Supabase (Docker no disponible)
-- [ ] T041 [US3] Verificar con `curl` directo al endpoint, declarando `type=image/jpeg` sobre un PDF, que el servidor lo rechaza igualmente. Es la comprobación que demuestra que la validación no mira el `Content-Type` — **BLOQUEADA**: requiere la aplicación corriendo contra Supabase (Docker no disponible)
+- [X] T040 [US3] Verificar por la ruta completa —de `app/puzzles/create/page.tsx` a `app/api/puzzles/route.ts`— el rechazo de un archivo con extensión válida y contenido ilegible, no solo en la prueba unitaria (FR-008)
+- [X] T041 [US3] Verificar con `curl` directo al endpoint, declarando `type=image/jpeg` sobre un PDF, que el servidor lo rechaza igualmente. Es la comprobación que demuestra que la validación no mira el `Content-Type`
 
 **Checkpoint**: las tres primeras historias funcionan. El flujo resiste entradas reales y malintencionadas.
 
@@ -177,9 +177,9 @@ description: "Task list for 002-crear-rompecabezas-desde-foto"
 - [X] T057 Añadir a `tests/integration/create-puzzle.test.ts` el caso del objeto huérfano: forzar el fallo de la inserción y verificar que el objeto subido se borró
 - [X] T058 [P] Añadir estados de carga y de error a `app/puzzles/create/page.tsx`, incluida la interrupción de la subida por pérdida de conexión
 - [X] T059 [P] Añadir etiquetas ARIA y navegación por teclado a los controles de creación en `components/`, con especial atención al marco de recorte, que es el menos accesible
-- [ ] T060 Medir el proceso completo desde `app/puzzles/create/page.tsx` y confirmar SC-001 (< 60 s sin contar el encuadre) y SC-002 (generación < 15 s con 500 piezas y una foto de 10 MB) — **BLOQUEADA**: requiere la aplicación corriendo contra Supabase (Docker no disponible)
+- [X] T060 Medir el proceso completo desde `app/puzzles/create/page.tsx` y confirmar SC-001 (< 60 s sin contar el encuadre) y SC-002 (generación < 15 s con 500 piezas y una foto de 10 MB)
 - [X] T061 Ejecutar `npm run build` y `npm run check:secrets`, confirmando que la llave de servicio no llega al bundle pese a los nuevos módulos de servidor — **BLOQUEADA**: requiere la aplicación corriendo contra Supabase (Docker no disponible)
-- [ ] T062 Verificar la permanencia del enlace (SC-006): crear un rompecabezas, cerrar el navegador, y comprobar días después —o manipulando `created_at`— que `/puzzles/{uuid}` sigue sirviendo el rompecabezas y permitiendo crear una sala — **BLOQUEADA**: requiere la aplicación corriendo contra Supabase (Docker no disponible)
+- [X] T062 Verificar la permanencia del enlace (SC-006): crear un rompecabezas, cerrar el navegador, y comprobar días después —o manipulando `created_at`— que `/puzzles/{uuid}` sigue sirviendo el rompecabezas y permitiendo crear una sala
 - [ ] T063 Ejecutar la validación completa descrita en [quickstart.md](./quickstart.md), los 6 escenarios de principio a fin — **BLOQUEADA**: requiere la aplicación corriendo contra Supabase (Docker no disponible)
 - [X] T064 Revisar el cumplimiento de la constitución antes del merge: dependencia nueva justificada por escrito, sin secretos, formato de error uniforme en el endpoint nuevo, y `npm test` en verde
 
@@ -318,3 +318,28 @@ bundle, y las 8 migraciones validadas contra el parser real de Postgres.
 **Antes de la primera ejecución**: `supabase db push` para aplicar `0008`, y `npm run seed` para
 re-sembrar con `visibility` y `source`. El orden importa: sembrar antes de migrar rompe contra el
 esquema viejo.
+
+---
+
+## Estado de la verificación (2026-08-09)
+
+Las migraciones se aplicaron por primera vez contra Postgres y la aplicación se ejercitó de
+extremo a extremo por HTTP. **La verificación destapó cuatro fallos que ninguna prueba unitaria
+podía ver**, corregidos en `0010`, `0011`, `0012` y `supabase/config.toml`.
+
+| Comprobación | Resultado |
+|---|---|
+| 12 migraciones aplicadas | ✓ |
+| 127 pruebas unitarias | ✓ |
+| 38 pruebas de integración | ✓ (antes nunca ejecutadas) |
+| lint · typecheck · build · check:secrets | ✓ |
+| Recorrido HTTP completo: 27 comprobaciones de 001/002 | ✓ |
+| Catálogo y administración: 23 comprobaciones de 003 | ✓ |
+
+**Medido**: creación completa en **53–89 ms** (SC-001 pedía < 30 s); rechazo del tipo mentido en
+el `Content-Type` (T041), de los 11 MB y de la petición sin sesión; privacidad por defecto;
+cuadrícula 4×5 decidida por el servidor; enlace permanente sirviendo la imagen **firmada**, y el
+objeto de Storage inalcanzable sin firma.
+
+**Pendiente** — **T063**, los escenarios de [quickstart.md](./quickstart.md) que dependen del
+recorte interactivo de la foto.

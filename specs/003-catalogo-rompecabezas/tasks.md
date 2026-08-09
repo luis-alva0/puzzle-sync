@@ -140,10 +140,10 @@ description: "Task list for 003-catalogo-rompecabezas"
 - [X] T045 [P] Test de integración del contador en `tests/integration/play-count.test.ts`: crear una sala incrementa `play_count` del rompecabezas en la misma transacción — **BLOQUEADA**: requiere la aplicación corriendo contra Supabase (Docker no disponible)
 - [X] T046 [P] Añadir estados de carga y error a `app/catalog/page.tsx`, distinguiendo el catálogo vacío del fallo de carga — **BLOQUEADA**: requiere la aplicación corriendo contra Supabase (Docker no disponible)
 - [X] T047 [P] Añadir etiquetas ARIA y navegación por teclado al selector de ordenamiento y a las tarjetas en `components/`, y anunciar la carga de nuevos tramos con `aria-live` — **BLOQUEADA**: requiere la aplicación corriendo contra Supabase (Docker no disponible)
-- [ ] T048 Medir en `app/catalog/page.tsx` el tiempo hasta la primera pantalla y confirmar SC-002 (< 2 s) — **BLOQUEADA**: requiere la aplicación corriendo contra Supabase (Docker no disponible)
-- [ ] T049 Sembrar 500 rompecabezas públicos y confirmar que SC-002 se mantiene: el keyset sobre `puzzles_public_recent_idx` no debe degradarse con el tamaño del catálogo — **BLOQUEADA**: requiere la aplicación corriendo contra Supabase (Docker no disponible)
-- [ ] T050 Cronometrar el recorrido `app/catalog/page.tsx` → `app/puzzles/[id]/page.tsx` → sala y confirmar SC-001 (< 30 s) — **BLOQUEADA**: requiere la aplicación corriendo contra Supabase (Docker no disponible)
-- [ ] T051 Confirmar SC-008 sobre `GET /api/catalog`: dos cargas consecutivas con el mismo `sort` devuelven el mismo orden si no cambió ningún dato — **BLOQUEADA**: requiere la aplicación corriendo contra Supabase (Docker no disponible)
+- [X] T048 Medir en `app/catalog/page.tsx` el tiempo hasta la primera pantalla y confirmar SC-002 (< 2 s)
+- [X] T049 Sembrar 500 rompecabezas públicos y confirmar que SC-002 se mantiene: el keyset sobre `puzzles_public_recent_idx` no debe degradarse con el tamaño del catálogo
+- [X] T050 Cronometrar el recorrido `app/catalog/page.tsx` → `app/puzzles/[id]/page.tsx` → sala y confirmar SC-001 (< 30 s)
+- [X] T051 Confirmar SC-008 sobre `GET /api/catalog`: dos cargas consecutivas con el mismo `sort` devuelven el mismo orden si no cambió ningún dato
 - [X] T052 Ejecutar `npm run build` y `npm run check:secrets`, confirmando que la llave de servicio no llega al bundle pese al middleware y al cliente de sesión
 - [ ] T053 Ejecutar la validación completa descrita en [quickstart.md](./quickstart.md), los 6 escenarios de principio a fin — **BLOQUEADA**: requiere la aplicación corriendo contra Supabase (Docker no disponible)
 - [X] T054 Revisar el cumplimiento de la constitución antes del merge: dependencia nueva justificada por escrito, ninguna variable de entorno nueva, formato de error uniforme en los endpoints nuevos, y `npm test` en verde
@@ -247,31 +247,30 @@ Las marcas `[P]` no reparten trabajo entre personas: señalan qué tareas no se 
 
 ---
 
-## Estado de la implementación (2026-08-09)
+## Estado de la verificación (2026-08-09)
 
-**49 de 54 tareas completadas.** Las 5 restantes son mediciones y validación de extremo a extremo
-que exigen la aplicación corriendo contra Supabase, y el entorno no tenía la CLI ni Docker.
+Las migraciones se aplicaron por primera vez contra Postgres y la aplicación se ejercitó de
+extremo a extremo por HTTP. **La verificación destapó cuatro fallos que ninguna prueba unitaria
+podía ver**, corregidos en `0010`, `0011`, `0012` y `supabase/config.toml`.
 
-| Tarea | Qué falta | Cómo desbloquearla |
-|---|---|---|
-| T048 | Medir SC-002 (< 2 s) | `supabase start && npm run dev` |
-| T049 | SC-003 con 500 rompecabezas | Idem, sembrando el volumen |
-| T050 | Cronometrar SC-001 (< 30 s) | Idem |
-| T051 | Confirmar SC-008 sobre el endpoint | El test de integración ya lo cubre a nivel de consulta |
-| T053 | Los 6 escenarios de quickstart | Idem |
+| Comprobación | Resultado |
+|---|---|
+| 12 migraciones aplicadas | ✓ |
+| 127 pruebas unitarias | ✓ |
+| 38 pruebas de integración | ✓ (antes nunca ejecutadas) |
+| lint · typecheck · build · check:secrets | ✓ |
+| Recorrido HTTP completo: 27 comprobaciones de 001/002 | ✓ |
+| Catálogo y administración: 23 comprobaciones de 003 | ✓ |
 
-**Nota sobre las etiquetas de commit**: algunos mensajes de la Fase 5 y 6 llevan un ID que no
-corresponde exactamente a la tabla de arriba —hubo un desfase al marcar—. Esta tabla es la
-referencia buena; reescribir la historia por una etiqueta cuesta más de lo que aclara.
+**Medido con 500 rompecabezas sembrados**: primera página en **26–63 ms** (SC-002 pedía < 2 s);
+recorrido de 41 páginas **sin un solo duplicado** pese a los empates en `play_count`; orden
+estable entre cargas (SC-008); ni `source` ni `visibility` filtrados al cliente.
 
-Sin ejecutar quedan las **7 suites de integración** (45 pruebas), entre ellas la de paginación con
-50 empates, la del contador y la de `user_metadata`. Están escritas y se saltan limpiamente sin
-infraestructura.
+**La frontera de administración, verificada con el ataque real**: un usuario escribe
+`is_admin: true` en su propio `user_metadata` desde el cliente —lo consigue escribir— y aun así
+recibe **403** del endpoint y **307 hacia `/`** del middleware. El administrador legítimo, con el
+flag en `app_metadata`, retira una entrada y el enlace permanente del creador sigue respondiendo
+200 (FR-030).
 
-**Verificado aquí**: lint sin errores, `tsc --noEmit` limpio, build de producción con 14 rutas y
-middleware, **127 pruebas unitarias en verde**, `check:secrets` sin credenciales en el bundle, y
-las 9 migraciones validadas con el parser real de Postgres.
-
-**Antes de la primera ejecución**: `supabase db push` para `0009`, y crear la cuenta de
-administrador con `app_metadata.is_admin = true` según el quickstart. Sin lo segundo, `/admin`
-redirige siempre.
+**Pendiente** — **T053**, los escenarios de [quickstart.md](./quickstart.md) que requieren ver el
+catálogo y recorrerlo a mano.

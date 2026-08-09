@@ -15,6 +15,12 @@ import { CATALOG_PAGE_SIZE, type CatalogItem, type SortOrder } from '@/types/cat
  *
  * No se llama al endpoint por HTTP: eso exigiría levantar Next. Se reproduce su consulta con las
  * mismas funciones de `lib/catalog/`, que es lo que se quiere verificar.
+ *
+ * **Precondición: base de datos recién reseteada** (`supabase db reset`). `walkAll` recorre como
+ * mucho 20 páginas, y un catálogo con más de 400 rompecabezas públicos acumulados se agota antes
+ * de llegar a las filas sembradas aquí: la prueba falla sin que nada esté roto. Los casos que
+ * comprueban una AUSENCIA —la semilla de 001, el retirado— necesitan además recorrer el catálogo
+ * entero, así que no basta con subir el tope.
  */
 
 const SEEDED = 50;

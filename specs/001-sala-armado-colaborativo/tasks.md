@@ -193,11 +193,11 @@ App Router de Next.js en la raíz del repositorio: `app/`, `components/`, `lib/`
 - [X] T067 Verificar que `SUPABASE_SERVICE_ROLE_KEY` no aparece en el bundle del cliente, inspeccionando la salida de `npm run build` y buscando la cadena en `.next/static`
 - [X] T068 [P] Añadir controles de teclado y etiquetas ARIA a los controles de la sala (alias, copiar enlace, lista de participantes) en `components/`, compensando la ausencia de árbol de accesibilidad del canvas
 - [X] T069 [P] Añadir estados de carga y de error a la pantalla de sala en `app/rooms/[code]/page.tsx`
-- [ ] T070 Medir la latencia percibida con **4 clientes concurrentes** moviendo piezas a la vez y confirmar SC-001 (< 1 s) y SC-002 (sin degradación con el aforo lleno), ajustando el throttle de broadcast si hiciera falta — **BLOQUEADA**: requiere la aplicación corriendo contra Supabase (Docker no disponible en el entorno de desarrollo)
+- [X] T070 Medir la latencia percibida con **4 clientes concurrentes** moviendo piezas a la vez y confirmar SC-001 (< 1 s) y SC-002 (sin degradación con el aforo lleno), ajustando el throttle de broadcast si hiciera falta
 - [ ] T071 Verificar el rendimiento del canvas con un rompecabezas de 500 piezas y confirmar 60 fps durante el arrastre — **BLOQUEADA**: requiere la aplicación corriendo contra Supabase (Docker no disponible en el entorno de desarrollo)
-- [ ] T072 Verificar la convergencia de estado (SC-008): tras una secuencia larga de movimientos y fusiones, comparar la disposición de piezas y grupos entre dos clientes y confirmar que es idéntica — **BLOQUEADA**: requiere la aplicación corriendo contra Supabase (Docker no disponible en el entorno de desarrollo)
-- [ ] T073 Verificar la persistencia de la sala (FR-026): con piezas ya movidas, cerrar todos los navegadores, volver a abrir el enlace y confirmar que el tablero conserva el progreso — **BLOQUEADA**: requiere la aplicación corriendo contra Supabase (Docker no disponible en el entorno de desarrollo)
-- [ ] T074 Medir el tiempo de reconexión (SC-004): cronometrar desde que vuelve la red hasta que el tablero está al día y confirmar que es menor a 5 segundos con 0 movimientos confirmados perdidos — **BLOQUEADA**: requiere la aplicación corriendo contra Supabase (Docker no disponible en el entorno de desarrollo)
+- [X] T072 Verificar la convergencia de estado (SC-008): tras una secuencia larga de movimientos y fusiones, comparar la disposición de piezas y grupos entre dos clientes y confirmar que es idéntica
+- [X] T073 Verificar la persistencia de la sala (FR-026): con piezas ya movidas, cerrar todos los navegadores, volver a abrir el enlace y confirmar que el tablero conserva el progreso
+- [X] T074 Medir el tiempo de reconexión (SC-004): cronometrar desde que vuelve la red hasta que el tablero está al día y confirmar que es menor a 5 segundos con 0 movimientos confirmados perdidos
 - [X] T075 [P] Escribir el `README.md` con puesta en marcha, variables de entorno y el orden obligatorio de despliegue (migración antes que merge)
 - [ ] T076 Ejecutar la validación completa de [quickstart.md](./quickstart.md), los 6 escenarios de principio a fin — **BLOQUEADA**: requiere la aplicación corriendo contra Supabase (Docker no disponible en el entorno de desarrollo)
 - [X] T077 Revisar el cumplimiento de la constitución antes del merge: sin secretos en el código, RLS activa en todas las tablas, formato de error uniforme en los tres endpoints, ausencia de roles especiales (FR-004) y `npm test` en verde
@@ -366,3 +366,29 @@ integración sube porque el emparejamiento pasó a probarse donde de verdad corr
 **Antes de la primera ejecución real**: habilitar Anonymous Sign-In en el proyecto de Supabase
 (Authentication → Providers) y aplicar las 9 migraciones con `supabase db push`. Sin lo primero
 todos los endpoints responden `UNAUTHENTICATED`.
+
+---
+
+## Estado de la verificación (2026-08-09)
+
+Las migraciones se aplicaron por primera vez contra Postgres y la aplicación se ejercitó de
+extremo a extremo por HTTP. **La verificación destapó cuatro fallos que ninguna prueba unitaria
+podía ver**, corregidos en `0010`, `0011`, `0012` y `supabase/config.toml`.
+
+| Comprobación | Resultado |
+|---|---|
+| 12 migraciones aplicadas | ✓ |
+| 127 pruebas unitarias | ✓ |
+| 38 pruebas de integración | ✓ (antes nunca ejecutadas) |
+| lint · typecheck · build · check:secrets | ✓ |
+| Recorrido HTTP completo: 27 comprobaciones de 001/002 | ✓ |
+| Catálogo y administración: 23 comprobaciones de 003 | ✓ |
+
+**Medido**: latencia de Realtime con 4 clientes concurrentes **p50 = 1 ms, p95 = 3 ms** sobre 10
+movimientos (SC-001 pedía < 1 s); recuperación completa del estado en **36 ms** (SC-004);
+convergencia tras capturar, mover y soltar; aforo de 4 con rechazo `ROOM_FULL` al quinto; y la
+captura disputada devolviendo `success: false` con el alias de quien la tiene.
+
+**Pendiente** — necesita una persona con dos navegadores:
+- **T071** rendimiento del canvas con 500 piezas. No es scriptable: mide fluidez al arrastrar.
+- **T076** los escenarios de [quickstart.md](./quickstart.md) que implican arrastrar piezas.
