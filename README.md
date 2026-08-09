@@ -89,6 +89,23 @@ Invertirlo deja código nuevo hablando con un esquema viejo.
 Las tres variables de entorno se declaran en el proyecto de Railway (Settings → Variables).
 Railway detecta Next.js automáticamente; no hace falta Dockerfile ni configuración de build.
 
+## Trampas conocidas
+
+Cosas que ya rompieron algo una vez en este proyecto. Se anotan aquí porque el coste de leerlas
+es menor que el de volver a tropezar, y porque una lección aprendida en una feature no llega sola
+a la siguiente.
+
+| Trampa | Síntoma | Qué hacer |
+|---|---|---|
+| `useSearchParams` sin `<Suspense>` | `npm run build` falla en el prerender con *"should be wrapped in a suspense boundary"* | Envolver el contenido que lo usa, como hace `app/page.tsx` |
+| Lanzar en la evaluación de un módulo de cliente | El build falla al prerenderizar, no al ejecutar | Diferir la comprobación al primer uso, como hace `lib/supabase/client.ts` |
+| Consultar con `service_role` y confiar en RLS | Se filtran filas que la política habría bloqueado | Con `service_role` la política **no se aplica**: el filtro va en la consulta |
+| Devolver una URL de Storage sin firmar | La imagen no carga y el tablero sale en blanco | El bucket no tiene política de lectura: todo pasa por `signPuzzleImageUrl` |
+| Guardar el rol en `user_metadata` | Cualquiera se hace administrador desde la consola del navegador | El rol vive en `app_metadata`, que solo escribe la llave de servicio |
+| Mutar una ref durante el render | ESLint lo rechaza con `react-hooks/refs` | Copiar a la ref dentro de un efecto |
+| Reimplementar en TypeScript lógica que vive en SQL | Las pruebas pasan sobre una copia que nadie ejecuta | Prohibido por el Principio VI: se prueba donde la lógica vive |
+| Copiar `piece_count` a `nominal_piece_count` | La migración aborta contra su propio `CHECK` | La semilla tiene un rompecabezas de 4 piezas, que no es una de las cinco opciones |
+
 ## Flujo de trabajo
 
 Un commit por tarea de `tasks.md`, con Conventional Commits y el ID de la tarea como scope:

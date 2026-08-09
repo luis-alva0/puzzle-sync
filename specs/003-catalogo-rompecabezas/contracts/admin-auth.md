@@ -83,6 +83,12 @@ administración quede abierto.
 
 Formulario de email y contraseña contra Supabase Auth. Es la única pantalla de login del producto.
 
+**Usa el cliente de navegador con cookies** (`createBrowserClient` de `@supabase/ssr`), **no**
+`getSupabaseBrowserClient()` de 001. Si usara ese, la sesión acabaría en `localStorage`: el login
+parecería correcto, no daría ningún error, y `/admin` seguiría redirigiendo porque el middleware
+no vería nada. Es el fallo más difícil de diagnosticar de esta feature, precisamente porque nada
+falla de forma visible.
+
 `[auth.email] enable_signup = false` en `supabase/config.toml` sigue en `false`: se puede iniciar
 sesión, no registrarse. Las cuentas se crean fuera de la aplicación.
 

@@ -13,7 +13,12 @@ description: "Task list for 003-catalogo-rompecabezas"
 
 **Organization**: Agrupadas por historia de usuario (US1–US3).
 
-> **Revisión 2**: incorpora la remediación de los 7 hallazgos de `/speckit.analyze`. Lo relevante:
+> **Revisión 3**: incorpora la remediación de las dos pasadas de `/speckit.analyze`. De la
+> segunda: restaurar la posición se hace con el **número de páginas**, no con el cursor —un
+> cursor apunta a una posición y devolvería solo la cola—; y el contenido del catálogo va
+> envuelto en `<Suspense>`, porque `useSearchParams` rompe el prerender sin él.
+>
+> **Revisión 2**: incorpora la remediación de los 7 hallazgos de la primera pasada. Lo relevante:
 > el listado consulta con `service_role`, así que el filtro de visibilidad va **en la consulta** y
 > no delegado a la política; y volver del detalle al catálogo conserva la posición, sin lo cual un
 > catálogo grande sería inservible con scroll infinito.
@@ -32,7 +37,7 @@ description: "Task list for 003-catalogo-rompecabezas"
 
 - [ ] T001 Instalar `@supabase/ssr` con `npm install @supabase/ssr` y registrar en `package.json`. La justificación que exige el Principio I ya está escrita en [research.md](./research.md) R1: un middleware corre en el servidor y no puede leer `localStorage`
 - [ ] T002 [P] Definir los tipos del catálogo en `types/catalog.ts`: `CatalogItem`, `SortOrder` (`'recent' | 'played'`), `CatalogCursor` y `CatalogPage`
-- [ ] T003 [P] Añadir `FORBIDDEN` (403) e `INVALID_CURSOR` (400) a `ErrorCode` y a `ERROR_STATUS` en `types/api.ts`, y sus mensajes por defecto en `lib/api/errors.ts`
+- [ ] T003 [P] Añadir en `types/api.ts` los códigos `FORBIDDEN` (403) e `INVALID_CURSOR` (400) a `ErrorCode` y a `ERROR_STATUS`, con sus mensajes por defecto en `lib/api/errors.ts`, **y los tipos de respuesta del catálogo**: `CatalogPageResponse` y `RetirePuzzleResponse`
 
 ---
 
@@ -50,7 +55,7 @@ description: "Task list for 003-catalogo-rompecabezas"
 - [ ] T009 [P] Test del ordenamiento en `tests/unit/catalog-ordering.test.ts`: la comparación de tupla es la correcta para cada `sort`, y el desempate por `id` siempre está presente
 - [ ] T010 Implementar `encodeCursor` y `decodeCursor` en `lib/catalog/cursor.ts` sobre base64 de `{ sort, key, id }`. Opaco pero no secreto: no lleva nada sensible y no autoriza nada
 - [ ] T011 Implementar en `lib/catalog/ordering.ts` la construcción de la condición de keyset y el `order by` para cada `SortOrder`, siempre con `id desc` como segunda clave
-- [ ] T012 Implementar el cliente de sesión con cookies en `lib/supabase/admin-session.ts` sobre `@supabase/ssr`, con la variante para middleware y la variante para route handlers
+- [ ] T012 Implementar el cliente de sesión con cookies en `lib/supabase/admin-session.ts` sobre `@supabase/ssr`, con **tres** variantes: middleware, route handlers y **navegador** (`createBrowserClient`). La de navegador la necesita `app/admin/login/page.tsx`: si el login usara `getSupabaseBrowserClient()` de 001, la sesión iría a `localStorage`, el middleware nunca la vería, y el acceso parecería funcionar mientras `/admin` sigue redirigiendo
 - [ ] T013 Implementar en `lib/supabase/admin-session.ts` el helper `requireAdmin(request)` que verifica la sesión y `app_metadata.is_admin === true`. **Nunca `user_metadata`**: lo puede escribir el propio usuario desde el cliente, y usarlo aquí sería regalar el rol (research R2)
 
 **Checkpoint**: esquema migrado, cursor y ordenamiento probados, y la comprobación de administrador disponible.
@@ -69,7 +74,7 @@ description: "Task list for 003-catalogo-rompecabezas"
 - [ ] T015 [US1] **No** incluir `source` ni `visibility` en la respuesta de `app/api/catalog/route.ts`. FR-003 prohíbe distinguir el origen, y la forma robusta de garantizarlo es no mandar el dato: una interfaz no puede pintar lo que no recibe
 - [ ] T016 [P] [US1] Crear la tarjeta en `components/CatalogCard.tsx` con imagen de referencia, cantidad de piezas y contador de partidas (FR-004)
 - [ ] T017 [P] [US1] Crear la rejilla en `components/CatalogGrid.tsx` con el centinela de `IntersectionObserver` al final de la lista. API nativa, sin biblioteca de scroll infinito (research R7)
-- [ ] T018 [US1] Crear la pantalla en `app/catalog/page.tsx`: carga inicial, acumulación de páginas y estado de carga
+- [ ] T018 [US1] Crear la pantalla en `app/catalog/page.tsx`: carga inicial, acumulación de páginas y estado de carga. **Envolver el contenido en `<Suspense>`**, con el mismo patrón que ya usa `app/page.tsx`: T027 introduce `useSearchParams`, y sin límite de Suspense el prerender falla y `npm run build` se cae. Ya ocurrió en 002
 - [ ] T019 [US1] Mostrar en `app/catalog/page.tsx` el mensaje de catálogo vacío con invitación a crear un rompecabezas desde foto (FR-006)
 - [ ] T020 [US1] Enlazar cada tarjeta a `/puzzles/{id}`, la pantalla que 002 ya construyó y que lleva a crear sala (FR-014, FR-015)
 - [ ] T021 [US1] Añadir un enlace al catálogo desde `app/page.tsx`, para que la pantalla sea alcanzable
@@ -91,7 +96,7 @@ description: "Task list for 003-catalogo-rompecabezas"
 - [ ] T024 [P] [US2] Crear el selector en `components/SortSelector.tsx` con las dos opciones, `recent` marcada por defecto (FR-009)
 - [ ] T025 [US2] Reiniciar la lista y el cursor al cambiar de ordenamiento en `app/catalog/page.tsx`
 - [ ] T026 [US2] Mantener el ordenamiento elegido al cargar tramos adicionales en `app/catalog/page.tsx` (FR-012)
-- [ ] T027 [US2] Reflejar `sort` y el cursor alcanzado en la **URL** de `app/catalog/page.tsx`, y restaurarlos al volver desde `/puzzles/[id]` (FR-016). Con scroll infinito no es cosmético: quien baje 200 tarjetas, abra una y vuelva, aterrizaría arriba del todo. Se usa la URL y no `sessionStorage` porque además hace el estado compartible y sobrevive a una recarga
+- [ ] T027 [US2] Reflejar en la **URL** de `app/catalog/page.tsx` el `sort` y el **número de páginas cargadas** —`?sort=played&pages=4`—, y al volver desde `/puzzles/[id]` pedir esas páginas en secuencia para reconstruir la lista (FR-016). **No se guarda el cursor**: un cursor apunta a una posición, no a un rango, así que restaurar desde él devolvería solo la cola y las tarjetas de arriba desaparecerían. Son más peticiones, pero es lo único que reconstruye la lista entera. Se usa la URL y no `sessionStorage` porque además hace el estado compartible y sobrevive a una recarga
 
 **Checkpoint**: US1 y US2 funcionan. El catálogo es navegable y ordenable.
 
@@ -120,7 +125,7 @@ description: "Task list for 003-catalogo-rompecabezas"
 - [ ] T037 [US3] Implementar `POST /api/puzzles/[id]/retire` en `app/api/puzzles/[id]/retire/route.ts`: comprueba administrador con `requireAdmin`, marca `catalog_status = 'retired'`, y es idempotente
 - [ ] T038 [US3] Garantizar en `app/api/puzzles/[id]/retire/route.ts` que retirar **no** toca `visibility`, **no** borra la fila y **no** borra el objeto de Storage: el enlace del creador sigue funcionando (FR-030) y las salas en curso no se enteran (FR-031)
 - [ ] T039 [US3] Añadir a `app/admin/page.tsx` el listado de entradas del catálogo con acción de retirar
-- [ ] T040 [US3] Devolver `catalogStatus` en `app/api/puzzles/[id]/route.ts` y avisar en `app/puzzles/[id]/page.tsx` cuando el rompecabezas está retirado (FR-036). **No se bloquea el acceso**: el enlace sigue siendo válido; solo se informa de que ya no está en el catálogo
+- [ ] T040 [US3] Añadir `catalogStatus` a `PuzzleDetailResponse` en `types/api.ts`, devolverlo desde `app/api/puzzles/[id]/route.ts`, y avisar en `app/puzzles/[id]/page.tsx` cuando el rompecabezas está retirado (FR-036). **No se bloquea el acceso**: el enlace sigue siendo válido; solo se informa de que ya no está en el catálogo
 - [ ] T041 [US3] Revisar que **todos** los route handlers de administración llaman a `requireAdmin` por su cuenta, no solo confían en el middleware: recorrer `app/api/` y confirmarlo endpoint por endpoint. El `matcher` es una lista y se puede quedar corta al añadir una ruta
 - [ ] T042 [US3] Verificar que ninguna pantalla del producto enlaza a `/admin` ni revela su existencia a quien no es administrador (FR-022)
 
@@ -236,4 +241,6 @@ Las marcas `[P]` no reparten trabajo entre personas: señalan qué tareas no se 
 - **El listado consulta con `service_role`, así que la RLS no lo protege.** El filtro de
   visibilidad vive en la consulta de T014 y en el predicado de los índices de T005. Si algún día
   se añade otra consulta al catálogo, tiene que llevar el mismo filtro.
+- **`useSearchParams` exige `<Suspense>`.** Es una trampa que ya costó un build fallido en 002.
+  Está anotada en las Trampas conocidas del `README.md`.
 - Esta feature no añade ninguna variable de entorno.
