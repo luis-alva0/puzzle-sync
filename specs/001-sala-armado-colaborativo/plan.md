@@ -132,6 +132,8 @@ lib/
 ├── rooms/
 │   ├── code.ts                       # Generación de código de 6 chars     ← test
 │   └── alias.ts                      # Validación 2–20 caracteres          ← test
+├── format/
+│   └── datetime.ts                   # Formateo a hora de Perú, offset -05:00
 └── api/
     └── errors.ts                     # { error: { code, message } }
 
@@ -173,6 +175,10 @@ piezas de lógica crítica que el Principio VI obliga a testear (`matching`, `gr
 - **Dependencia de datos**: esta feature crea la tabla `puzzles` en su forma mínima y una semilla,
   porque las especificaciones 002 y 003 aún no existen (research R7). 002 la extenderá con
   recorte y visibilidad; 003 con el contador de partidas. No la reemplazarán.
-- **Refinamiento sobre el spec**: el input de planificación fija la longitud del alias en 2–20
-  caracteres, mientras que el spec solo exige "no vacío" (FR-002). El plan adopta 2–20 y la
-  validación es la fuente de verdad. Si quieres que el spec lo refleje, es un cambio de una línea.
+- **Longitud del alias**: resuelto. El spec fija ahora 2–20 caracteres tras recortar espacios
+  (FR-002), alineado con el input de planificación y con `lib/rooms/alias.ts`. Ya no hay dos
+  fuentes de verdad.
+- **Orden de `release_piece`**: la función se crea en su forma mínima dentro de US2 (soltar y
+  liberar el bloqueo) y US3 la extiende con encaje y fusión. Sin ese reparto, US2 no sería
+  demostrable de forma independiente: una pieza capturada quedaría bloqueada hasta que expirase
+  el arrendamiento a los 30 segundos.

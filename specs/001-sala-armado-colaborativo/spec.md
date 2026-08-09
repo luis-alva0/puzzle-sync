@@ -8,6 +8,12 @@
 
 **Input**: User description: "Especificar la funcionalidad de armado colaborativo de rompecabezas en tiempo real dentro de una sala. Los actores son el jugador que crea la sala, quien ingresa un alias para identificarse y genera un enlace de invitacion para compartir, y los jugadores invitados, quienes ingresan a la sala a traves de ese enlace y tambien ingresan un alias propio para diferenciarse dentro de la sala; todos los jugadores dentro de una sala tienen exactamente los mismos permisos, sin roles especiales para el creador. Una sala admite un maximo de cuatro jugadores conectados simultaneamente. [...] El criterio de exito medible para esta funcionalidad es que el movimiento de una pieza realizado por un jugador debe reflejarse en las pantallas de los demas jugadores conectados a la misma sala con una latencia percibida menor a un segundo bajo condiciones normales de conexion."
 
+## Clarifications
+
+### Session 2026-08-09
+
+- Q: ¿Qué longitud debe tener un alias válido? (resuelta durante `/speckit.analyze`, hallazgo I1: el plan y las tareas implementaban 2–20 caracteres mientras el spec solo exigía "no vacío") → A: Entre 2 y 20 caracteres tras recortar espacios. FR-002 actualizado; la validación de `lib/rooms/alias.ts` es la implementación de esa regla, no una regla aparte.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Crear una sala e invitar a otro jugador (Priority: P1)
@@ -164,8 +170,8 @@ el histórico con marca de inicio y de finalización.
 
 ### Edge Cases
 
-- **Alias vacío o solo espacios**: el sistema no permite entrar hasta que se ingrese un alias
-  válido.
+- **Alias vacío, solo espacios, de 1 carácter o de más de 20**: el sistema no permite entrar
+  hasta que se ingrese un alias válido, indicando el rango admitido.
 - **Alias duplicado dentro de la misma sala**: se permite, y la interfaz los distingue con un
   sufijo numérico para que dos jugadores no aparezcan idénticos.
 - **Desconexión con pieza capturada**: el bloqueo no puede quedar huérfano; la pieza se libera
@@ -195,8 +201,9 @@ el histórico con marca de inicio y de finalización.
 
 - **FR-001**: El sistema MUST permitir crear una sala de armado sin cuenta, registro ni inicio
   de sesión.
-- **FR-002**: El sistema MUST requerir un alias no vacío antes de que un jugador entre a una
-  sala, tanto al crearla como al unirse.
+- **FR-002**: El sistema MUST requerir un alias de entre 2 y 20 caracteres, tras recortar
+  espacios al inicio y al final, antes de que un jugador entre a una sala, tanto al crearla como
+  al unirse.
 - **FR-003**: El sistema MUST generar para cada sala un enlace de invitación compartible que
   permita a otras personas entrar directamente a esa sala.
 - **FR-004**: El sistema MUST otorgar a todos los jugadores de una sala exactamente los mismos

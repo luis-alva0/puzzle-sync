@@ -120,6 +120,23 @@ select started_at, completed_at, aliases from game_history order by completed_at
 
 devuelve una fila con ambas marcas de tiempo en hora de Perú (**FR-028**, **FR-030**).
 
+### 6. La sala sobrevive a que todos se vayan (FR-026)
+
+1. Con ambos jugadores dentro, mover varias piezas y encajar al menos un par.
+2. Cerrar los dos navegadores por completo.
+3. Esperar más de 30 segundos, para que ambos figuren como desconectados.
+4. Volver a abrir `/rooms/{CODE}`.
+
+**Esperado**: el tablero conserva exactamente el progreso, incluidos los grupos ya formados.
+Ninguna pieza queda bloqueada por los jugadores ausentes (**SC-007**).
+
+### Convergencia de estado (SC-008)
+
+Transversal a los escenarios 2, 3 y 6, no un paso aparte: tras cualquier secuencia de
+movimientos, comparar la disposición de piezas y grupos entre los dos navegadores. Deben ser
+idénticas. Si divergen, recargar ambos y comparar de nuevo con el estado que devuelve
+`GET /state`: esa respuesta es el árbitro.
+
 ---
 
 ## Pruebas
@@ -131,7 +148,8 @@ npm run test:db   # integración contra Supabase local (requiere supabase start)
 
 `npm test` cubre emparejamiento de piezas, fusión de grupos, validación de alias, generación de
 códigos y reconciliación de estado. `npm run test:db` cubre lo que no se puede simular: la
-atomicidad de `capture_piece` bajo concurrencia y la expiración del arrendamiento (research R8).
+atomicidad de `capture_piece` bajo concurrencia, la expiración del arrendamiento y el
+determinismo de dos fusiones simultáneas sobre grupos vecinos (research R8).
 
 ---
 
