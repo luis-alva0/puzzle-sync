@@ -53,3 +53,35 @@ export async function deletePuzzleImage(puzzleId: string): Promise<void> {
     console.warn(`[storage] no se pudo borrar el objeto huérfano de ${puzzleId}:`, error.message);
   }
 }
+
+/** Caducidad de la URL firmada. Se emite de nuevo en cada lectura, así que no necesita durar. */
+const SIGNED_URL_TTL_SECONDS = 60 * 60;
+
+/**
+ * URL utilizable de la imagen de un rompecabezas.
+ *
+ * Es el **único** camino por el que una imagen llega al navegador: el bucket no tiene política de
+ * lectura, así que sin firmar no es alcanzable ni siendo el rompecabezas público.
+ *
+ * Lo permanente que promete FR-023 es el enlace `/puzzles/{uuid}`, no la dirección del objeto en
+ * Storage. Esta URL caduca en una hora a propósito, y no debe guardarse ni cachearse en ninguna
+ * parte: se pide de nuevo en cada lectura.
+ *
+ * Cuando `storagePath` es `null` la imagen no está en Storage —los rompecabezas de la semilla
+ * usan `data:` URI— y se devuelve `imageUrl` tal cual.
+ */
+export async function signPuzzleImageUrl(
+  storagePath: string | null,
+  imageUrl: string,
+): Promise<string> {
+  if (!storagePath) return imageUrl;
+
+  const { data, error } = await getSupabaseServiceClient()
+    .storage.from(PUZZLE_IMAGES_BUCKET)
+    .createSignedUrl(storagePath, SIGNED_URL_TTL_SECONDS);
+
+  if (error || !data?.signedUrl) {
+    throw error ?? new Error(`No se pudo firmar la URL de ${storagePath}`);
+  }
+  return data.signedUrl;
+}
