@@ -71,7 +71,7 @@ la feature.
 1. Verifica la posesión del grupo; si no la tiene, no-op.
 2. Escribe la posición final absoluta del grupo.
 3. Busca grupos vecinos encajables: para cada pieza del grupo, comprueba si alguna pieza adyacente
-   en la cuadrícula (`row±1`, `col±1`) pertenece a otro grupo y está dentro de la **tolerancia de
+   en la cuadrícula (`grid_row±1`, `grid_col±1`) pertenece a otro grupo y está dentro de la **tolerancia de
    encaje** respecto de su posición relativa correcta (**FR-016**).
 4. Si hay encaje: alinea el grupo entrante a la posición relativa exacta y ejecuta
    `UPDATE pieces SET group_id = <ganador> WHERE group_id = <perdedor>` (**FR-018**). La fusión se

@@ -29,9 +29,9 @@ extenderán esta tabla; no la sustituirán (ver research R7).
 |---|---|---|---|
 | `id` | `uuid` | PK, default `gen_random_uuid()` | |
 | `image_url` | `text` | NOT NULL | Ruta en Supabase Storage |
-| `rows` | `smallint` | NOT NULL, `> 0` | Filas de la cuadrícula |
-| `cols` | `smallint` | NOT NULL, `> 0` | Columnas de la cuadrícula |
-| `piece_count` | `smallint` | NOT NULL, generada `rows * cols` | Cantidad real de piezas |
+| `grid_rows` | `smallint` | NOT NULL, `> 0` | Filas de la cuadrícula |
+| `grid_cols` | `smallint` | NOT NULL, `> 0` | Columnas de la cuadrícula |
+| `piece_count` | `smallint` | NOT NULL, generada `grid_rows * grid_cols` | Cantidad real de piezas |
 | `created_at` | `timestamptz` | NOT NULL, default `now()` | |
 
 ---
@@ -110,8 +110,8 @@ rompecabezas.
 |---|---|---|---|
 | `id` | `uuid` | PK, default `gen_random_uuid()` | |
 | `room_id` | `uuid` | NOT NULL, FK → `rooms.id` ON DELETE CASCADE | |
-| `row` | `smallint` | NOT NULL | Fila correcta en la cuadrícula |
-| `col` | `smallint` | NOT NULL | Columna correcta en la cuadrícula |
+| `grid_row` | `smallint` | NOT NULL | Fila correcta en la cuadrícula |
+| `grid_col` | `smallint` | NOT NULL | Columna correcta en la cuadrícula |
 | `x` | `real` | NOT NULL | Posición actual en el tablero |
 | `y` | `real` | NOT NULL | Posición actual en el tablero |
 | `group_id` | `uuid` | NOT NULL | Grupo de piezas conectadas (research R6) |
@@ -119,7 +119,7 @@ rompecabezas.
 | `captured_at` | `timestamptz` | NULL | Inicio del arrendamiento del bloqueo |
 | `updated_at` | `timestamptz` | NOT NULL, default `now()` | |
 
-**Índices**: único sobre `(room_id, row, col)`; índice sobre `(room_id, group_id)`.
+**Índices**: único sobre `(room_id, grid_row, grid_col)`; índice sobre `(room_id, group_id)`.
 
 **Invariantes**:
 
