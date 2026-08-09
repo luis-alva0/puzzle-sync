@@ -4,6 +4,7 @@ import { use, useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AliasForm } from '@/components/AliasForm';
 import { Board, type BoardApi } from '@/components/Board';
+import { CompletionBanner } from '@/components/CompletionBanner';
 import { ConnectionStatus } from '@/components/ConnectionStatus';
 import { PlayerList } from '@/components/PlayerList';
 import { ApiError, fetchRoomState, joinRoom } from '@/lib/api/client';
@@ -90,6 +91,11 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
           },
           // Hecho confirmado: tiene precedencia sobre cualquier pista provisional.
           onPieceConfirmed: (piece) => boardApiRef.current?.applyConfirmed(piece),
+          // El completado llega por el cambio de estado de la sala, no de quien colocó la
+          // última pieza: así lo reciben todos los conectados a la vez (FR-027).
+          onRoomChanged: (room) => {
+            if (room.status === 'completed') void reloadBoard();
+          },
         });
         channelRef.current = handle;
         setChannel(handle);
@@ -218,6 +224,14 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
 
       <div style={{ display: 'grid', gap: '1.25rem', gridTemplateColumns: 'minmax(0,1fr) 280px' }}>
         <section className="card">
+          {board?.room.status === 'completed' && board.room.completedAt && (
+            <CompletionBanner
+              startedAt={board.room.startedAt}
+              completedAt={board.room.completedAt}
+              pieceCount={board.pieces.length}
+              playerCount={board.players.length}
+            />
+          )}
           {board ? (
             <Board
               initialPieces={board.pieces}
