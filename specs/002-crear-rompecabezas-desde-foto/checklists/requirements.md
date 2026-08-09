@@ -50,3 +50,18 @@ Observaciones de la validación:
   **produce** el enlace del rompecabezas; en 001 se **consume** al crear la sala. La geometría
   estática de las piezas pertenece a esta feature; la posición de las piezas durante una
   partida pertenece a 001.
+
+**Re-validación 2026-08-09 (post-clarify de la especificación 003): PASS — 16/16 sin cambios de
+estado.**
+
+- El spec se amplió con la opción de hacer público al crear (FR-028 y FR-029a–d), resolviendo
+  la dependencia D-001 de la especificación 003. Antes de este cambio, 002 y 003 se
+  contradecían: 002 declaraba todos los rompecabezas privados sin excepción y 003 exigía
+  contenido público de jugadores.
+- Privado sigue siendo el valor por defecto, de modo que la garantía de privacidad para fotos
+  personales no se debilita: publicar requiere una acción deliberada del jugador, advertida e
+  irreversible.
+- SC-005 se reformuló para cubrir ambos casos (privados nunca listados, públicos siempre
+  listados) en lugar de asumir que ningún rompecabezas desde foto es público.
+- La retirada reactiva de contenido del catálogo pertenece a 003 y quedó declarada fuera de
+  alcance aquí para no duplicar el requisito.

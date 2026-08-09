@@ -8,6 +8,12 @@
 
 **Input**: User description: "Especificar la funcionalidad de creacion de un rompecabezas a partir de una foto subida por el usuario. Esta funcionalidad es independiente de la creacion de una sala de juego: el jugador crea el rompecabezas primero y este queda guardado para poder usarse despues en cualquier sala. El actor es cualquier jugador de la aplicacion, sin necesidad de tener una cuenta registrada. [...] El criterio de exito medible para esta funcionalidad es que un jugador debe poder completar todo el proceso, desde subir la foto hasta obtener el enlace del rompecabezas listo para jugar, en menos de un minuto bajo condiciones normales de conexion, sin contar el tiempo que el jugador dedique a ajustar el encuadre."
 
+## Clarifications
+
+### Session 2026-08-09
+
+- Q: ¿Puede un jugador hacer público su rompecabezas para que aparezca en el catálogo? (resuelta durante la clarificación de la especificación 003, dependencia D-001) → A: Sí. Se añade una opción explícita de hacer público en el paso de configuración final, desmarcada por defecto. La visibilidad se fija al crear y no puede cambiarse después.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Convertir una foto en un rompecabezas jugable (Priority: P1)
@@ -104,32 +110,40 @@ ningún rompecabezas.
 
 ---
 
-### User Story 4 - El rompecabezas es privado y accesible solo por su enlace (Priority: P3)
+### User Story 4 - Privado por defecto, público solo si el jugador lo decide (Priority: P3)
 
-El rompecabezas creado desde una foto personal no queda expuesto a nadie más. Solo quien tenga
-el enlace único puede acceder a él o usarlo en una sala, y nunca aparece en ningún listado
-público de la aplicación.
+El rompecabezas creado desde una foto personal no queda expuesto a nadie: es privado salvo que
+el jugador marque explícitamente lo contrario al crearlo. Si lo deja privado, solo quien tenga
+el enlace único puede acceder a él, y nunca aparece en ningún listado público. Si decide
+hacerlo público, además entra al catálogo para que cualquiera pueda jugarlo.
 
 **Why this priority**: Es una garantía de privacidad indispensable para fotos personales, pero
 depende de que la creación (US1) ya exista.
 
-**Independent Test**: Crear un rompecabezas desde una foto, verificar que no aparece en ninguna
-biblioteca o listado de exploración de la aplicación, y verificar que solo es accesible
-mediante su enlace único.
+**Independent Test**: Crear un rompecabezas dejando la opción por defecto, verificar que no
+aparece en ningún listado y que solo es accesible por su enlace. Luego crear otro marcándolo
+como público y verificar que sí aparece en el catálogo.
 
 **Acceptance Scenarios**:
 
-1. **Given** un rompecabezas creado desde una foto, **When** cualquier persona explora la
-   aplicación, **Then** ese rompecabezas no aparece listado en ninguna biblioteca pública ni
-   resultado de exploración.
-2. **Given** un rompecabezas privado, **When** alguien accede con su enlace único, **Then**
+1. **Given** un jugador en el paso de configuración final, **When** revisa las opciones,
+   **Then** encuentra una opción explícita para hacer público el rompecabezas, desmarcada por
+   defecto.
+2. **Given** un jugador que no toca esa opción, **When** confirma la creación, **Then** el
+   rompecabezas queda privado.
+3. **Given** un rompecabezas privado, **When** cualquier persona explora la aplicación,
+   **Then** ese rompecabezas no aparece listado en ninguna biblioteca pública ni resultado de
+   exploración.
+4. **Given** un rompecabezas privado, **When** alguien accede con su enlace único, **Then**
    puede verlo y usarlo para crear una sala.
-3. **Given** un identificador de rompecabezas inexistente o mal formado, **When** alguien
+5. **Given** un jugador que marca la opción de hacer público, **When** confirma la creación,
+   **Then** el rompecabezas queda publicado en el catálogo y además conserva su enlace único.
+6. **Given** un rompecabezas ya creado, sea público o privado, **When** el jugador quiere
+   cambiar su visibilidad, **Then** no existe forma de hacerlo: la decisión se toma una sola
+   vez, al crear.
+7. **Given** un identificador de rompecabezas inexistente o mal formado, **When** alguien
    intenta acceder con él, **Then** el sistema responde que el rompecabezas no existe, sin
    revelar información sobre otros rompecabezas.
-4. **Given** un rompecabezas creado desde foto, **When** se compara con los rompecabezas
-   pre-creados del catálogo, **Then** el privado se distingue por requerir enlace y no ser
-   explorable.
 
 ---
 
@@ -226,10 +240,19 @@ mediante su enlace único.
   enlace es la única vía de acceso al rompecabezas.
 - **FR-027**: El sistema MUST permitir usar el rompecabezas para crear una sala en cualquier
   momento futuro mediante su enlace.
-- **FR-028**: El sistema MUST tratar los rompecabezas creados desde foto como privados por
-  defecto: accesibles únicamente por quien posea el enlace único.
-- **FR-029**: El sistema MUST NOT listar los rompecabezas creados desde foto en ninguna
-  biblioteca pública ni resultado de exploración.
+- **FR-028**: El sistema MUST ofrecer, en el paso de configuración final, una opción explícita
+  para hacer público el rompecabezas, presentada como desmarcada por defecto.
+- **FR-029**: El sistema MUST tratar como privado todo rompecabezas cuya opción de hacer
+  público no fue marcada: accesible únicamente por quien posea el enlace único.
+- **FR-029a**: El sistema MUST NOT listar ningún rompecabezas privado en ninguna biblioteca
+  pública ni resultado de exploración.
+- **FR-029b**: El sistema MUST publicar en el catálogo los rompecabezas cuya opción de hacer
+  público fue marcada, conservando además su enlace único.
+- **FR-029c**: El sistema MUST fijar la visibilidad en el momento de la creación y MUST NOT
+  ofrecer ninguna forma de cambiarla después.
+- **FR-029d**: El sistema MUST advertir al jugador, junto a la opción de hacer público, que un
+  rompecabezas público será visible para cualquier persona y que la decisión no se puede
+  revertir.
 - **FR-030**: El sistema MUST usar identificadores de enlace aleatorios y no secuenciales, de
   modo que no sean adivinables ni enumerables.
 - **FR-031**: El sistema MUST responder que el rompecabezas no existe ante un identificador
@@ -249,7 +272,8 @@ mediante su enlace único.
 
 - **Rompecabezas**: rompecabezas guardado de forma permanente. Atributos: origen (foto de
   usuario), imagen recortada de referencia, cantidad de piezas nominal y real, disposición de
-  la cuadrícula, enlace único, visibilidad (privado), y marca de tiempo de creación.
+  la cuadrícula, enlace único, visibilidad (privado o público, fijada al crear), y marca de
+  tiempo de creación.
 - **Foto subida**: archivo de imagen aportado por el jugador, con su formato y tamaño. Es la
   entrada del proceso; una vez aplicado el recorte, la imagen recortada es lo que define el
   rompecabezas.
@@ -259,7 +283,8 @@ mediante su enlace único.
   derivadas de la cuadrícula. Es información estática del rompecabezas, independiente de
   cualquier partida; la posición de una pieza *durante el juego* pertenece a la sala.
 - **Enlace único**: identificador aleatorio no adivinable que constituye la única vía de acceso
-  a un rompecabezas privado.
+  a un rompecabezas privado. En los rompecabezas públicos sigue existiendo y funcionando, pero
+  convive con el acceso por catálogo.
 
 ## Success Criteria *(mandatory)*
 
@@ -275,8 +300,8 @@ mediante su enlace único.
   se crea un rompecabezas.
 - **SC-004**: El 95% de los jugadores completan la creación en su primer intento, sin ayuda
   externa ni abandono del flujo.
-- **SC-005**: El 0% de los rompecabezas creados desde foto aparecen en listados públicos o
-  resultados de exploración de la aplicación.
+- **SC-005**: El 0% de los rompecabezas **privados** aparecen en listados públicos o resultados
+  de exploración de la aplicación, y el 100% de los marcados como públicos sí aparecen.
 - **SC-006**: Un rompecabezas creado sigue accesible y utilizable por su enlace de forma
   indefinida, sin caducidad.
 - **SC-007**: El rompecabezas generado reconstruye la imagen recortada sin huecos ni
@@ -318,7 +343,11 @@ Explícitamente fuera del alcance de esta funcionalidad:
 - Cualquier sistema de moderación automática o manual del contenido de las fotos subidas.
 - Edición avanzada de la imagen más allá del recorte de encuadre: filtros, ajuste de brillo,
   contraste, color, rotación libre o retoque.
-- Compartir públicamente un rompecabezas creado desde foto o publicarlo en una biblioteca.
+- Cambiar la visibilidad de un rompecabezas después de creado (la decisión es definitiva).
+- La exploración y el ordenamiento del catálogo donde aparecen los rompecabezas públicos
+  (especificación 003). Aquí solo se decide y se fija la visibilidad.
+- Moderación o revisión del contenido publicado. La retirada reactiva de una entrada del
+  catálogo pertenece a la especificación 003.
 - Editar, renombrar o eliminar un rompecabezas después de crearlo.
 - Cuentas de usuario, biblioteca personal de rompecabezas creados o recuperación de enlaces
   perdidos.

@@ -8,6 +8,15 @@
 
 **Input**: User description: "Especificar la funcionalidad de seleccionar un rompecabezas pre-creado desde un catalogo, en lugar de crear uno nuevo a partir de una foto. El catalogo esta compuesto tanto por un conjunto curado que el administrador del proyecto carga y mantiene, como por rompecabezas que otros jugadores crearon desde foto y decidieron marcar explicitamente como publicos en el momento de crearlos. [...] El criterio de exito medible para esta funcionalidad es que un jugador debe poder pasar de abrir el catalogo a tener el rompecabezas seleccionado listo para usarse en una sala en menos de treinta segundos bajo condiciones normales de conexion."
 
+## Clarifications
+
+### Session 2026-08-09
+
+- Q: ¿Cómo se resuelve la dependencia D-001, dado que el catálogo debe incluir rompecabezas publicados por jugadores pero la spec 002 los define como privados sin excepción? → A: Ampliar la spec 002 con una opción de marcar el rompecabezas como público al crearlo, con privado como valor por defecto.
+- Q: Cuando un jugador marca su rompecabezas como público, ¿aparece en el catálogo de inmediato, o necesita aprobación del administrador antes de ser visible? → A: Publicación inmediata, sin revisión previa, pero el administrador puede retirar una entrada del catálogo desde la pantalla de administración (moderación reactiva).
+- Q: Cuando el jugador toca un rompecabezas del catálogo, ¿se crea la sala en ese mismo momento, o hay un paso intermedio? → A: Pantalla de detalle con vista previa ampliada y un botón explícito para crear la sala.
+- Q: ¿El jugador ve cuántas veces se ha jugado cada rompecabezas, o el contador es solo un dato interno para ordenar? → A: Visible tanto en la tarjeta del listado como en la pantalla de detalle.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Explorar el catálogo y elegir un rompecabezas para jugar (Priority: P1)
@@ -32,15 +41,21 @@ de piezas con la que fue creado.
    **Then** aparecen mezclados entre sí, sin ninguna distinción visual que revele si son
    curados o publicados por jugadores.
 3. **Given** cada rompecabezas del listado, **When** el jugador lo revisa, **Then** ve una
-   imagen de referencia y la cantidad de piezas que tiene, suficiente para decidir sin abrirlo.
+   imagen de referencia, la cantidad de piezas y cuántas veces se ha jugado, suficiente para
+   decidir sin abrirlo.
 4. **Given** un jugador que encuentra un rompecabezas que le interesa, **When** lo selecciona,
-   **Then** el sistema lo prepara para ser usado directamente en una sala de juego.
-5. **Given** un rompecabezas seleccionado desde el catálogo, **When** el sistema lo prepara,
-   **Then** respeta la cantidad de piezas con la que fue originalmente creado y no ofrece
-   ninguna opción para cambiarla.
-6. **Given** un jugador sin cuenta, **When** explora y selecciona del catálogo, **Then** puede
+   **Then** el sistema muestra una pantalla de detalle con una vista previa ampliada, la
+   cantidad de piezas, y una acción explícita para crear una sala con él.
+5. **Given** un jugador en la pantalla de detalle, **When** confirma la creación de la sala,
+   **Then** el sistema prepara ese rompecabezas para ser usado en una sala de juego,
+   respetando la cantidad de piezas con la que fue originalmente creado y sin ofrecer ninguna
+   opción para cambiarla.
+6. **Given** un jugador en la pantalla de detalle que cambia de opinión, **When** vuelve al
+   catálogo, **Then** no se crea ninguna sala y el listado conserva el ordenamiento elegido y
+   la posición previa.
+7. **Given** un jugador sin cuenta, **When** explora y selecciona del catálogo, **Then** puede
    hacerlo completamente sin registro ni inicio de sesión.
-7. **Given** un catálogo todavía vacío, **When** un jugador lo abre, **Then** ve un mensaje que
+8. **Given** un catálogo todavía vacío, **When** un jugador lo abre, **Then** ve un mensaje que
    explica que aún no hay rompecabezas disponibles y lo invita a crear uno desde una foto.
 
 ---
@@ -111,6 +126,11 @@ sesión y verificar que el acceso es denegado.
 7. **Given** un administrador cuya sesión expira a mitad de la carga, **When** intenta
    confirmar, **Then** el sistema rechaza la operación, no publica nada y le pide autenticarse
    de nuevo.
+8. **Given** una entrada del catálogo que el administrador considera inapropiada, **When** la
+   retira desde la pantalla de administración, **Then** deja de aparecer en el catálogo para
+   todos los jugadores, sin eliminar el rompecabezas ni invalidar su enlace único.
+9. **Given** una entrada retirada del catálogo, **When** existen salas ya creadas con ese
+   rompecabezas, **Then** esas partidas continúan sin verse afectadas.
 
 ---
 
@@ -134,7 +154,9 @@ sesión y verificar que el acceso es denegado.
 - **Rompecabezas público cuyo enlace único también circula de forma privada**: ambos caminos
   llevan al mismo rompecabezas; ser público no invalida el enlace.
 - **Contenido inapropiado publicado por un jugador**: aparece en el catálogo sin revisión
-  previa; no existe mecanismo de retirada en esta funcionalidad (ver Riesgos Aceptados).
+  previa y permanece visible hasta que el administrador lo retira (ver Riesgos Aceptados).
+- **Entrada retirada mientras un jugador la está seleccionando**: si intenta usarla después de
+  retirada, recibe un mensaje de rompecabezas no disponible y vuelve al catálogo.
 - **Un rompecabezas curado y uno publicado por un jugador con la misma imagen**: coexisten como
   entradas separadas; no hay deduplicación.
 
@@ -153,7 +175,7 @@ sesión y verificar que el acceso es denegado.
   distinción visual ni etiqueta que revele si un rompecabezas es curado o publicado por un
   jugador.
 - **FR-004**: El sistema MUST mostrar, para cada rompecabezas del catálogo, una imagen de
-  referencia y su cantidad de piezas.
+  referencia, su cantidad de piezas y su contador de partidas.
 - **FR-005**: El sistema MUST NOT incluir en el catálogo ningún rompecabezas privado.
 - **FR-006**: El sistema MUST mostrar un mensaje explicativo, con invitación a crear un
   rompecabezas desde foto, cuando el catálogo no tiene ningún elemento.
@@ -176,52 +198,86 @@ sesión y verificar que el acceso es denegado.
 
 **Selección para jugar**
 
-- **FR-014**: El sistema MUST permitir seleccionar un rompecabezas del catálogo y prepararlo
-  para ser usado directamente en una sala de juego.
-- **FR-015**: El sistema MUST respetar la cantidad de piezas con la que el rompecabezas fue
+- **FR-014**: El sistema MUST mostrar una pantalla de detalle al seleccionar un rompecabezas
+  del catálogo, con una vista previa ampliada de su imagen, su cantidad de piezas y su contador
+  de partidas.
+- **FR-015**: El sistema MUST ofrecer en esa pantalla de detalle una acción explícita para
+  crear una sala de juego con ese rompecabezas.
+- **FR-016**: El sistema MUST permitir volver de la pantalla de detalle al catálogo sin crear
+  nada, conservando el ordenamiento elegido y la posición previa en el listado.
+- **FR-017**: El sistema MUST respetar la cantidad de piezas con la que el rompecabezas fue
   originalmente creado.
-- **FR-016**: El sistema MUST NOT ofrecer ninguna opción para cambiar la cantidad de piezas en
-  el momento de la selección.
-- **FR-017**: El sistema MUST permitir que un mismo rompecabezas del catálogo se use en
+- **FR-018**: El sistema MUST NOT ofrecer ninguna opción para cambiar la cantidad de piezas, ni
+  en el listado ni en la pantalla de detalle.
+- **FR-019**: El sistema MUST permitir que un mismo rompecabezas del catálogo se use en
   múltiples salas simultáneas e independientes entre sí.
 
 **Administración**
 
-- **FR-018**: El sistema MUST exigir autenticación con una cuenta de administrador para acceder
+- **FR-020**: El sistema MUST exigir autenticación con una cuenta de administrador para acceder
   a la pantalla de administración.
-- **FR-019**: El sistema MUST denegar el acceso a la pantalla de administración a visitantes sin
+- **FR-021**: El sistema MUST denegar el acceso a la pantalla de administración a visitantes sin
   sesión y a personas autenticadas que no sean administradores, aplicando la verificación tanto
   a la pantalla como a la operación de carga.
-- **FR-020**: El sistema MUST NOT mostrar ninguna opción, enlace ni indicio de la carga de
+- **FR-022**: El sistema MUST NOT mostrar ninguna opción, enlace ni indicio de la carga de
   contenido a quien no sea administrador, incluido el acceso directo por dirección.
-- **FR-021**: El sistema MUST ofrecer al administrador autenticado un formulario para subir una
+- **FR-023**: El sistema MUST ofrecer al administrador autenticado un formulario para subir una
   foto, recortar su encuadre y elegir la cantidad de piezas.
-- **FR-022**: El sistema MUST aplicar en ese formulario las mismas reglas de formato admitido,
+- **FR-024**: El sistema MUST aplicar en ese formulario las mismas reglas de formato admitido,
   tamaño máximo, encuadre y opciones de cantidad de piezas que rigen la creación desde foto de
   los jugadores.
-- **FR-023**: El sistema MUST publicar automáticamente en el catálogo el rompecabezas curado
+- **FR-025**: El sistema MUST publicar automáticamente en el catálogo el rompecabezas curado
   resultante, sin ningún paso adicional de publicación.
-- **FR-024**: El sistema MUST rechazar la operación de carga y no publicar nada cuando la sesión
+- **FR-026**: El sistema MUST rechazar la operación de carga y no publicar nada cuando la sesión
   del administrador ha expirado o ha sido revocada.
+
+**Retirada de contenido del catálogo**
+
+- **FR-027**: El sistema MUST publicar los rompecabezas marcados como públicos por un jugador
+  de forma inmediata, sin revisión previa ni cola de aprobación.
+- **FR-028**: El sistema MUST permitir al administrador autenticado retirar cualquier entrada
+  del catálogo, sea curada o publicada por un jugador.
+- **FR-029**: El sistema MUST dejar de mostrar a los jugadores toda entrada retirada, en el
+  listado y en cualquier ordenamiento.
+- **FR-030**: El sistema MUST NOT eliminar el rompecabezas ni invalidar su enlace único al
+  retirar su entrada del catálogo; quien tenga el enlace conserva el acceso privado.
+- **FR-031**: El sistema MUST NOT afectar las salas ya creadas con un rompecabezas cuya entrada
+  fue retirada; esas partidas continúan normalmente.
+- **FR-032**: El sistema MUST restringir la acción de retirada al administrador autenticado,
+  aplicando la misma verificación que FR-021.
+
+**Estados de carga y error**
+
+- **FR-033**: El sistema MUST indicar visualmente que el catálogo se está cargando mientras la
+  primera pantalla no esté disponible.
+- **FR-034**: El sistema MUST mostrar un mensaje de error con una acción de reintento cuando el
+  catálogo no se puede cargar, en lugar de un listado vacío o una pantalla en blanco.
+- **FR-035**: El sistema MUST distinguir el catálogo vacío (FR-006) del fallo de carga
+  (FR-034), con mensajes diferentes.
+- **FR-036**: El sistema MUST responder con un mensaje de rompecabezas no disponible cuando un
+  jugador intenta usar una entrada que fue retirada mientras la tenía abierta.
 
 **Errores**
 
-- **FR-025**: El sistema MUST responder a los fallos con un formato de error uniforme que
+- **FR-037**: El sistema MUST responder a los fallos con un formato de error uniforme que
   incluya un código estable y un mensaje descriptivo, incluidos acceso denegado, sesión
-  expirada, rompecabezas inexistente y fallo de carga.
+  expirada, rompecabezas inexistente o retirado, fallo de carga del catálogo y fallo de
+  retirada.
 
 ### Key Entities
 
 - **Entrada de catálogo**: presencia pública de un rompecabezas en el catálogo. Atributos:
   rompecabezas referenciado, origen (curado por administrador o publicado por jugador), fecha
-  de publicación y contador de partidas. El origen es información interna y no se expone en la
-  interfaz.
+  de publicación, contador de partidas y estado (visible o retirada). El origen es información
+  interna y no se expone en la interfaz; el estado retirada la excluye del listado sin borrar
+  el rompecabezas.
 - **Rompecabezas**: definido en la especificación 002. Aporta la imagen de referencia, la
   cantidad de piezas y la geometría de las piezas. El catálogo no lo modifica.
 - **Administrador**: cuenta autenticada con permiso para cargar rompecabezas curados. Es la
   única identidad con cuenta en el producto; los jugadores no tienen ninguna.
 - **Contador de partidas**: número acumulado de salas creadas con un rompecabezas del catálogo.
-  Alimenta el ordenamiento por más jugados.
+  Alimenta el ordenamiento por más jugados y se muestra al jugador en la tarjeta del listado y
+  en la pantalla de detalle.
 
 ## Success Criteria *(mandatory)*
 
@@ -240,15 +296,20 @@ sesión y verificar que el acceso es denegado.
   minutos, sin contar el tiempo dedicado al encuadre.
 - **SC-008**: Dos cargas consecutivas del catálogo con el mismo ordenamiento devuelven el mismo
   orden cuando no ha cambiado ningún dato.
+- **SC-009**: Una entrada retirada por el administrador deja de aparecer en el catálogo para
+  todos los jugadores en menos de 1 minuto, y en el 100% de los casos sin afectar las salas ya
+  creadas con ese rompecabezas.
 
 ## Dependencies
 
-- **D-001 (bloqueante para FR-002)**: La especificación 002 (creación desde foto) define hoy
-  todos los rompecabezas como privados y declara la publicación explícitamente fuera de alcance.
-  Para que el catálogo incluya rompecabezas publicados por jugadores, **002 debe ampliarse** con
-  una opción de marcar el rompecabezas como público en el momento de crearlo, con privado como
-  valor por defecto. Mientras esa ampliación no exista, el catálogo funciona igual pero solo con
-  contenido curado.
+- **D-001 (resuelta, requiere cambio en 002)**: La especificación 002 (creación desde foto)
+  definía todos los rompecabezas como privados y declaraba la publicación fuera de alcance.
+  **Decisión**: 002 se amplía con una opción de marcar el rompecabezas como público en el
+  momento de crearlo, con **privado como valor por defecto**. La visibilidad se decide una sola
+  vez, al crear, y no cambia después. El catálogo (FR-002) consume esa marca para incluir los
+  rompecabezas publicados por jugadores junto a los curados. La ampliación de 002 debe estar
+  implementada antes de que FR-002 pueda satisfacerse con contenido de jugadores; hasta
+  entonces el catálogo opera solo con contenido curado.
 - **D-002**: La especificación 001 (sala de armado) consume el rompecabezas seleccionado. Esta
   funcionalidad lo deja preparado; la creación de la sala y el armado quedan fuera de su
   alcance.
@@ -281,11 +342,16 @@ sesión y verificar que el acceso es denegado.
 
 ## Riesgos Aceptados
 
-- **Contenido publicado sin revisión**: los rompecabezas que un jugador marca como públicos
-  aparecen en el catálogo de inmediato y visibles para todos, sin moderación previa ni
-  posterior, y sin mecanismo de retirada. La moderación fue declarada fuera de alcance en la
-  especificación 002, cuando todo el contenido era privado; al hacerlo público el riesgo cambia
-  de naturaleza. Se asume conscientemente en esta versión.
+- **Ventana de exposición antes de la retirada**: los rompecabezas que un jugador marca como
+  públicos aparecen en el catálogo de inmediato, sin revisión previa. La moderación es
+  **reactiva**: el administrador puede retirar cualquier entrada (FR-028), pero entre la
+  publicación y la retirada el contenido es visible para todos. El riesgo residual es esa
+  ventana, y depende de que el administrador se entere. Se asume conscientemente: una cola de
+  aprobación previa fue descartada por convertir al administrador en cuello de botella del
+  flujo de publicación.
+- **Sin canal de reporte**: no existe forma de que un jugador avise al administrador sobre
+  contenido inapropiado. La detección depende exclusivamente de que el administrador revise el
+  catálogo por su cuenta.
 
 ## Out of Scope
 
@@ -295,9 +361,10 @@ Explícitamente fuera del alcance de esta funcionalidad:
 - Filtros por categoría, temática, dificultad o cantidad de piezas.
 - Calificaciones, reseñas, comentarios o favoritos de los jugadores.
 - Elegir una cantidad de piezas distinta a la que el rompecabezas ya tiene definida.
-- Moderación automática o manual del contenido del catálogo, y retirada de rompecabezas
-  publicados.
-- Editar, despublicar o eliminar rompecabezas del catálogo, incluidos los curados.
+- Moderación automática del contenido y revisión previa a la publicación (cola de aprobación).
+- Canal para que los jugadores reporten contenido inapropiado.
+- Editar o eliminar definitivamente un rompecabezas ya creado. La retirada del catálogo
+  (FR-028) oculta la entrada pero no borra el rompecabezas ni su enlace.
 - Cambiar la visibilidad de un rompecabezas después de creado.
 - Estadísticas o panel de métricas para el administrador más allá de la carga de contenido.
 - Gestión de cuentas de administrador desde la aplicación.
