@@ -1,4 +1,5 @@
 import { getSupabaseServiceClient, getAuthUserId } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/supabase/admin-session';
 import { apiError, withErrorHandling } from '@/lib/api/errors';
 import { validateImage, MAX_FILE_BYTES } from '@/lib/upload/validate';
 import { chooseGrid } from '@/lib/puzzle-generation/grid';
@@ -41,8 +42,18 @@ export const POST = withErrorHandling(async (request: Request): Promise<Response
   const nominalPieceCount = Number(form.get('nominalPieceCount'));
   if (!isPieceCountOption(nominalPieceCount)) return apiError('INVALID_PIECE_COUNT');
 
+  // La condición de administrador se deriva de la SESIÓN, nunca de un campo del cuerpo. Si
+  // viniera del `FormData`, cualquier jugador podría enviarlo y marcar su rompecabezas como
+  // curado (research R2 de 003). Todo campo del cliente que pretenda esto se ignora.
+  const admin = await requireAdmin(request);
+
   // Ausente ⇒ privado. La privacidad no depende de que el cliente recuerde pedirla (FR-029).
-  const visibility: PuzzleVisibility = form.get('isPublic') === 'true' ? 'public' : 'private';
+  const visibility: PuzzleVisibility = admin.ok
+    ? 'public'
+    : form.get('isPublic') === 'true'
+      ? 'public'
+      : 'private';
+  const source = admin.ok ? 'curated' : 'user_photo';
 
   const bytes = new Uint8Array(await file.arrayBuffer());
   const validation = validateImage(bytes);
@@ -60,6 +71,16 @@ export const POST = withErrorHandling(async (request: Request): Promise<Response
 
   const { storagePath } = await uploadPuzzleImage(puzzleId, bytes, contentType);
 
+  // Revalidación de la sesión de administrador justo antes de insertar (FR-026 de 003): una
+  // subida de 10 MB puede empezar con sesión válida y terminar sin ella.
+  if (admin.ok) {
+    const stillAdmin = await requireAdmin(request);
+    if (!stillAdmin.ok) {
+      await deletePuzzleImage(puzzleId);
+      return apiError('FORBIDDEN', 'La sesión de administrador expiró durante la subida.');
+    }
+  }
+
   const { error: insertError } = await getSupabaseServiceClient().from('puzzles').insert({
     id: puzzleId,
     image_url: storagePath,
@@ -68,7 +89,7 @@ export const POST = withErrorHandling(async (request: Request): Promise<Response
     grid_cols: grid.cols,
     nominal_piece_count: nominalPieceCount,
     visibility,
-    source: 'user_photo',
+    source,
   });
 
   if (insertError) {
