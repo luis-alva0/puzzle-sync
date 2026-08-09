@@ -48,6 +48,8 @@ export interface BoardApi {
 
 interface BoardProps {
   initialPieces: Piece[];
+  /** Se reenvía al canvas: es la semilla del generador de formas. */
+  puzzleId: string;
   players: PlayerSummary[];
   gridRows: number;
   gridCols: number;
@@ -68,6 +70,7 @@ interface DragState {
 
 export function Board({
   initialPieces,
+  puzzleId,
   players,
   gridRows,
   gridCols,
@@ -215,6 +218,7 @@ export function Board({
     <div>
       <BoardCanvas
         pieces={pieces}
+        puzzleId={puzzleId}
         gridRows={gridRows}
         gridCols={gridCols}
         imageUrl={imageUrl}

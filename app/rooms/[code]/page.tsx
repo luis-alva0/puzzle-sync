@@ -247,6 +247,7 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
           {board ? (
             <Board
               initialPieces={board.pieces}
+              puzzleId={board.puzzle.id}
               players={board.players}
               gridRows={board.puzzle.gridRows}
               gridCols={board.puzzle.gridCols}
