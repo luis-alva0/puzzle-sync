@@ -349,6 +349,11 @@ sesión y verificar que el acceso es denegado.
   ventana, y depende de que el administrador se entere. Se asume conscientemente: una cola de
   aprobación previa fue descartada por convertir al administrador en cuello de botella del
   flujo de publicación.
+- **El ordenamiento por más jugados es manipulable**: crear una sala es gratis, anónimo e
+  ilimitado, y el contador sube al crearla. Inflar el de un rompecabezas propio es un bucle de
+  peticiones. Se asume: el catálogo es pequeño y no hay nada que ganar más allá de aparecer
+  arriba. Si algún día importa, la mitigación barata es contar jugadores distintos en lugar de
+  salas totales, que ya está al alcance porque `room_players` guarda `auth_user_id`.
 - **Sin canal de reporte**: no existe forma de que un jugador avise al administrador sobre
   contenido inapropiado. La detección depende exclusivamente de que el administrador revise el
   catálogo por su cuenta.

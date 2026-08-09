@@ -115,6 +115,14 @@ curl -X POST http://localhost:3000/api/puzzles \
 **Esperado**: `source = 'user_photo'`. El campo se ignora: la condición de administrador sale del
 token, no del cuerpo (research R2).
 
+### 4b. Volver del detalle no pierde el sitio
+
+Bajar hasta cargar al menos tres páginas, abrir un rompecabezas y volver atrás.
+
+**Esperado**: el listado conserva el ordenamiento y **la posición**. Con scroll infinito, volver
+arriba del todo obliga a recorrer 200 tarjetas otra vez, y es lo que hace inservible un catálogo
+grande. El estado va en la URL, así que recargar también lo conserva.
+
 ### 5. Retirada sin daños colaterales
 
 Con un rompecabezas público, **crear una sala con él**, y luego retirarlo desde administración.
@@ -150,6 +158,8 @@ npm run test:db   # integración: paginación con empates, admin fuerza público
 | El middleware pide login en cada navegación | No se está propagando la cookie refrescada a la respuesta |
 | El middleware no se ejecuta | El `matcher` no cubre la ruta, o el archivo no está en la raíz |
 | Las miniaturas salen rotas | No se están firmando las URL: el bucket no tiene política de lectura |
-| Un rompecabezas retirado sigue en el listado | Falta `catalog_status` en la consulta o en la política RLS |
+| Un rompecabezas retirado sigue en el listado | Falta `catalog_status` en la **consulta**: el listado usa `service_role` y la política RLS no lo protege |
+| Aparecen los rompecabezas de la semilla | Falta `source <> 'seed'` en la consulta |
+| Volver del detalle manda al principio de la lista | El estado del catálogo no se está reflejando en la URL |
 | `play_count` siempre a 0 | `create_room` no se redefinió (migración de 003) |
 | Cambiar de ordenamiento rompe la lista | El cursor lleva el `sort` dentro: al cambiarlo hay que empezar de cero |

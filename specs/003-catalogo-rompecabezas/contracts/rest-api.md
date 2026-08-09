@@ -54,6 +54,15 @@ Códigos de error nuevos:
 aparezcan mezclados **sin distinción visual de origen**, y la forma robusta de garantizarlo es no
 mandar el dato: una interfaz no puede pintar lo que no recibe.
 
+**Quién consulta**: `service_role`, desde el route handler. No es una elección de comodidad —
+`signPuzzleImageUrl` ya exige servidor porque el bucket no tiene política de lectura— pero sí
+tiene una consecuencia que hay que tener presente:
+
+> **La RLS no se aplica.** El filtro de visibilidad va **en la consulta**, escrito a mano, y es
+> obligatorio. Olvidarlo hace que el catálogo liste rompecabezas privados y retirados, que es
+> exactamente lo que la política existe para impedir. La política sigue estando —protege al
+> cliente anónimo— pero aquí no interviene.
+
 **Comportamiento**
 
 1. `sort` fuera del conjunto → se trata como `recent`, sin error: es un parámetro de presentación.
@@ -65,11 +74,18 @@ mandar el dato: una interfaz no puede pintar lo que no recibe.
 
 ```sql
 -- sort=recent
-where visibility = 'public' and catalog_status = 'visible'
+where visibility = 'public'
+  and catalog_status = 'visible'
+  and source <> 'seed'
   and (created_at, id) < ($cursorCreatedAt, $cursorId)
 order by created_at desc, id desc
 limit 21
 ```
+
+**`source <> 'seed'`**: las tres filas de la semilla son `public` desde la migración de 002, pero
+no son contenido — son andamiaje de desarrollo con `data:` URI. FR-002 define el catálogo como
+curados más publicados por jugadores, y la semilla no es ninguna de las dos cosas. Se excluye en
+la consulta y en el predicado de los índices, para que sigan cubriéndola exactamente.
 
 5. Se piden **21** para saber si hay más sin una consulta de conteo aparte. Se devuelven 20 y el
    21.º solo sirve para poner `hasMore`.
@@ -127,8 +143,14 @@ usuario de confianza para el validador de archivos.
 
 ---
 
-## `GET /api/puzzles/[id]` — sin cambios
+## `GET /api/puzzles/[id]` — añade `catalogStatus`
 
 Sigue sirviendo cualquier rompecabezas por su UUID, **incluidos los retirados y los privados**,
 porque usa `service_role` y no pasa por la política RLS. Es lo que hace que retirar del catálogo
 no rompa el enlace del creador.
+
+**Cambio de 003**: la respuesta incluye `"catalogStatus": "visible" | "retired"`.
+
+Sin ese campo, un jugador que tuviera abierta la pantalla de un rompecabezas retirado no tendría
+forma de enterarse (FR-036). El acceso **no** se bloquea —el enlace sigue siendo válido— pero la
+pantalla puede avisar de que ya no está en el catálogo.

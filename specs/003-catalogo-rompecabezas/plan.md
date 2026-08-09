@@ -49,7 +49,7 @@ rompecabezas (SC-003); de abrir el catálogo a rompecabezas listo para sala < 30
 **Constraints**: las mismas tres variables de entorno, **ninguna nueva**. Ningún secreto en el
 código. El rol de administrador solo se otorga desde el servidor
 
-**Scale/Scope**: 2 pantallas nuevas, 2 endpoints nuevos, 1 modificado, 1 middleware, 1 migración
+**Scale/Scope**: 2 pantallas nuevas, 2 endpoints nuevos, 2 modificados, 1 middleware, 1 migración
 
 ## Constitution Check
 
@@ -159,6 +159,12 @@ handler.
   se implementa así: sería un campo que cualquier jugador podría enviar para marcar su
   rompecabezas como curado. La condición de administrador se deriva del token (research R2). Es la
   desviación más importante respecto del input y conviene confirmarla.
+- **El listado consulta con `service_role`, no con la llave anónima**, porque firmar las
+  miniaturas ya exige servidor. Consecuencia: la política RLS **no** protege ese camino, y el
+  filtro `visibility = 'public' and catalog_status = 'visible' and source <> 'seed'` va escrito en
+  la consulta. Olvidarlo listaría privados y retirados.
+- **Las tres filas de la semilla se excluyen del catálogo** por `source <> 'seed'`. Son `public`
+  desde la migración de 002, pero son andamiaje con `data:` URI, no contenido.
 - **La moderación sigue siendo reactiva y sin canal de reporte**, tal como quedó en la
   clarificación del spec. Esta feature construye la retirada; detectar qué retirar sigue
   dependiendo de que el administrador mire el catálogo por su cuenta.

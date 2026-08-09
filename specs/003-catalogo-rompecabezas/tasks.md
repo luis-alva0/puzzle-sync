@@ -13,6 +13,11 @@ description: "Task list for 003-catalogo-rompecabezas"
 
 **Organization**: Agrupadas por historia de usuario (US1–US3).
 
+> **Revisión 2**: incorpora la remediación de los 7 hallazgos de `/speckit.analyze`. Lo relevante:
+> el listado consulta con `service_role`, así que el filtro de visibilidad va **en la consulta** y
+> no delegado a la política; y volver del detalle al catálogo conserva la posición, sin lo cual un
+> catálogo grande sería inservible con scroll infinito.
+
 **Base existente**: esta feature parte de 001 y 002 implementadas. **No crea ninguna tabla**: añade una columna, reemplaza dos índices, redefine una función de 001 y reutiliza `ImageCropper`, `PieceCountSelector`, `lib/api/errors.ts`, `lib/storage/upload.ts` y el endpoint de creación tal como están.
 
 ## Format: `[ID] [P?] [Story] Description`
@@ -38,7 +43,7 @@ description: "Task list for 003-catalogo-rompecabezas"
 **⚠️ CRITICAL**: Ninguna historia puede empezar hasta que esta fase esté completa.
 
 - [ ] T004 Crear la migración `supabase/migrations/0009_catalog.sql` con la columna `catalog_status text not null default 'visible' check (catalog_status in ('visible','retired'))` sobre `puzzles`
-- [ ] T005 Reemplazar en la misma migración los dos índices de 002 por versiones con desempate: `(created_at desc, id desc)` y `(play_count desc, id desc)`, ambos parciales sobre `visibility = 'public' and catalog_status = 'visible'`. **Sin el `id` la paginación produce duplicados y saltos** cuando hay empates, que con `play_count = 0` es el caso normal (research R3)
+- [ ] T005 Reemplazar en la misma migración los dos índices de 002 por versiones con desempate: `(created_at desc, id desc)` y `(play_count desc, id desc)`, ambos parciales sobre `visibility = 'public' and catalog_status = 'visible' and source <> 'seed'`, para que cubran exactamente las filas que consulta el listado. **Sin el `id` la paginación produce duplicados y saltos** cuando hay empates, que con `play_count = 0` es el caso normal (research R3)
 - [ ] T006 Redefinir `create_room` en la misma migración para incrementar `puzzles.play_count` dentro de la **misma transacción** que crea la sala (FR-013). Es una función de la feature 001; hoy no menciona el contador (research R4)
 - [ ] T007 Restringir en la misma migración la política de lectura de `puzzles` a `visibility = 'public' and catalog_status = 'visible'`, para que un rompecabezas retirado deje de ser legible desde el cliente
 - [ ] T008 [P] Test del cursor en `tests/unit/catalog-cursor.test.ts`: ida y vuelta para ambos ordenamientos, rechazo de un cursor corrupto, y rechazo cuando el `sort` codificado no coincide con el pedido
@@ -60,7 +65,7 @@ description: "Task list for 003-catalogo-rompecabezas"
 
 ### Implementation for User Story 1
 
-- [ ] T014 [US1] Implementar `GET /api/catalog` en `app/api/catalog/route.ts`: consulta keyset con `limit 21` para deducir `hasMore` sin una consulta de conteo, y firma cada `imageUrl` con `signPuzzleImageUrl` de 002
+- [ ] T014 [US1] Implementar `GET /api/catalog` en `app/api/catalog/route.ts` con `service_role` —lo exige `signPuzzleImageUrl`—: consulta keyset con `limit 21` para deducir `hasMore` sin una consulta de conteo, y firma cada `imageUrl`. **El filtro `visibility = 'public' and catalog_status = 'visible' and source <> 'seed'` va escrito en la consulta**: con `service_role` la RLS no se aplica, y olvidarlo hace que el catálogo liste privados y retirados
 - [ ] T015 [US1] **No** incluir `source` ni `visibility` en la respuesta de `app/api/catalog/route.ts`. FR-003 prohíbe distinguir el origen, y la forma robusta de garantizarlo es no mandar el dato: una interfaz no puede pintar lo que no recibe
 - [ ] T016 [P] [US1] Crear la tarjeta en `components/CatalogCard.tsx` con imagen de referencia, cantidad de piezas y contador de partidas (FR-004)
 - [ ] T017 [P] [US1] Crear la rejilla en `components/CatalogGrid.tsx` con el centinela de `IntersectionObserver` al final de la lista. API nativa, sin biblioteca de scroll infinito (research R7)
@@ -86,6 +91,7 @@ description: "Task list for 003-catalogo-rompecabezas"
 - [ ] T024 [P] [US2] Crear el selector en `components/SortSelector.tsx` con las dos opciones, `recent` marcada por defecto (FR-009)
 - [ ] T025 [US2] Reiniciar la lista y el cursor al cambiar de ordenamiento en `app/catalog/page.tsx`
 - [ ] T026 [US2] Mantener el ordenamiento elegido al cargar tramos adicionales en `app/catalog/page.tsx` (FR-012)
+- [ ] T027 [US2] Reflejar `sort` y el cursor alcanzado en la **URL** de `app/catalog/page.tsx`, y restaurarlos al volver desde `/puzzles/[id]` (FR-016). Con scroll infinito no es cosmético: quien baje 200 tarjetas, abra una y vuelva, aterrizaría arriba del todo. Se usa la URL y no `sessionStorage` porque además hace el estado compartible y sobrevive a una recarga
 
 **Checkpoint**: US1 y US2 funcionan. El catálogo es navegable y ordenable.
 
@@ -99,22 +105,24 @@ description: "Task list for 003-catalogo-rompecabezas"
 
 ### Tests for User Story 3
 
-- [ ] T027 [P] [US3] Test de integración del acceso a administración en `tests/integration/admin-access.test.ts`: sin sesión redirige al login, con sesión sin `is_admin` redirige a la portada, con administrador entra, y **`user_metadata.is_admin = true` puesto desde el cliente NO da acceso**. Esa última es la que hace que el resto valga algo
-- [ ] T028 [P] [US3] Test de integración del forzado de visibilidad en `tests/integration/admin-upload.test.ts`: lo creado por un administrador queda `public` + `curated` sin excepción, y un jugador que envía un campo tipo `isAdminUpload` en el `FormData` sigue obteniendo `user_photo`
+- [ ] T028 [P] [US3] Test de integración del acceso a administración en `tests/integration/admin-access.test.ts`: sin sesión redirige al login, con sesión sin `is_admin` redirige a la portada, con administrador entra, y **`user_metadata.is_admin = true` puesto desde el cliente NO da acceso**. Esa última es la que hace que el resto valga algo
+- [ ] T029 [P] [US3] Test de integración del forzado de visibilidad en `tests/integration/admin-upload.test.ts`: lo creado por un administrador queda `public` + `curated` sin excepción, y un jugador que envía un campo tipo `isAdminUpload` en el `FormData` sigue obteniendo `user_photo`
 
 ### Implementation for User Story 3
 
-- [ ] T029 [US3] Crear `middleware.ts` en la raíz del repositorio con `matcher: ['/admin/:path*']`, refrescando la sesión desde la cookie y **propagando la cookie renovada a la respuesta**: sin eso, la siguiente navegación vuelve a fallar
-- [ ] T030 [US3] Implementar en `middleware.ts` las dos redirecciones: sin sesión a `/admin/login`, y con sesión sin `app_metadata.is_admin` a `/`. Se redirige y no se responde `403` porque es una navegación de página, no una llamada de API
-- [ ] T031 [US3] Crear la pantalla de acceso en `app/admin/login/page.tsx` con email y contraseña contra Supabase Auth. Sin registro, sin recuperación y sin enlace mágico: las cuentas se crean fuera de la aplicación
-- [ ] T032 [US3] Modificar `app/api/puzzles/route.ts` para derivar la condición de administrador con `requireAdmin` y, cuando lo sea, forzar `visibility = 'public'` y `source = 'curated'`, **ignorando cualquier campo del cuerpo**. Un campo del `FormData` permitiría a cualquier jugador marcar su rompecabezas como curado (research R2)
-- [ ] T033 [US3] Crear la pantalla de carga curada en `app/admin/page.tsx` reutilizando `components/ImageCropper.tsx` y `components/PieceCountSelector.tsx` **sin modificarlos**, y sin mostrar el interruptor de visibilidad
-- [ ] T034 [US3] Verificar en `app/admin/page.tsx` que las validaciones de archivo son las mismas que para un jugador: tipo, 10 MB y las cinco cantidades. Un administrador no es un usuario de confianza para el validador (FR-024)
-- [ ] T035 [US3] Implementar `POST /api/puzzles/[id]/retire` en `app/api/puzzles/[id]/retire/route.ts`: comprueba administrador con `requireAdmin`, marca `catalog_status = 'retired'`, y es idempotente
-- [ ] T036 [US3] Garantizar en `app/api/puzzles/[id]/retire/route.ts` que retirar **no** toca `visibility`, **no** borra la fila y **no** borra el objeto de Storage: el enlace del creador sigue funcionando (FR-030) y las salas en curso no se enteran (FR-031)
-- [ ] T037 [US3] Añadir a `app/admin/page.tsx` el listado de entradas del catálogo con acción de retirar
-- [ ] T038 [US3] Comprobar la condición de administrador **también dentro de cada route handler**, no solo en el middleware. El `matcher` es una lista y se puede quedar corta al añadir una ruta; esa comprobación es lo que evita que el endpoint quede abierto
-- [ ] T039 [US3] Verificar que ninguna pantalla del producto enlaza a `/admin` ni revela su existencia a quien no es administrador (FR-022)
+- [ ] T030 [US3] Crear `middleware.ts` en la raíz del repositorio con `matcher: ['/admin/:path*']`, refrescando la sesión desde la cookie y **propagando la cookie renovada a la respuesta**: sin eso, la siguiente navegación vuelve a fallar
+- [ ] T031 [US3] Implementar en `middleware.ts` las dos redirecciones: sin sesión a `/admin/login`, y con sesión sin `app_metadata.is_admin` a `/`. Se redirige y no se responde `403` porque es una navegación de página, no una llamada de API
+- [ ] T032 [US3] Crear la pantalla de acceso en `app/admin/login/page.tsx` con email y contraseña contra Supabase Auth. Sin registro, sin recuperación y sin enlace mágico: las cuentas se crean fuera de la aplicación
+- [ ] T033 [US3] Modificar `app/api/puzzles/route.ts` para derivar la condición de administrador con `requireAdmin` y, cuando lo sea, forzar `visibility = 'public'` y `source = 'curated'`, **ignorando cualquier campo del cuerpo**. Un campo del `FormData` permitiría a cualquier jugador marcar su rompecabezas como curado (research R2)
+- [ ] T034 [US3] Crear la pantalla de carga curada en `app/admin/page.tsx` reutilizando `components/ImageCropper.tsx` y `components/PieceCountSelector.tsx` **sin modificarlos**, y sin mostrar el interruptor de visibilidad
+- [ ] T035 [US3] Verificar en `app/admin/page.tsx` que las validaciones de archivo son las mismas que para un jugador: tipo, 10 MB y las cinco cantidades. Un administrador no es un usuario de confianza para el validador (FR-024)
+- [ ] T036 [US3] Revalidar la sesión de administrador en `app/api/puzzles/route.ts` **justo antes de insertar la fila**, no solo al empezar (FR-026). Una subida de 10 MB puede empezar con sesión válida y terminar sin ella; el middleware cubre la navegación, no la duración de la petición
+- [ ] T037 [US3] Implementar `POST /api/puzzles/[id]/retire` en `app/api/puzzles/[id]/retire/route.ts`: comprueba administrador con `requireAdmin`, marca `catalog_status = 'retired'`, y es idempotente
+- [ ] T038 [US3] Garantizar en `app/api/puzzles/[id]/retire/route.ts` que retirar **no** toca `visibility`, **no** borra la fila y **no** borra el objeto de Storage: el enlace del creador sigue funcionando (FR-030) y las salas en curso no se enteran (FR-031)
+- [ ] T039 [US3] Añadir a `app/admin/page.tsx` el listado de entradas del catálogo con acción de retirar
+- [ ] T040 [US3] Devolver `catalogStatus` en `app/api/puzzles/[id]/route.ts` y avisar en `app/puzzles/[id]/page.tsx` cuando el rompecabezas está retirado (FR-036). **No se bloquea el acceso**: el enlace sigue siendo válido; solo se informa de que ya no está en el catálogo
+- [ ] T041 [US3] Revisar que **todos** los route handlers de administración llaman a `requireAdmin` por su cuenta, no solo confían en el middleware: recorrer `app/api/` y confirmarlo endpoint por endpoint. El `matcher` es una lista y se puede quedar corta al añadir una ruta
+- [ ] T042 [US3] Verificar que ninguna pantalla del producto enlaza a `/admin` ni revela su existencia a quien no es administrador (FR-022)
 
 **Checkpoint**: las tres historias funcionan. La feature está completa a nivel de producto.
 
@@ -122,18 +130,18 @@ description: "Task list for 003-catalogo-rompecabezas"
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T040 [P] Test de integración de la paginación en `tests/integration/catalog-pagination.test.ts`: sembrar 50 rompecabezas **con el mismo `play_count`**, recorrer todas las páginas y verificar 50 identificadores distintos, sin repetidos ni ausentes. Repetir con `created_at` idéntico. Es la prueba que justifica el desempate por `id`
-- [ ] T041 [P] Añadir a `tests/integration/catalog-pagination.test.ts` el caso del retirado: desaparece del listado y su enlace `/puzzles/{id}` sigue funcionando
-- [ ] T042 [P] Test de integración del contador en `tests/integration/play-count.test.ts`: crear una sala incrementa `play_count` del rompecabezas en la misma transacción
-- [ ] T043 [P] Añadir estados de carga y error a `app/catalog/page.tsx`, distinguiendo el catálogo vacío del fallo de carga
-- [ ] T044 [P] Añadir etiquetas ARIA y navegación por teclado al selector de ordenamiento y a las tarjetas en `components/`, y anunciar la carga de nuevos tramos con `aria-live`
-- [ ] T045 Medir en `app/catalog/page.tsx` el tiempo hasta la primera pantalla y confirmar SC-002 (< 2 s)
-- [ ] T046 Sembrar 500 rompecabezas públicos y confirmar que SC-002 se mantiene: el keyset sobre `puzzles_public_recent_idx` no debe degradarse con el tamaño del catálogo
-- [ ] T047 Cronometrar el recorrido `app/catalog/page.tsx` → `app/puzzles/[id]/page.tsx` → sala y confirmar SC-001 (< 30 s)
-- [ ] T048 Confirmar SC-008 sobre `GET /api/catalog`: dos cargas consecutivas con el mismo `sort` devuelven el mismo orden si no cambió ningún dato
-- [ ] T049 Ejecutar `npm run build` y `npm run check:secrets`, confirmando que la llave de servicio no llega al bundle pese al middleware y al cliente de sesión
-- [ ] T050 Ejecutar la validación completa descrita en [quickstart.md](./quickstart.md), los 6 escenarios de principio a fin
-- [ ] T051 Revisar el cumplimiento de la constitución antes del merge: dependencia nueva justificada por escrito, ninguna variable de entorno nueva, formato de error uniforme en los endpoints nuevos, y `npm test` en verde
+- [ ] T043 [P] Test de integración de la paginación en `tests/integration/catalog-pagination.test.ts`: sembrar 50 rompecabezas **con el mismo `play_count`**, recorrer todas las páginas y verificar 50 identificadores distintos, sin repetidos ni ausentes. Repetir con `created_at` idéntico. Es la prueba que justifica el desempate por `id`
+- [ ] T044 [P] Añadir a `tests/integration/catalog-pagination.test.ts` el caso del retirado: desaparece del listado y su enlace `/puzzles/{id}` sigue funcionando
+- [ ] T045 [P] Test de integración del contador en `tests/integration/play-count.test.ts`: crear una sala incrementa `play_count` del rompecabezas en la misma transacción
+- [ ] T046 [P] Añadir estados de carga y error a `app/catalog/page.tsx`, distinguiendo el catálogo vacío del fallo de carga
+- [ ] T047 [P] Añadir etiquetas ARIA y navegación por teclado al selector de ordenamiento y a las tarjetas en `components/`, y anunciar la carga de nuevos tramos con `aria-live`
+- [ ] T048 Medir en `app/catalog/page.tsx` el tiempo hasta la primera pantalla y confirmar SC-002 (< 2 s)
+- [ ] T049 Sembrar 500 rompecabezas públicos y confirmar que SC-002 se mantiene: el keyset sobre `puzzles_public_recent_idx` no debe degradarse con el tamaño del catálogo
+- [ ] T050 Cronometrar el recorrido `app/catalog/page.tsx` → `app/puzzles/[id]/page.tsx` → sala y confirmar SC-001 (< 30 s)
+- [ ] T051 Confirmar SC-008 sobre `GET /api/catalog`: dos cargas consecutivas con el mismo `sort` devuelven el mismo orden si no cambió ningún dato
+- [ ] T052 Ejecutar `npm run build` y `npm run check:secrets`, confirmando que la llave de servicio no llega al bundle pese al middleware y al cliente de sesión
+- [ ] T053 Ejecutar la validación completa descrita en [quickstart.md](./quickstart.md), los 6 escenarios de principio a fin
+- [ ] T054 Revisar el cumplimiento de la constitución antes del merge: dependencia nueva justificada por escrito, ninguna variable de entorno nueva, formato de error uniforme en los endpoints nuevos, y `npm test` en verde
 
 ---
 
@@ -165,7 +173,7 @@ Los índices se crean **después** de la columna porque su condición parcial la
 - Fase 2: T008 y T009 en paralelo; T010, T011 y T012 en paralelo entre sí
 - US1: T016 y T017 en paralelo
 - **US1 y US3 completas en paralelo**: no comparten ningún archivo
-- Fase 6: T040, T041, T042, T043 y T044 en paralelo
+- Fase 6: T043, T044, T045, T046 y T047 en paralelo
 
 ---
 
@@ -218,10 +226,14 @@ Las marcas `[P]` no reparten trabajo entre personas: señalan qué tareas no se 
   `supabase db push`. Esta toca una función y una política que ya están en producción.
 - **Esta feature modifica 001 y 002 en cuatro puntos**, y ninguno es opcional: `create_room`
   (T006, contador), los índices de 002 (T005, desempate), la política RLS de `puzzles` (T007,
-  excluir retirados) y `POST /api/puzzles` (T032, forzar público para administradores).
+  excluir retirados), `POST /api/puzzles` (T033, forzar público; T036, revalidar sesión) y
+  `GET /api/puzzles/[id]` (T040, devolver `catalogStatus`).
 - **El rol de administrador nunca se lee de `user_metadata`.** Es la única regla de esta feature
   que, si se rompe, entrega el rol a cualquiera con una llamada del SDK desde la consola del
-  navegador. T027 la prueba explícitamente.
+  navegador. T028 la prueba explícitamente.
 - `npm test` debe seguir corriendo sin infraestructura. `npm run test:db` requiere
   `supabase start`.
+- **El listado consulta con `service_role`, así que la RLS no lo protege.** El filtro de
+  visibilidad vive en la consulta de T014 y en el predicado de los índices de T005. Si algún día
+  se añade otra consulta al catálogo, tiene que llevar el mismo filtro.
 - Esta feature no añade ninguna variable de entorno.
