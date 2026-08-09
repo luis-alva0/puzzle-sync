@@ -14,6 +14,9 @@ const DEFAULT_MESSAGES: Record<ErrorCode, string> = {
   ROOM_NOT_FOUND: 'No encontramos esa sala. Revisa el enlace o crea una nueva.',
   ROOM_FULL: 'La sala está llena: ya tiene el máximo de jugadores conectados.',
   PUZZLE_NOT_FOUND: 'No encontramos ese rompecabezas.',
+  INVALID_FILE_TYPE: 'La imagen debe ser un archivo JPG o PNG válido.',
+  FILE_TOO_LARGE: 'La imagen no puede pesar más de 10 MB.',
+  INVALID_PIECE_COUNT: 'Elige una de las cantidades de piezas disponibles.',
   INTERNAL_ERROR: 'Algo falló de nuestro lado. Inténtalo de nuevo.',
 };
 

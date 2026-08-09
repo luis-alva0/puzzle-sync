@@ -7,6 +7,7 @@
  */
 
 import type { BoardState, PuzzleSummary } from './board';
+import type { PieceCountOption, PuzzleVisibility } from './puzzle';
 
 export type ErrorCode =
   | 'UNAUTHENTICATED'
@@ -14,6 +15,9 @@ export type ErrorCode =
   | 'ROOM_NOT_FOUND'
   | 'ROOM_FULL'
   | 'PUZZLE_NOT_FOUND'
+  | 'INVALID_FILE_TYPE'
+  | 'FILE_TOO_LARGE'
+  | 'INVALID_PIECE_COUNT'
   | 'INTERNAL_ERROR';
 
 export interface ApiErrorBody {
@@ -30,6 +34,9 @@ export const ERROR_STATUS: Record<ErrorCode, number> = {
   ROOM_NOT_FOUND: 404,
   ROOM_FULL: 409,
   PUZZLE_NOT_FOUND: 404,
+  INVALID_FILE_TYPE: 400,
+  FILE_TOO_LARGE: 413,
+  INVALID_PIECE_COUNT: 400,
   INTERNAL_ERROR: 500,
 };
 
@@ -67,3 +74,34 @@ export interface JoinRoomResponse {
 // --- GET /api/rooms/[code]/state ---------------------------------------------
 
 export type RoomStateResponse = BoardState;
+
+// --- POST /api/puzzles -------------------------------------------------------
+
+export interface CreatePuzzleResponse {
+  puzzleId: string;
+  /** Ruta relativa del enlace permanente. El dominio no forma parte del contrato. */
+  url: string;
+  gridRows: number;
+  gridCols: number;
+  /** Cantidad **real**, derivada de la cuadrícula. Puede diferir de la nominal (research R4). */
+  pieceCount: number;
+  nominalPieceCount: PieceCountOption;
+  visibility: PuzzleVisibility;
+}
+
+// --- GET /api/puzzles/[id] ---------------------------------------------------
+
+export interface PuzzleDetailResponse {
+  puzzleId: string;
+  /**
+   * URL **firmada**, con 1 hora de caducidad, emitida en cada lectura. El bucket no tiene
+   * política de lectura. No guardar ni cachear: lo permanente es `/puzzles/{id}`.
+   */
+  imageUrl: string;
+  gridRows: number;
+  gridCols: number;
+  pieceCount: number;
+  visibility: PuzzleVisibility;
+  /** ISO 8601 con offset -05:00. */
+  createdAt: string;
+}
