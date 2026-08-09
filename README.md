@@ -54,12 +54,19 @@ cliente, es un incidente: **rotar la llave** antes de cualquier otra cosa.
 ## Comandos
 
 ```bash
-npm run dev        # servidor de desarrollo
-npm run build      # build de producción
-npm run lint       # ESLint
-npm run typecheck  # tsc --noEmit
-npm test           # unitarias, sin infraestructura
-npm run test:db    # integración, requiere supabase start
+npm run dev            # servidor de desarrollo
+npm run build          # build de producción
+npm run lint           # ESLint
+npm run typecheck      # tsc --noEmit
+npm test               # unitarias, sin infraestructura
+npm run test:db        # integración, requiere supabase start
+npm run check:secrets  # verifica que no haya credenciales en el bundle (tras build)
+```
+
+Antes de mergear a `main`:
+
+```bash
+npm run lint && npm run typecheck && npm test && npm run build && npm run check:secrets
 ```
 
 `npm test` cubre la lógica crítica que exige el Principio VI: emparejamiento de piezas, fusión de
