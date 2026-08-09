@@ -3,6 +3,7 @@
 import { use, useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AliasForm } from '@/components/AliasForm';
+import { Board, type BoardApi } from '@/components/Board';
 import { PlayerList } from '@/components/PlayerList';
 import { ApiError, fetchRoomState, joinRoom } from '@/lib/api/client';
 import { subscribeToRoom, type RoomChannelHandle } from '@/lib/realtime/channel';
@@ -40,10 +41,21 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
 
   const channelRef = useRef<RoomChannelHandle | null>(null);
   const presenceRef = useRef<PresenceHandle | null>(null);
+  const [channel, setChannel] = useState<RoomChannelHandle | null>(null);
+
+  // El tablero expone cómo aplicar los eventos; la página los recibe del canal y se los pasa.
+  // Así el canal no conoce al tablero ni el tablero al canal.
+  const boardApiRef = useRef<BoardApi | null>(null);
+  const handleBoardReady = useCallback((api: BoardApi) => {
+    boardApiRef.current = api;
+  }, []);
 
   const reloadBoard = useCallback(async () => {
     try {
-      setBoard(await fetchRoomState(code));
+      const state = await fetchRoomState(code);
+      setBoard(state);
+      // Reemplazo completo: durante una caída se perdieron eventos irreproducibles (FR-023).
+      boardApiRef.current?.replacePieces(state.pieces);
     } catch (cause) {
       if (cause instanceof ApiError) setError({ code: cause.code, message: cause.message });
     }
@@ -60,13 +72,25 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
 
         await reloadBoard();
 
-        const handle = await subscribeToRoom(code, {
+        const handle = await subscribeToRoom(code, joined.roomId, {
           onStatusChange: setStatus,
           // Al reconectar se recarga el estado entero: durante la caída se perdieron eventos
           // y no hay forma de reproducirlos.
           onResubscribed: () => void reloadBoard(),
+          // Pista visual sin autoridad; se ignoran los propios eventos.
+          onPieceDrag: (payload) => {
+            if (payload.playerId === joined.playerId) return;
+            boardApiRef.current?.applyDragHint(payload.groupId, payload.x, payload.y);
+          },
+          onPieceDrop: (payload) => {
+            if (payload.playerId === joined.playerId) return;
+            boardApiRef.current?.clearDragHint(payload.groupId);
+          },
+          // Hecho confirmado: tiene precedencia sobre cualquier pista provisional.
+          onPieceConfirmed: (piece) => boardApiRef.current?.applyConfirmed(piece),
         });
         channelRef.current = handle;
+        setChannel(handle);
         presenceRef.current = startPresence(handle.channel, joined.playerId, chosenAlias);
       } catch (cause) {
         if (cause instanceof ApiError) {
@@ -163,16 +187,16 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
       <div style={{ display: 'grid', gap: '1.25rem', gridTemplateColumns: 'minmax(0,1fr) 280px' }}>
         <section className="card">
           {board ? (
-            <>
-              <p className="muted" style={{ marginTop: 0 }}>
-                Rompecabezas de {board.puzzle.gridRows * board.puzzle.gridCols} piezas.
-              </p>
-              {/* El tablero se monta en US2. Hasta entonces la sala ya es demostrable:
-                  dos personas entran, se ven y comparten el enlace. */}
-              <p className="muted" style={{ marginBottom: 0 }}>
-                {board.pieces.length} piezas listas en el tablero.
-              </p>
-            </>
+            <Board
+              initialPieces={board.pieces}
+              players={board.players}
+              gridRows={board.puzzle.gridRows}
+              gridCols={board.puzzle.gridCols}
+              imageUrl={board.puzzle.imageUrl}
+              playerId={playerId}
+              channel={channel}
+              onReady={handleBoardReady}
+            />
           ) : (
             <p className="muted" style={{ margin: 0 }}>
               Cargando tablero…
