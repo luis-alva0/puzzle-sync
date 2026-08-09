@@ -79,19 +79,45 @@ propias filas y fallan sin que nada esté roto. Ante un fallo raro ahí, `supaba
 
 ## Despliegue
 
-Railway despliega automáticamente con cada push a `main`.
+| | |
+|---|---|
+| Proyecto Railway | `puzzle-sync` · servicio `web` · entorno `production` |
+| URL | https://web-production-b2500a.up.railway.app |
+| Origen | GitHub `luis-alva0/puzzle-sync`, rama `main`, despliegue automático |
 
-**Las migraciones no se aplican solas.** El orden correcto siempre es:
+Railway detecta Next.js automáticamente; no hace falta Dockerfile ni configuración de build.
+
+### Primera puesta en producción
+
+El orden importa. Los tres primeros pasos son de una sola vez:
 
 ```bash
-supabase db push        # 1. esquema en producción
-git push origin main    # 2. código
+# 1. Proyecto Supabase en la nube y esquema. Las migraciones NO se aplican solas.
+supabase link --project-ref <ref>
+supabase db push
+
+# 2. Las tres variables en Railway, con los valores de Settings → API del proyecto.
+railway variables --service web \
+  --set "NEXT_PUBLIC_SUPABASE_URL=https://<ref>.supabase.co" \
+  --set "NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon>" \
+  --set "SUPABASE_SERVICE_ROLE_KEY=<service_role>"
+
+# 3. La cuenta de administrador, que no tiene pantalla de alta (feature 003).
+supabase auth admin create-user --email tu@correo.com --password '…'
+curl -X PUT "https://<ref>.supabase.co/auth/v1/admin/users/<USER_ID>" \
+  -H "Authorization: Bearer <service_role>" -H "apikey: <service_role>" \
+  -H "Content-Type: application/json" -d '{"app_metadata": {"is_admin": true}}'
+
+# 4. Y ya: cada push despliega.
+git push origin main
 ```
 
-Invertirlo deja código nuevo hablando con un esquema viejo.
+**En el panel de Supabase, antes del primer uso**: activar *Authentication → Providers →
+Anonymous sign-ins* (sin eso no hay identidad de jugador y RLS bloquea todo), dejar el proveedor
+de email habilitado (lo necesita `/admin/login`), y añadir la URL de Railway a *Authentication →
+URL Configuration → Site URL* y *Redirect URLs*.
 
-Las tres variables de entorno se declaran en el proyecto de Railway (Settings → Variables).
-Railway detecta Next.js automáticamente; no hace falta Dockerfile ni configuración de build.
+Empujar código antes de aplicar las migraciones deja código nuevo hablando con un esquema viejo.
 
 ## Trampas conocidas
 
