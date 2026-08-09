@@ -24,23 +24,34 @@ Esta feature **no crea tablas**. Extiende `puzzles`, que ya existe desde
 
 | Columna | Tipo | Restricciones | Notas |
 |---|---|---|---|
-| `nominal_piece_count` | `smallint` | NOT NULL, `in (20,50,100,200,500)` | La opción que eligió el jugador (FR-017). Difiere de `piece_count` (research R4). |
+| `nominal_piece_count` | `smallint` | **NULL permitido**, `CHECK (is null or in (20,50,100,200,500))` | La opción que eligió el jugador (FR-017). Difiere de `piece_count` (research R4). **NULL = no se eligió entre las cinco opciones**: es el caso de la semilla y de los curados de 003. |
 | `visibility` | `text` | NOT NULL, default `'private'`, `in ('private','public')` | FR-028, FR-029. Se fija al crear y **no cambia** (FR-029c). |
 | `storage_path` | `text` | NULL | Ruta dentro del bucket. **NULL ⟺ la imagen no está en Storage**: es el caso de la semilla, que usa `data:` URI en `image_url`. Cuando no es NULL, `image_url` guarda la misma ruta y lo que se sirve al cliente es una URL firmada. |
 | `play_count` | `integer` | NOT NULL, default `0`, `>= 0` | Partidas jugadas. Lo incrementa 001 al crear sala; lo ordena 003 (research R7). |
-| `source` | `text` | NOT NULL, default `'user_photo'`, `in ('seed','user_photo','curated')` | Distingue origen. `'curated'` queda reservado para 003. |
+| `source` | `text` | NOT NULL, default `'user_photo'`, `in ('seed','user_photo','curated')` | Distingue origen. `'curated'` queda reservado para 003. El default sirve al endpoint de creación; `supabase/seed.sql` debe declararlo explícitamente o etiquetaría la semilla como foto de usuario. |
 
 ### Migración de las filas existentes
 
-Las tres filas de la semilla de 001 se actualizan en la misma migración antes de aplicar
-`NOT NULL`:
+Las tres filas de la semilla de 001 se actualizan en la misma migración:
 
 ```text
-nominal_piece_count := piece_count     -- 4, 20 y 100: ya coinciden con opciones reales
+nominal_piece_count := null            -- ninguna se creó eligiendo entre las cinco opciones
 visibility          := 'public'        -- son contenido de prueba, visibles para todos
 source              := 'seed'
 storage_path        := null            -- usan data URI, no Storage
 ```
+
+> **Por qué `nominal_piece_count` admite NULL.** La versión anterior de este documento lo definía
+> `NOT NULL` y proponía copiar `piece_count` en las filas existentes, afirmando que *"4, 20 y 100
+> ya coinciden con opciones reales"*. **4 no es una de las cinco opciones**, así que el `CHECK`
+> habría rechazado la fila y la migración habría abortado en su primer `UPDATE`.
+>
+> No es un detalle de la semilla: ese rompecabezas de 2×2 es el que la feature 001 usa para
+> validar el completado sin tener que armar 100 piezas a mano. Cambiarlo por uno de 20 para
+> encajar en la restricción habría degradado una prueba de 001 para acomodar un `CHECK` de 002.
+>
+> Admitir NULL dice la verdad: esas filas no se crearon eligiendo entre cinco opciones. Y deja
+> `supabase/seed.sql` funcionando sin tener que declarar la columna.
 
 ### Índices nuevos
 
@@ -53,8 +64,10 @@ Se crean aquí porque las columnas nacen aquí; los consulta 003.
 
 ### Reglas de validación
 
-- `nominal_piece_count` ∈ {20, 50, 100, 200, 500}. Impuesto por `CHECK`, no solo por la
-  aplicación: es la última línea si algún día otro camino inserta en la tabla.
+- `nominal_piece_count` ∈ {20, 50, 100, 200, 500} **o NULL**. Impuesto por `CHECK`, no solo por la
+  aplicación: es la última línea si algún día otro camino inserta en la tabla. El endpoint de
+  creación **siempre** lo rellena; NULL solo aparece en filas que no nacieron de una elección del
+  jugador.
 - `visibility` se decide al crear. No existe ningún camino de escritura que la cambie después
   (FR-029c); la ausencia de ese camino **es** la restricción.
 - `grid_rows`/`grid_cols` los calcula el servidor con `chooseGrid`, nunca llegan del cliente: si
@@ -126,7 +139,7 @@ feature la restringe.
 | Requisito | Dónde se satisface |
 |---|---|
 | FR-004, FR-005 formatos y tamaño | Restricciones del bucket + validación por números mágicos (research R6) |
-| FR-017 cinco opciones | `CHECK` sobre `nominal_piece_count` |
+| FR-017 cinco opciones | `CHECK` sobre `nominal_piece_count`, y el endpoint lo rellena siempre |
 | FR-019 cantidad real visible | `piece_count` generada vs `nominal_piece_count` |
 | FR-020 generar desde el recorte | `storage_path` apunta solo a la imagen recortada |
 | FR-022 sin huecos ni solapes | Rejilla de bordes compartidos (research R3) |

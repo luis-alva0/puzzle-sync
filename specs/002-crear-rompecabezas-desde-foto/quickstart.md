@@ -17,7 +17,12 @@ Adicional para esta feature:
 ```bash
 npm install react-easy-crop
 supabase db push          # aplica 0008_puzzles_from_photo.sql
+npm run seed              # re-siembra con visibility y source ya declarados
 ```
+
+`seed.sql` y `scripts/seed.mjs` se actualizan **en el mismo despliegue** que la migración: declaran
+`visibility = 'public'` y `source = 'seed'`. Sin eso, los valores por defecto de las columnas
+nuevas etiquetarían la semilla como foto de usuario y privada.
 
 El bucket `puzzle-images` lo crea la migración. Si ya existe de un intento anterior, la migración
 es idempotente y no falla.
@@ -152,4 +157,7 @@ npm run test:db   # integración: flujo de creación, visibilidad, limpieza de h
 | La página del rompecabezas carga pero la imagen sale rota | La URL no se está firmando. El bucket no tiene política de lectura: sin firma, ninguna imagen es alcanzable |
 | El tablero de una sala sale en blanco | `GET /state` de 001 devuelve `puzzles.image_url` en crudo en vez de firmarla |
 | La imagen funciona un rato y luego deja de funcionar | Se está guardando o cacheando la URL firmada, que caduca en 1 hora. Hay que pedirla de nuevo en cada lectura |
+| `supabase db push` falla con violación de `CHECK` | Se está copiando `piece_count` en `nominal_piece_count`: el rompecabezas de 4 piezas de la semilla no es una de las cinco opciones. Debe quedar NULL |
+| `npm run seed` falla tras la migración | `seed.sql` no declara `visibility` ni `source` |
+| La semilla aparece como privada o como foto de usuario | Mismo motivo: faltan las columnas en el sembrado |
 | La foto sale girada 90° | No se normalizó la orientación EXIF: decodificar con `createImageBitmap(file, { imageOrientation: 'from-image' })` |

@@ -47,7 +47,7 @@ confirmar en < 15 s incluso con 500 piezas y 10 MB (SC-002)
 **Constraints**: 10 MB por archivo; solo JPG y PNG; cinco cantidades fijas; ningún secreto en el
 código; las mismas tres variables de entorno de 001, **ninguna nueva**
 
-**Scale/Scope**: 2 pantallas y 2 endpoints nuevos, 3 archivos de 001 modificados, 1 migración, 4 módulos de generación. Volumen bajo.
+**Scale/Scope**: 2 pantallas y 2 endpoints nuevos, **5 puntos de 001 modificados**, 1 migración, 4 módulos de generación. Volumen bajo.
 
 ## Constitution Check
 
@@ -105,6 +105,8 @@ app/
 │       └── [id]/
 │           └── route.ts              # NUEVO  GET: sirve privados con service_role
 ├── page.tsx                          # TOCADO Acepta un puzzleId arbitrario, no solo la semilla
+├── api/rooms/route.ts                 # TOCADO Quita `puzzle` de la respuesta (URL inservible)
+├── api/rooms/[code]/join/route.ts     # TOCADO Idem
 └── api/rooms/[code]/state/route.ts    # TOCADO Firma la URL de imagen (001)
 
 components/
@@ -130,8 +132,9 @@ types/
 └── puzzle.ts                         # NUEVO  Edge, EdgeGrid, PieceEdges
 
 supabase/
-└── migrations/
-    └── 0008_puzzles_from_photo.sql   # NUEVO  ALTER TABLE + bucket + políticas
+├── migrations/
+│   └── 0008_puzzles_from_photo.sql   # NUEVO  ALTER TABLE + bucket + política
+└── seed.sql                          # TOCADO Declara visibility y source
 
 tests/
 ├── unit/                             # prng, edges, grid, validate
@@ -159,6 +162,11 @@ petición HTTP.
 
 ## Pendientes conocidos
 
+- **`nominal_piece_count` admite NULL a propósito.** La semilla de 001 incluye un rompecabezas de
+  4 piezas —el que usa para validar el completado— y 4 no es una de las cinco opciones. Con la
+  columna `NOT NULL` copiando `piece_count`, la migración abortaría contra su propio `CHECK`. NULL
+  significa "no se creó eligiendo entre las cinco opciones", que es la verdad para la semilla y
+  para los curados de 003.
 - **El bucket es privado sin excepción y toda URL de imagen se firma al servir** (research R5).
   Consecuencia que atraviesa features: `GET /api/rooms/[code]/state`, que es de 001, devuelve hoy
   `puzzles.image_url` en crudo y debe firmarla. Sin ese cambio, 002 rompe 001 para cualquier
