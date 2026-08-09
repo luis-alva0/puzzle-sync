@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { ImageCropper, type CropResult } from '@/components/ImageCropper';
 import { PieceCountSelector } from '@/components/PieceCountSelector';
 import { PuzzleLinkResult } from '@/components/PuzzleLinkResult';
 import { ApiError, createPuzzle } from '@/lib/api/client';
@@ -18,15 +19,14 @@ import type { CreatePuzzleResponse } from '@/types/api';
  */
 
 interface LoadedImage {
-  file: File;
-  /** Dimensiones **ya orientadas**: `createImageBitmap` aplica la rotación EXIF al decodificar. */
-  width: number;
-  height: number;
+  /** Bitmap **ya orientado**: `createImageBitmap` aplica la rotación EXIF al decodificar. */
+  bitmap: ImageBitmap;
   previewUrl: string;
 }
 
 export default function CreatePuzzlePage() {
   const [image, setImage] = useState<LoadedImage | null>(null);
+  const [crop, setCrop] = useState<CropResult | null>(null);
   const [pieceCount, setPieceCount] = useState<PieceCountOption | null>(100);
   // Pasa a ser estado con interruptor en US4 (T042). Hasta entonces, privado siempre (FR-029).
   const isPublic = false;
@@ -51,24 +51,30 @@ export default function CreatePuzzlePage() {
       // `imageOrientation: 'from-image'` aplica la rotación EXIF al decodificar (FR-016). Sin
       // esto, una foto de móvil se encuadra derecha y sale girada 90°.
       const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
-      setImage({
-        file,
-        width: bitmap.width,
-        height: bitmap.height,
-        previewUrl: URL.createObjectURL(file),
-      });
-      bitmap.close();
+      setCrop(null);
+      setImage({ bitmap, previewUrl: URL.createObjectURL(file) });
     } catch {
       setError('No pudimos leer esa imagen. ¿Está completa?');
     }
   }
 
+  function resetImage() {
+    image?.bitmap.close();
+    if (image) URL.revokeObjectURL(image.previewUrl);
+    setImage(null);
+    setCrop(null);
+    setError(null);
+  }
+
   async function handleSubmit() {
-    if (!image || !pieceCount) return;
+    if (!crop || !pieceCount) return;
     setBusy(true);
     setError(null);
     try {
-      setResult(await createPuzzle({ image: image.file, nominalPieceCount: pieceCount, isPublic }));
+      // Se envía el recorte, no el original: el rompecabezas se construye solo con la porción
+      // elegida (FR-020), y así no se sube una foto de 10 MB para usar un cuarto de ella.
+      const croppedFile = new File([crop.blob], 'cropped.jpg', { type: 'image/jpeg' });
+      setResult(await createPuzzle({ image: croppedFile, nominalPieceCount: pieceCount, isPublic }));
     } catch (cause) {
       // Se conmuta sobre el código, nunca sobre el texto (Principio V).
       const code = cause instanceof ApiError ? cause.code : 'INTERNAL_ERROR';
@@ -124,32 +130,43 @@ export default function CreatePuzzlePage() {
           JPG o PNG, hasta 10 MB.
         </p>
 
-        {image && (
-          <div style={{ marginTop: '1rem' }}>
-            {/* eslint-disable-next-line @next/next/no-img-element -- es un blob local del
-                navegador, no una imagen remota que Next pueda optimizar */}
-            <img
-              src={image.previewUrl}
-              alt="Vista previa de la foto elegida"
-              style={{
-                maxWidth: '100%',
-                maxHeight: 320,
-                borderRadius: 'var(--radius)',
-                display: 'block',
-              }}
-            />
-            <p className="muted" style={{ fontSize: '0.85rem', marginBottom: 0 }}>
-              {image.width} × {image.height} píxeles
-            </p>
-          </div>
-        )}
       </section>
 
-      {image && (
+      {image && !crop && (
         <section className="card" style={{ marginBottom: '1.25rem' }}>
+          <h2 style={{ marginTop: 0, fontSize: '1.05rem' }}>Ajusta el encuadre</h2>
+          <p className="muted" style={{ marginTop: 0 }}>
+            Mueve y amplía la foto para quedarte con la parte que quieras. Si no tocas nada, se usa
+            la imagen completa.
+          </p>
+          <ImageCropper
+            bitmap={image.bitmap}
+            previewUrl={image.previewUrl}
+            onCropped={setCrop}
+            onBack={resetImage}
+            busy={busy}
+          />
+        </section>
+      )}
+
+      {crop && (
+        <section className="card" style={{ marginBottom: '1.25rem' }}>
+          <p className="muted" style={{ marginTop: 0 }}>
+            Recorte de {crop.width} × {crop.height} píxeles.{' '}
+            <button
+              type="button"
+              onClick={() => setCrop(null)}
+              style={{ padding: '0.15rem 0.5rem', fontSize: '0.85rem' }}
+            >
+              Cambiar encuadre
+            </button>
+          </p>
+          {/* La cantidad real se calcula sobre el RECORTE que se va a enviar, no sobre la imagen
+              original: el servidor recalcula sobre ese mismo blob, y medir cosas distintas haría
+              que el número mostrado no fuese el guardado (FR-019). */}
           <PieceCountSelector
-            cropWidth={image.width}
-            cropHeight={image.height}
+            cropWidth={crop.width}
+            cropHeight={crop.height}
             value={pieceCount}
             onChange={setPieceCount}
             disabled={busy}
@@ -166,7 +183,7 @@ export default function CreatePuzzlePage() {
       <button
         type="button"
         className="primary"
-        disabled={!image || !pieceCount || busy}
+        disabled={!crop || !pieceCount || busy}
         onClick={() => void handleSubmit()}
       >
         {busy ? 'Creando…' : 'Crear rompecabezas'}
