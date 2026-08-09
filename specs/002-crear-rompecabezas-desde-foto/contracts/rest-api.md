@@ -10,25 +10,25 @@ la API.
 
 ## Códigos de error
 
-Se añaden dos a la unión `ErrorCode` de `types/api.ts`:
+Se añaden **tres** a la unión `ErrorCode` de `types/api.ts`:
 
 | `code` | HTTP | Cuándo |
 |---|---|---|
 | `INVALID_FILE_TYPE` | 400 | El archivo no es JPG ni PNG, según sus **números mágicos** (FR-006) |
 | `FILE_TOO_LARGE` | 413 | Supera los 10 MB (FR-007) |
+| `INVALID_PIECE_COUNT` | 400 | La cantidad no es una de las cinco opciones (FR-017) |
 
-Ya existentes que este endpoint usa:
+Ya existentes, reutilizados sin cambiar su significado:
 
 | `code` | HTTP | Cuándo |
 |---|---|---|
 | `UNAUTHENTICATED` | 401 | Falta el JWT o es inválido |
-| `INVALID_PIECE_COUNT` | 400 | La cantidad no es una de las cinco opciones (FR-017) |
-| `PUZZLE_NOT_FOUND` | 404 | El UUID no corresponde a ningún rompecabezas (FR-031). Ya existe desde 001 |
+| `PUZZLE_NOT_FOUND` | 404 | El UUID no corresponde a ningún rompecabezas (FR-031). Existe desde 001 |
 | `INTERNAL_ERROR` | 500 | Fallo de subida, de inserción o no previsto |
 
-`INVALID_PIECE_COUNT` también es nuevo. Los tres nuevos se añaden a `ErrorCode` y a
-`ERROR_STATUS`; ninguno se reutiliza con significado distinto, porque cambiar el significado de un
-código existente es un cambio incompatible (Principio V).
+Los tres nuevos se añaden a `ErrorCode` y a `ERROR_STATUS`. Ninguno existente se reutiliza con
+significado distinto: cambiar el significado de un código ya publicado es un cambio incompatible
+(Principio V).
 
 ---
 
@@ -103,7 +103,7 @@ Conocer el UUID es la credencial. Es la misma regla de acceso que el spec define
 ```json
 {
   "puzzleId": "0f9c1a2b-3d4e-4f50-8a1b-2c3d4e5f6071",
-  "imageUrl": "https://…/puzzle-images/0f9c…/cropped.jpg",
+  "imageUrl": "https://…/storage/v1/object/sign/puzzle-images/0f9c…/cropped.jpg?token=…",
   "gridRows": 10,
   "gridCols": 10,
   "pieceCount": 100,
@@ -116,8 +116,15 @@ Conocer el UUID es la credencial. Es la misma regla de acceso que el spec define
 
 1. Valida que el parámetro de ruta tenga forma de UUID → `PUZZLE_NOT_FOUND` si no.
 2. Busca la fila con `service_role` → `PUZZLE_NOT_FOUND` si no existe.
-3. Devuelve los metadatos y una URL de imagen utilizable.
+3. **Firma** la URL de la imagen con `service_role`, con 1 hora de caducidad, y la devuelve. El
+   bucket no tiene política de lectura: sin firmar, la imagen no es alcanzable ni siendo pública
+   (research R5). Si `storage_path` es `null` —los rompecabezas de la semilla— devuelve
+   `image_url` tal cual, que es un `data:` URI.
 4. `createdAt` se serializa con el helper de 001, en hora de Perú (FR-034).
+
+**`imageUrl` caduca, el enlace no.** La URL firmada dura 1 hora y se emite de nuevo en cada
+lectura. Lo permanente que promete FR-023 es `/puzzles/{uuid}`, no la dirección del objeto en
+Storage. No hay que guardar ni cachear la URL firmada en ningún sitio.
 
 **No requiere autenticación de miembro de nada**: cualquiera con el UUID puede leerlo, igual que
 cualquiera con el enlace de una sala puede entrar en ella. Sí requiere la sesión anónima, como el
@@ -125,6 +132,17 @@ resto de la API.
 
 **Respuesta a un UUID inexistente o mal formado**: `PUZZLE_NOT_FOUND`, sin revelar si el
 identificador existió alguna vez ni información de otros rompecabezas (FR-031).
+
+---
+
+## Impacto en `GET /api/rooms/[code]/state` (feature 001)
+
+Ese endpoint ya existe y devuelve `puzzle.imageUrl` leyendo `puzzles.image_url` en crudo. Con el
+bucket cerrado, esa URL deja de servir para cualquier rompecabezas creado desde foto, y el tablero
+se quedaría en blanco.
+
+**Debe firmar igual que `GET /api/puzzles/[id]`**, con el mismo helper. Es un cambio pequeño en un
+endpoint de 001, y sin él la feature 002 rompe la 001 en cuanto alguien juegue con una foto propia.
 
 ---
 

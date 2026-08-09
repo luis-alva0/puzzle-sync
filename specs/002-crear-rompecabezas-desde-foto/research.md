@@ -150,24 +150,37 @@ resuelve con la política RLS del bucket, no haciéndolo público.
   almacenamiento y menos dato personal custodiado.
 - Se sube con `service_role` desde el route handler. El cliente nunca escribe en Storage.
 
-**Lectura — decidido, no diferido**: política sobre el bucket que consulta la visibilidad del
-rompecabezas al que pertenece el objeto.
+**Lectura — decidido**: el bucket queda **completamente privado, sin ninguna política de
+lectura**. Toda URL de imagen se emite **firmada por el servidor**, con caducidad de 1 hora, en
+cada lectura.
 
 ```text
-select permitido  ⟺  existe puzzles.id = <primer segmento de la ruta>  ∧  visibility = 'public'
+GET /api/puzzles/[id]        → firma y devuelve la URL de la imagen
+GET /api/rooms/[code]/state  → firma y devuelve la URL de la imagen (endpoint de 001)
 ```
 
-Los rompecabezas **privados** no se sirven por el bucket: los entrega
-`GET /api/puzzles/[id]`, que usa `service_role` y ya comprueba el UUID de la ruta.
+> **Corrección de un razonamiento equivocado.** Una versión anterior de esta decisión descartó
+> las URL firmadas *"porque caducan, y el enlace debe ser permanente (FR-023)"*. Eso confundía dos
+> cosas distintas:
+>
+> - el **enlace al rompecabezas**, `/puzzles/{uuid}`, que sí debe ser permanente — y lo es, porque
+>   es un UUID en una tabla sin purga;
+> - la **URL del objeto en Storage**, que se pide de nuevo en cada visita y no tiene por qué durar
+>   nada.
+>
+> El error tenía consecuencias: con una política de bucket restringida a `visibility = 'public'`,
+> la imagen de un rompecabezas **privado** no era alcanzable por ninguna URL, y su enlace habría
+> mostrado una página con la imagen rota. Peor: `GET /state` de 001 devuelve `puzzle.imageUrl` y
+> el tablero la carga directamente, así que una sala creada con un rompecabezas privado habría
+> tenido el tablero en blanco.
 
-Se descarta la URL firmada con caducidad larga: obliga a decidir una caducidad —y una URL firmada
-que caduca rompe un enlace que el spec promete permanente (FR-023)— o a renovarla, que es un
-mecanismo más que mantener. La política es estática y no caduca.
+**Por qué firmar siempre, y no solo los privados**: dos caminos —política de bucket para los
+públicos, firma para los privados— son dos cosas que mantener y dos formas de fallar. Firmar
+siempre deja **un solo camino**, permite prescindir por completo de la política de lectura, y
+mantiene el bucket cerrado por defecto. Es menos código y menos superficie.
 
-Consecuencia que hay que tener presente: tras restringir la política de lectura de `puzzles` a
-`visibility = 'public'`, **un rompecabezas privado deja de ser legible desde el cliente**. Sin un
-endpoint de servidor que lo sirva, su enlace no funcionaría. De ahí que exista
-`GET /api/puzzles/[id]`.
+**Los rompecabezas de la semilla no se firman**: usan `data:` URI en `image_url` y no tienen
+`storage_path`. El helper devuelve `image_url` tal cual cuando `storage_path` es `null`.
 
 **Limpieza ante fallo parcial**: si la subida tiene éxito y el `INSERT` falla, el objeto queda
 huérfano. El route handler borra el objeto en el `catch`. Es una compensación explícita, no una

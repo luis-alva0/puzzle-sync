@@ -26,7 +26,7 @@ Esta feature **no crea tablas**. Extiende `puzzles`, que ya existe desde
 |---|---|---|---|
 | `nominal_piece_count` | `smallint` | NOT NULL, `in (20,50,100,200,500)` | La opción que eligió el jugador (FR-017). Difiere de `piece_count` (research R4). |
 | `visibility` | `text` | NOT NULL, default `'private'`, `in ('private','public')` | FR-028, FR-029. Se fija al crear y **no cambia** (FR-029c). |
-| `storage_path` | `text` | NULL | Ruta dentro del bucket. NULL en los rompecabezas de la semilla, que usan data URI. |
+| `storage_path` | `text` | NULL | Ruta dentro del bucket. **NULL ⟺ la imagen no está en Storage**: es el caso de la semilla, que usa `data:` URI en `image_url`. Cuando no es NULL, `image_url` guarda la misma ruta y lo que se sirve al cliente es una URL firmada. |
 | `play_count` | `integer` | NOT NULL, default `0`, `>= 0` | Partidas jugadas. Lo incrementa 001 al crear sala; lo ordena 003 (research R7). |
 | `source` | `text` | NOT NULL, default `'user_photo'`, `in ('seed','user_photo','curated')` | Distingue origen. `'curated'` queda reservado para 003. |
 
@@ -84,11 +84,10 @@ Se crean aquí porque las columnas nacen aquí; los consulta 003.
 **Escritura**: solo `service_role`, desde el route handler. El cliente nunca sube directamente:
 si lo hiciera, no habría forma de validar el archivo antes de que exista.
 
-**Lectura**: política que permite `select` sobre un objeto solo si el rompecabezas de su primer
-segmento de ruta existe **y** tiene `visibility = 'public'`. Los objetos de rompecabezas privados
-no se sirven por el bucket: los entrega `GET /api/puzzles/[id]` con `service_role`, que comprueba
-el UUID de la ruta. Se descartó la URL firmada porque caduca, y el enlace debe ser permanente
-(FR-023).
+**Lectura**: **ninguna política**. El bucket es privado de extremo a extremo y no se lee nunca
+directamente. Cada URL de imagen la firma el servidor con `service_role`, con 1 hora de caducidad,
+en el momento de servir la fila (research R5). Lo permanente es el enlace `/puzzles/{uuid}`, no la
+URL del objeto.
 
 **Un solo objeto por rompecabezas**: la imagen recortada. La original no se conserva.
 
@@ -115,6 +114,10 @@ feature la restringe.
 > política se restringe a `visibility = 'public'`, y los privados se sirven por
 > `GET /api/puzzles/[id]` con `service_role`, que ya comprueba el UUID de la ruta. Ese endpoint
 > existe precisamente por esto.
+>
+> La imagen sigue el mismo criterio pero por otra vía: el bucket no tiene política de lectura
+> alguna y su URL se firma al servir (research R5). Restringir la fila y dejar el objeto accesible
+> habría filtrado exactamente lo que se quería proteger.
 
 ---
 

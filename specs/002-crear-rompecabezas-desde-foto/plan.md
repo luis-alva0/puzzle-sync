@@ -47,7 +47,7 @@ confirmar en < 15 s incluso con 500 piezas y 10 MB (SC-002)
 **Constraints**: 10 MB por archivo; solo JPG y PNG; cinco cantidades fijas; ningún secreto en el
 código; las mismas tres variables de entorno de 001, **ninguna nueva**
 
-**Scale/Scope**: 2 pantallas, 2 endpoints, 1 migración, 4 módulos de generación. Volumen bajo.
+**Scale/Scope**: 2 pantallas y 2 endpoints nuevos, 3 archivos de 001 modificados, 1 migración, 4 módulos de generación. Volumen bajo.
 
 ## Constitution Check
 
@@ -104,13 +104,14 @@ app/
 │       ├── route.ts                  # NUEVO  POST: valida, sube, inserta
 │       └── [id]/
 │           └── route.ts              # NUEVO  GET: sirve privados con service_role
-└── page.tsx                          # TOCADO Acepta un puzzleId arbitrario, no solo la semilla
+├── page.tsx                          # TOCADO Acepta un puzzleId arbitrario, no solo la semilla
+└── api/rooms/[code]/state/route.ts    # TOCADO Firma la URL de imagen (001)
 
 components/
 ├── ImageCropper.tsx                  # NUEVO  Encuadre, sobre react-easy-crop
 ├── PieceCountSelector.tsx            # NUEVO  Las cinco opciones + cantidad real
 ├── PuzzleLinkResult.tsx              # NUEVO  Enlace, copiar y advertencia (FR-026)
-└── BoardCanvas.tsx                   # TOCADO Recorte por Path2D en vez de rectángulos
+└── BoardCanvas.tsx                   # TOCADO Prop puzzleId + recorte por Path2D
 
 lib/
 ├── puzzle-generation/
@@ -119,7 +120,7 @@ lib/
 │   ├── path.ts                       # NUEVO  Path2D de una pieza
 │   └── grid.ts                       # NUEVO  chooseGrid                     ← test
 ├── storage/
-│   └── upload.ts                     # NUEVO  Subida y borrado en Storage
+│   └── upload.ts                     # NUEVO  Subida, borrado y firma de URL en Storage
 ├── upload/
 │   └── validate.ts                   # NUEVO  Números mágicos y tamaño       ← test
 └── api/errors.ts                     # TOCADO 3 códigos de error nuevos
@@ -158,6 +159,11 @@ petición HTTP.
 
 ## Pendientes conocidos
 
+- **El bucket es privado sin excepción y toda URL de imagen se firma al servir** (research R5).
+  Consecuencia que atraviesa features: `GET /api/rooms/[code]/state`, que es de 001, devuelve hoy
+  `puzzles.image_url` en crudo y debe firmarla. Sin ese cambio, 002 rompe 001 para cualquier
+  rompecabezas creado desde foto: el tablero saldría en blanco. Lo permanente que promete FR-023
+  es el enlace `/puzzles/{uuid}`, no la dirección del objeto en Storage.
 - **El enlace necesita destino, y eso toca 001**: el `POST` devuelve `/puzzles/{uuid}`, así que
   esa ruta tiene que existir, y desde ella se crea la sala. Como la migración restringe la lectura
   de `puzzles` a los públicos, los privados se sirven por `GET /api/puzzles/[id]` con

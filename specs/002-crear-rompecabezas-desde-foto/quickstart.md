@@ -55,8 +55,13 @@ select nominal_piece_count, piece_count, grid_rows, grid_cols, visibility, sourc
 
 Abrir el enlace de un rompecabezas **privado** en una ventana de incógnito.
 
-**Esperado**: se muestra. Conocer el UUID es la credencial. Y comprobar que un UUID inventado
-responde con "rompecabezas no encontrado", sin filtrar nada.
+**Esperado**: se muestra **con la imagen visible**. Conocer el UUID es la credencial. Y comprobar
+que un UUID inventado responde con "rompecabezas no encontrado", sin filtrar nada.
+
+La imagen llega por una URL **firmada** que caduca en 1 hora y se emite de nuevo en cada visita: el
+bucket no tiene política de lectura (research R5). Comprobar también lo contrario —que pegar la
+ruta cruda del objeto en el navegador **no** funciona— porque es lo que protege las fotos
+personales.
 
 ### 2. Encuadre (US2)
 
@@ -111,8 +116,11 @@ rompecabezas ya creados, que se dibujarían distintos a como se crearon.
 
 ### 6. Extremo a extremo con una sala real
 
-Crear un rompecabezas, copiar su UUID, crear una sala con él desde la pantalla de inicio, y
-armarlo entre dos navegadores.
+Crear un rompecabezas **privado**, copiar su UUID, crear una sala con él desde la pantalla de
+inicio, y armarlo entre dos navegadores.
+
+Que sea privado no es un detalle: es el caso que rompía la feature 001 antes de firmar las URL. Si
+el tablero sale en blanco, `GET /state` no está firmando la imagen.
 
 **Esperado**: las piezas se ven con forma irregular, encajan, y el encaje sigue funcionando igual
 que con las piezas cuadradas de la semilla. Las lengüetas son decoración: el encaje se calcula
@@ -141,4 +149,7 @@ npm run test:db   # integración: flujo de creación, visibilidad, limpieza de h
 | La cantidad real no coincide con la elegida | Es lo esperado (research R4). Si molesta, el problema está en la interfaz que no la muestra antes de confirmar |
 | El enlace devuelto da 404 | Falta `app/puzzles/[id]/page.tsx` |
 | El enlace de un rompecabezas privado da error, el de uno público funciona | Falta `GET /api/puzzles/[id]`: tras la migración, los privados no son legibles con la llave anónima |
+| La página del rompecabezas carga pero la imagen sale rota | La URL no se está firmando. El bucket no tiene política de lectura: sin firma, ninguna imagen es alcanzable |
+| El tablero de una sala sale en blanco | `GET /state` de 001 devuelve `puzzles.image_url` en crudo en vez de firmarla |
+| La imagen funciona un rato y luego deja de funcionar | Se está guardando o cacheando la URL firmada, que caduca en 1 hora. Hay que pedirla de nuevo en cada lectura |
 | La foto sale girada 90° | No se normalizó la orientación EXIF: decodificar con `createImageBitmap(file, { imageOrientation: 'from-image' })` |
