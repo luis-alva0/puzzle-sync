@@ -87,3 +87,21 @@ a {
 .error {
   color: var(--danger);
 }
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* Respeta la preferencia de reducir movimiento: el color y el texto ya distinguen el estado. */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
