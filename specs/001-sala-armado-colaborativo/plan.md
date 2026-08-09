@@ -27,8 +27,13 @@ Detalle y alternativas descartadas en [research.md](./research.md).
 
 **Language/Version**: TypeScript 5.x en modo estricto, Node.js 20+
 
-**Primary Dependencies**: Next.js 15 (App Router), React 19, `@supabase/supabase-js`,
-`@supabase/ssr`, Vitest
+**Primary Dependencies**: Next.js 16 (App Router), React 19, `@supabase/supabase-js`, Vitest 4
+
+> Nota de implementación: el plan original fijaba Next.js 15 y Vitest 2. Al instalar, ambas
+> versiones arrastraban vulnerabilidades conocidas — Vitest 2 vía `esbuild`, y Next 15 vía
+> `postcss` y `sharp` (CVEs de libvips, relevantes porque el producto procesará fotos subidas
+> por usuarios). Con cero código escrito el coste de migración era nulo, así que se adoptaron
+> Next 16 y Vitest 4. `npm audit` reporta 0 vulnerabilidades.
 
 **Storage**: Supabase Postgres. Imágenes de rompecabezas en Supabase Storage.
 
