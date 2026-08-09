@@ -109,6 +109,12 @@ export function BoardCanvas({
       const sourcePieceWidth = image ? image.naturalWidth / gridCols : 0;
       const sourcePieceHeight = image ? image.naturalHeight / gridRows : 0;
 
+      // Tamaño de cada grupo, para distinguir visualmente los bloques ya conectados (FR-017).
+      const groupSizes = new Map<string, number>();
+      for (const piece of piecesRef.current) {
+        groupSizes.set(piece.groupId, (groupSizes.get(piece.groupId) ?? 0) + 1);
+      }
+
       for (const piece of piecesRef.current) {
         if (image && sourcePieceWidth > 0) {
           context.drawImage(
@@ -128,8 +134,10 @@ export function BoardCanvas({
           context.fillRect(piece.x, piece.y, PIECE_SIZE, PIECE_SIZE);
         }
 
-        // Borde de la pieza.
-        context.strokeStyle = 'rgba(0,0,0,0.55)';
+        // Borde de la pieza. Las que ya están conectadas con alguien llevan un borde más
+        // tenue: así el jugador ve de un vistazo qué bloques se mueven como una unidad.
+        const inGroup = groupSizes.get(piece.groupId) ?? 1;
+        context.strokeStyle = inGroup > 1 ? 'rgba(0,0,0,0.18)' : 'rgba(0,0,0,0.55)';
         context.lineWidth = 1 / scale;
         context.strokeRect(piece.x, piece.y, PIECE_SIZE, PIECE_SIZE);
 
