@@ -1,0 +1,30 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`instantánea del algoritmo > la rejilla de un UUID conocido no puede cambiar 1`] = `
+{
+  "h10": {
+    "offset": -0.036,
+    "sign": 1,
+    "size": 0.18000000000000002,
+    "straight": false,
+  },
+  "h11": {
+    "offset": -0.012,
+    "sign": 1,
+    "size": 0.19,
+    "straight": false,
+  },
+  "v01": {
+    "offset": 0.06,
+    "sign": 1,
+    "size": 0.23,
+    "straight": false,
+  },
+  "v11": {
+    "offset": 0.028,
+    "sign": 1,
+    "size": 0.18000000000000002,
+    "straight": false,
+  },
+}
+`;
