@@ -52,24 +52,10 @@ export const POST = withErrorHandling(
     if (!data.player_id || !data.room_id || !data.puzzle_id)
       throw new Error('join_room incompleto');
 
-    const { data: puzzle, error: puzzleError } = await supabase
-      .from('puzzles')
-      .select('id, image_url, grid_rows, grid_cols')
-      .eq('id', data.puzzle_id)
-      .single();
-
-    if (puzzleError) throw puzzleError;
-
     const response: JoinRoomResponse = {
       playerId: data.player_id,
       roomId: data.room_id,
       reconnected: data.reconnected,
-      puzzle: {
-        id: puzzle.id,
-        imageUrl: puzzle.image_url,
-        gridRows: puzzle.grid_rows,
-        gridCols: puzzle.grid_cols,
-      },
     };
     return Response.json(response);
   },

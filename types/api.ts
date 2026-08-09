@@ -6,7 +6,7 @@
  * `message`.
  */
 
-import type { BoardState, PuzzleSummary } from './board';
+import type { BoardState } from './board';
 import type { PieceCountOption, PuzzleVisibility } from './puzzle';
 
 export type ErrorCode =
@@ -51,7 +51,6 @@ export interface CreateRoomResponse {
   roomCode: string;
   /** `room_players.id` del creador. */
   playerId: string;
-  puzzle: PuzzleSummary;
 }
 
 // --- POST /api/rooms/[code]/join ---------------------------------------------
@@ -63,7 +62,6 @@ export interface JoinRoomRequest {
 export interface JoinRoomResponse {
   playerId: string;
   roomId: string;
-  puzzle: PuzzleSummary;
   /**
    * `true` si el jugador ya tenía plaza en la sala y esto fue una reconexión.
    * En ese caso el aforo no se aplica (FR-022).

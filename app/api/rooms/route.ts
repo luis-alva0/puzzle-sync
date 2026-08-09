@@ -33,7 +33,7 @@ export const POST = withErrorHandling(async (request: Request): Promise<Response
 
   const { data: puzzle, error: puzzleError } = await supabase
     .from('puzzles')
-    .select('id, image_url, grid_rows, grid_cols')
+    .select('id, grid_rows, grid_cols')
     .eq('id', body.puzzleId)
     .maybeSingle();
 
@@ -64,16 +64,7 @@ export const POST = withErrorHandling(async (request: Request): Promise<Response
       throw error;
     }
 
-    const response: CreateRoomResponse = {
-      roomCode,
-      playerId: data.player_id,
-      puzzle: {
-        id: puzzle.id,
-        imageUrl: puzzle.image_url,
-        gridRows: puzzle.grid_rows,
-        gridCols: puzzle.grid_cols,
-      },
-    };
+    const response: CreateRoomResponse = { roomCode, playerId: data.player_id };
     return Response.json(response, { status: 201 });
   }
 
