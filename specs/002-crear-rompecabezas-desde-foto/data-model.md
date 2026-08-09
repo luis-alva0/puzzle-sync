@@ -84,9 +84,11 @@ Se crean aquí porque las columnas nacen aquí; los consulta 003.
 **Escritura**: solo `service_role`, desde el route handler. El cliente nunca sube directamente:
 si lo hiciera, no habría forma de validar el archivo antes de que exista.
 
-**Lectura**: política que permite `select` sobre objetos cuyo primer segmento de ruta corresponde
-a un rompecabezas existente. Conocer el UUID es la credencial, igual que para el propio
-rompecabezas.
+**Lectura**: política que permite `select` sobre un objeto solo si el rompecabezas de su primer
+segmento de ruta existe **y** tiene `visibility = 'public'`. Los objetos de rompecabezas privados
+no se sirven por el bucket: los entrega `GET /api/puzzles/[id]` con `service_role`, que comprueba
+el UUID de la ruta. Se descartó la URL firmada porque caduca, y el enlace debe ser permanente
+(FR-023).
 
 **Un solo objeto por rompecabezas**: la imagen recortada. La original no se conserva.
 
@@ -95,9 +97,9 @@ rompecabezas.
 ## Row Level Security
 
 `puzzles` ya tiene RLS habilitada con una política de lectura pública desde 001
-(`puzzles legibles por cualquiera`). Esa política **sigue siendo correcta**: la fila contiene la
-URL de la imagen y los metadatos, y el control de acceso real está en que el UUID no es
-adivinable.
+(`puzzles legibles por cualquiera`). Esa política **deja de ser suficiente** en cuanto la tabla
+contiene fotos personales: permite enumerar filas, y el UUID protege el enlace, no la tabla. Esta
+feature la restringe.
 
 **No se añade ninguna política de escritura.** Toda creación pasa por el route handler con
 `service_role`.
