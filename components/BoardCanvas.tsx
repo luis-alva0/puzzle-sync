@@ -1,7 +1,10 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { PIECE_SIZE, solvedSize } from '@/lib/puzzle/geometry';
+import { buildEdgeGrid, pieceEdges } from '@/lib/puzzle-generation/edges';
+import { piecePath, tabOverflow } from '@/lib/puzzle-generation/path';
+import { seedFromUuid } from '@/lib/puzzle-generation/prng';
 import type { Piece, PlayerSummary } from '@/types/board';
 
 /**
@@ -13,10 +16,19 @@ import type { Piece, PlayerSummary } from '@/types/board';
  *
  * El componente no tiene estado propio: recibe las piezas ya resueltas —confirmadas más pistas
  * provisionales— y las pinta. Toda la lógica de precedencia vive en `lib/realtime/boardSync.ts`.
+ *
+ * Las formas irregulares se calculan aquí a partir del UUID del rompecabezas (feature 002): el
+ * servidor no genera ni almacena ninguna imagen por pieza. Cada pieza se recorta con su `Path2D`
+ * y se pinta una región de imagen **mayor** que la celda, porque las lengüetas sobresalen.
+ *
+ * Las lengüetas son decoración: el encaje se sigue calculando sobre la cuadrícula regular en
+ * `release_piece`. Dos piezas encajan por su posición de celda, no por si sus formas embonan.
  */
 
 interface BoardCanvasProps {
   pieces: Piece[];
+  /** UUID del rompecabezas: es la semilla del generador de formas (research R3 de 002). */
+  puzzleId: string;
   gridRows: number;
   gridCols: number;
   imageUrl: string;
@@ -31,6 +43,7 @@ interface BoardCanvasProps {
 
 export function BoardCanvas({
   pieces,
+  puzzleId,
   gridRows,
   gridCols,
   imageUrl,
@@ -64,6 +77,17 @@ export function BoardCanvas({
       imageRef.current = image;
     };
   }, [imageUrl]);
+
+  // La rejilla de bordes solo cambia si cambian el rompecabezas o su cuadrícula, así que se
+  // calcula una vez y no en cada frame.
+  const edgeGrid = useMemo(
+    () => buildEdgeGrid(seedFromUuid(puzzleId), gridRows, gridCols),
+    [puzzleId, gridRows, gridCols],
+  );
+  const edgeGridRef = useRef(edgeGrid);
+  useEffect(() => {
+    edgeGridRef.current = edgeGrid;
+  }, [edgeGrid]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -115,51 +139,68 @@ export function BoardCanvas({
         groupSizes.set(piece.groupId, (groupSizes.get(piece.groupId) ?? 0) + 1);
       }
 
+      // Holgura de la lengüeta: hay que pintar más allá de la celda o saldrían vacías.
+      const overflow = tabOverflow(PIECE_SIZE);
+      const sourceOverflowX = image ? (overflow / PIECE_SIZE) * sourcePieceWidth : 0;
+      const sourceOverflowY = image ? (overflow / PIECE_SIZE) * sourcePieceHeight : 0;
+
       for (const piece of piecesRef.current) {
+        const path = piecePath(
+          pieceEdges(edgeGridRef.current, piece.gridRow, piece.gridCol),
+          PIECE_SIZE,
+        );
+
+        context.save();
+        context.translate(piece.x, piece.y);
+        context.clip(path);
+
         if (image && sourcePieceWidth > 0) {
+          // Región de origen ampliada por la holgura, y destino ampliado igual: el recorte por
+          // path se queda con la forma de la pieza y descarta el resto.
           context.drawImage(
             image,
-            piece.gridCol * sourcePieceWidth,
-            piece.gridRow * sourcePieceHeight,
-            sourcePieceWidth,
-            sourcePieceHeight,
-            piece.x,
-            piece.y,
-            PIECE_SIZE,
-            PIECE_SIZE,
+            piece.gridCol * sourcePieceWidth - sourceOverflowX,
+            piece.gridRow * sourcePieceHeight - sourceOverflowY,
+            sourcePieceWidth + sourceOverflowX * 2,
+            sourcePieceHeight + sourceOverflowY * 2,
+            -overflow,
+            -overflow,
+            PIECE_SIZE + overflow * 2,
+            PIECE_SIZE + overflow * 2,
           );
         } else {
-          // Sin imagen cargada todavía, se pinta un relleno para que el tablero no parezca roto.
           context.fillStyle = '#232735';
-          context.fillRect(piece.x, piece.y, PIECE_SIZE, PIECE_SIZE);
+          context.fillRect(-overflow, -overflow, PIECE_SIZE + overflow * 2, PIECE_SIZE + overflow * 2);
         }
+        context.restore();
 
-        // Borde de la pieza. Las que ya están conectadas con alguien llevan un borde más
-        // tenue: así el jugador ve de un vistazo qué bloques se mueven como una unidad.
+        // Contorno con el path, no con strokeRect: la pieza ya no es un rectángulo.
         const inGroup = groupSizes.get(piece.groupId) ?? 1;
+        context.save();
+        context.translate(piece.x, piece.y);
         context.strokeStyle = inGroup > 1 ? 'rgba(0,0,0,0.18)' : 'rgba(0,0,0,0.55)';
         context.lineWidth = 1 / scale;
-        context.strokeRect(piece.x, piece.y, PIECE_SIZE, PIECE_SIZE);
+        context.stroke(path);
 
-        // Estado ocupado (FR-012): contorno y alias de quien la tiene. Se distingue si es
-        // propia o ajena, porque solo la ajena bloquea al jugador que mira.
+        // Estado ocupado (FR-012 de 001): contorno y alias de quien la tiene.
         if (piece.capturedBy) {
           const isMine = piece.capturedBy === currentPlayerRef.current;
           context.strokeStyle = isMine ? '#4ade80' : '#fbbf24';
           context.lineWidth = 3 / scale;
-          context.strokeRect(piece.x, piece.y, PIECE_SIZE, PIECE_SIZE);
+          context.stroke(path);
+        }
+        context.restore();
 
-          if (!isMine) {
-            const alias = aliasRef.current.get(piece.capturedBy) ?? 'otro jugador';
-            context.font = `${12 / scale}px system-ui, sans-serif`;
-            context.textBaseline = 'bottom';
-            const label = ` ${alias} `;
-            const metrics = context.measureText(label);
-            context.fillStyle = 'rgba(0,0,0,0.7)';
-            context.fillRect(piece.x, piece.y - 18 / scale, metrics.width, 16 / scale);
-            context.fillStyle = '#fbbf24';
-            context.fillText(label, piece.x, piece.y - 4 / scale);
-          }
+        if (piece.capturedBy && piece.capturedBy !== currentPlayerRef.current) {
+          const alias = aliasRef.current.get(piece.capturedBy) ?? 'otro jugador';
+          context.font = `${12 / scale}px system-ui, sans-serif`;
+          context.textBaseline = 'bottom';
+          const label = ` ${alias} `;
+          const metrics = context.measureText(label);
+          context.fillStyle = 'rgba(0,0,0,0.7)';
+          context.fillRect(piece.x, piece.y - 18 / scale, metrics.width, 16 / scale);
+          context.fillStyle = '#fbbf24';
+          context.fillText(label, piece.x, piece.y - 4 / scale);
         }
       }
 
