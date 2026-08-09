@@ -2,6 +2,7 @@ import { getSupabaseServiceClient, getAuthUserId } from '@/lib/supabase/server';
 import { apiError, withErrorHandling } from '@/lib/api/errors';
 import { isValidRoomCode, normalizeRoomCode } from '@/lib/rooms/code';
 import { toPeruIso, toPeruIsoOrNull } from '@/lib/format/datetime';
+import { signPuzzleImageUrl } from '@/lib/storage/upload';
 import type { RoomStateResponse } from '@/types/api';
 import type { Piece, PlayerSummary, RoomStatus } from '@/types/board';
 
@@ -106,9 +107,14 @@ export const GET = withErrorHandling(
     const puzzle = room.puzzles as unknown as {
       id: string;
       image_url: string;
+      storage_path: string | null;
       grid_rows: number;
       grid_cols: number;
     };
+
+    // El bucket no tiene política de lectura: sin firmar, la imagen de cualquier rompecabezas
+    // creado desde foto sería inalcanzable y el tablero saldría en blanco (research R5 de 002).
+    const signedImageUrl = await signPuzzleImageUrl(puzzle.storage_path, puzzle.image_url);
 
     const response: RoomStateResponse = {
       room: {
@@ -120,7 +126,7 @@ export const GET = withErrorHandling(
       },
       puzzle: {
         id: puzzle.id,
-        imageUrl: puzzle.image_url,
+        imageUrl: signedImageUrl,
         gridRows: puzzle.grid_rows,
         gridCols: puzzle.grid_cols,
       },
