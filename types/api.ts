@@ -8,6 +8,7 @@
 
 import type { BoardState } from './board';
 import type { PieceCountOption, PuzzleVisibility } from './puzzle';
+import type { CatalogPage, CatalogStatus } from './catalog';
 
 export type ErrorCode =
   | 'UNAUTHENTICATED'
@@ -18,6 +19,8 @@ export type ErrorCode =
   | 'INVALID_FILE_TYPE'
   | 'FILE_TOO_LARGE'
   | 'INVALID_PIECE_COUNT'
+  | 'FORBIDDEN'
+  | 'INVALID_CURSOR'
   | 'INTERNAL_ERROR';
 
 export interface ApiErrorBody {
@@ -37,6 +40,8 @@ export const ERROR_STATUS: Record<ErrorCode, number> = {
   INVALID_FILE_TYPE: 400,
   FILE_TOO_LARGE: 413,
   INVALID_PIECE_COUNT: 400,
+  FORBIDDEN: 403,
+  INVALID_CURSOR: 400,
   INTERNAL_ERROR: 500,
 };
 
@@ -100,6 +105,22 @@ export interface PuzzleDetailResponse {
   gridCols: number;
   pieceCount: number;
   visibility: PuzzleVisibility;
+  /**
+   * `'retired'` si el administrador lo sacó del catálogo. El acceso por enlace **no** se
+   * bloquea; el campo existe para que la pantalla pueda avisar (FR-036 de 003).
+   */
+  catalogStatus: CatalogStatus;
   /** ISO 8601 con offset -05:00. */
   createdAt: string;
+}
+
+// --- GET /api/catalog --------------------------------------------------------
+
+export type CatalogPageResponse = CatalogPage;
+
+// --- POST /api/puzzles/[id]/retire -------------------------------------------
+
+export interface RetirePuzzleResponse {
+  puzzleId: string;
+  catalogStatus: CatalogStatus;
 }

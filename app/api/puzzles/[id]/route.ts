@@ -4,6 +4,7 @@ import { signPuzzleImageUrl } from '@/lib/storage/upload';
 import { toPeruIso } from '@/lib/format/datetime';
 import type { PuzzleDetailResponse } from '@/types/api';
 import type { PuzzleVisibility } from '@/types/puzzle';
+import type { CatalogStatus } from '@/types/catalog';
 
 /**
  * `GET /api/puzzles/[id]` — leer un rompecabezas por su enlace.
@@ -29,7 +30,7 @@ export const GET = withErrorHandling(
 
     const { data: puzzle, error } = await getSupabaseServiceClient()
       .from('puzzles')
-      .select('id, image_url, storage_path, grid_rows, grid_cols, piece_count, visibility, created_at')
+      .select('id, image_url, storage_path, grid_rows, grid_cols, piece_count, visibility, catalog_status, created_at')
       .eq('id', id)
       .maybeSingle();
 
@@ -45,6 +46,8 @@ export const GET = withErrorHandling(
       gridCols: puzzle.grid_cols,
       pieceCount: puzzle.piece_count,
       visibility: puzzle.visibility as PuzzleVisibility,
+      // El retirado sigue siendo accesible por su enlace; el campo solo permite avisar (FR-036).
+      catalogStatus: puzzle.catalog_status as CatalogStatus,
       createdAt: toPeruIso(puzzle.created_at),
     };
     return Response.json(response);

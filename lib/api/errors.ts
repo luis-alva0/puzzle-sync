@@ -17,6 +17,8 @@ const DEFAULT_MESSAGES: Record<ErrorCode, string> = {
   INVALID_FILE_TYPE: 'La imagen debe ser un archivo JPG o PNG válido.',
   FILE_TOO_LARGE: 'La imagen no puede pesar más de 10 MB.',
   INVALID_PIECE_COUNT: 'Elige una de las cantidades de piezas disponibles.',
+  FORBIDDEN: 'No tienes permiso para esta operación.',
+  INVALID_CURSOR: 'La página solicitada ya no es válida. Vuelve a cargar el catálogo.',
   INTERNAL_ERROR: 'Algo falló de nuestro lado. Inténtalo de nuevo.',
 };
 
