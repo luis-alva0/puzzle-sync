@@ -11,6 +11,8 @@ const config = [
       'dist/**',
       'coverage/**',
       'next-env.d.ts',
+      // Lo genera `supabase start`; ya está fuera de git y trae código minificado.
+      'supabase/.temp/**',
     ],
   },
   ...coreWebVitals,
