@@ -187,32 +187,57 @@ export function BoardCanvas({
     return { x: pixelX / scale - originX, y: pixelY / scale - originY };
   }
 
+  const connectedPieces = pieces.filter(
+    (piece) => pieces.filter((other) => other.groupId === piece.groupId).length > 1,
+  ).length;
+
   return (
-    <canvas
-      ref={canvasRef}
-      role="application"
-      aria-label={`Tablero de rompecabezas de ${gridRows * gridCols} piezas`}
-      style={{
-        width: '100%',
-        aspectRatio: `${gridCols + 4} / ${gridRows + 4}`,
-        display: 'block',
-        borderRadius: 'var(--radius)',
-        touchAction: 'none',
-        cursor: 'grab',
-      }}
-      onPointerDown={(event) => {
-        event.currentTarget.setPointerCapture(event.pointerId);
-        const point = toBoard(event);
-        onPointerDownBoard?.(point.x, point.y);
-      }}
-      onPointerMove={(event) => {
-        const point = toBoard(event);
-        onPointerMoveBoard?.(point.x, point.y);
-      }}
-      onPointerUp={(event) => {
-        const point = toBoard(event);
-        onPointerUpBoard?.(point.x, point.y);
-      }}
-    />
+    <>
+      {/*
+        Canvas no genera árbol de accesibilidad: un lector de pantalla no ve las piezas. Se
+        compensa con un resumen textual del progreso, que es la información que de verdad
+        importa fuera del arrastre con puntero (el spec declara el puntero como modo soportado).
+      */}
+      <p
+        role="status"
+        aria-live="polite"
+        style={{
+          position: 'absolute',
+          width: 1,
+          height: 1,
+          overflow: 'hidden',
+          clip: 'rect(0 0 0 0)',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {connectedPieces} de {pieces.length} piezas conectadas.
+      </p>
+      <canvas
+        ref={canvasRef}
+        role="application"
+        aria-label={`Tablero de rompecabezas de ${gridRows * gridCols} piezas`}
+        style={{
+          width: '100%',
+          aspectRatio: `${gridCols + 4} / ${gridRows + 4}`,
+          display: 'block',
+          borderRadius: 'var(--radius)',
+          touchAction: 'none',
+          cursor: 'grab',
+        }}
+        onPointerDown={(event) => {
+          event.currentTarget.setPointerCapture(event.pointerId);
+          const point = toBoard(event);
+          onPointerDownBoard?.(point.x, point.y);
+        }}
+        onPointerMove={(event) => {
+          const point = toBoard(event);
+          onPointerMoveBoard?.(point.x, point.y);
+        }}
+        onPointerUp={(event) => {
+          const point = toBoard(event);
+          onPointerUpBoard?.(point.x, point.y);
+        }}
+      />
+    </>
   );
 }
