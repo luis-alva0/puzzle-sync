@@ -125,6 +125,14 @@ function HomeContent() {
       </section>
 
       <section className="card" style={{ marginBottom: '1.5rem' }}>
+        <h2 style={{ marginTop: 0, fontSize: '1.05rem' }}>Explorar el catálogo</h2>
+        <p className="muted" style={{ marginBottom: '0.75rem' }}>
+          Rompecabezas ya listos para armar, sin subir nada.
+        </p>
+        <Link href="/catalog">Ver el catálogo →</Link>
+      </section>
+
+      <section className="card" style={{ marginBottom: '1.5rem' }}>
         <h2 style={{ marginTop: 0, fontSize: '1.05rem' }}>Usar una foto tuya</h2>
         <p className="muted" style={{ marginBottom: '0.75rem' }}>
           Sube una foto y conviértela en un rompecabezas. Sin cuenta.
