@@ -54,7 +54,17 @@ enable_anonymous_sign_ins = true
 enable_signup = true
 
 [auth.email]
-enable_signup = false
+# Tiene que estar activo: esta opción no controla solo el registro, activa el proveedor de email
+# entero. Con `false`, Supabase responde `422 Email logins are disabled` a CUALQUIER inicio de
+# sesión con contraseña, incluido el del administrador de la feature 003 en `/admin/login`.
+#
+# El valor venía de 001/002, cuando ningún usuario iniciaba sesión y cerrarlo no costaba nada.
+# 003 añadió el acceso de administrador y no se revisó.
+#
+# Que alguien pueda registrarse por email no concede nada: el rol vive en `app_metadata.is_admin`
+# y solo se escribe con la llave de servicio. La aplicación tampoco expone ninguna pantalla de
+# registro (Principio III: sin muros de login para jugadores).
+enable_signup = true
 enable_confirmations = false
 
 [analytics]
