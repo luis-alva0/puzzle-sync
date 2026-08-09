@@ -1,0 +1,33 @@
+# Dependencias
+node_modules/
+
+# Build de Next.js
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# Variables de entorno — NUNCA commitear valores reales (Principio II de la constitución)
+.env
+.env.*
+!.env.example
+
+# Supabase local
+supabase/.temp/
+supabase/.branches/
+
+# Tests
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema operativo y editores
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
