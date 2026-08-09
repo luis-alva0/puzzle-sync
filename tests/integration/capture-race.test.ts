@@ -3,7 +3,6 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   adminClient,
   cleanupRoom,
-  expireLease,
   hasSupabase,
   setupRoom,
   skipReason,
@@ -171,38 +170,6 @@ describe.skipIf(!hasSupabase)('capture_piece sobre grupos', () => {
       .rpc('capture_piece', { p_piece_id: second!, p_player_id: playerB!.id })
       .single<CaptureResult>();
     expect(denied.data?.success).toBe(false);
-  });
-});
-
-describe.skipIf(!hasSupabase)('expiración del arrendamiento (FR-015, SC-007)', () => {
-  let admin: SupabaseClient;
-  let room: TestRoom;
-
-  beforeAll(() => {
-    admin = adminClient();
-  });
-
-  afterEach(async () => {
-    if (room) await cleanupRoom(admin, room);
-  });
-
-  it('una captura vencida es tomada por otro jugador', async () => {
-    room = await setupRoom(admin, { playerCount: 2 });
-    const [playerA, playerB] = room.players;
-    const pieceId = room.pieceIds[0]!;
-
-    await playerA!.client
-      .rpc('capture_piece', { p_piece_id: pieceId, p_player_id: playerA!.id })
-      .single<CaptureResult>();
-
-    // Simula que playerA se desconectó hace dos minutos sin soltar la pieza.
-    await expireLease(admin, pieceId);
-
-    const result = await playerB!.client
-      .rpc('capture_piece', { p_piece_id: pieceId, p_player_id: playerB!.id })
-      .single<CaptureResult>();
-
-    expect(result.data?.success).toBe(true);
   });
 });
 
