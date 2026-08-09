@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState } from 'react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { AliasForm } from '@/components/AliasForm';
 import { ApiError, createRoom } from '@/lib/api/client';
 import { isValidRoomCode, normalizeRoomCode, ROOM_CODE_LENGTH } from '@/lib/rooms/code';
@@ -21,10 +22,17 @@ const SEED_PUZZLES = [
   { id: '33333333-3333-4333-8333-333333333333', label: '100 piezas', hint: 'partida larga' },
 ] as const;
 
-export default function HomePage() {
+function HomeContent() {
   const router = useRouter();
 
-  const [selectedPuzzle, setSelectedPuzzle] = useState<string>(SEED_PUZZLES[0].id);
+  // Un rompecabezas creado desde foto llega por aquí, desde `/puzzles/[id]`. La portada acepta
+  // cualquier UUID, no solo los de la semilla: sin esto, un rompecabezas propio no llegaría
+  // nunca a una sala.
+  const incomingPuzzleId = useSearchParams().get('puzzleId');
+
+  const [selectedPuzzle, setSelectedPuzzle] = useState<string>(
+    incomingPuzzleId ?? SEED_PUZZLES[0].id,
+  );
   const [busy, setBusy] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
@@ -74,7 +82,17 @@ export default function HomePage() {
       <section className="card" style={{ marginBottom: '1.5rem' }}>
         <h2 style={{ marginTop: 0, fontSize: '1.05rem' }}>Crear una sala</h2>
 
-        <fieldset style={{ border: 0, padding: 0, margin: '0 0 1rem' }}>
+        {incomingPuzzleId && (
+          <p className="muted" style={{ marginTop: 0 }}>
+            Vas a crear una sala con tu rompecabezas.{' '}
+            <Link href={`/puzzles/${incomingPuzzleId}`}>Ver el rompecabezas</Link>
+          </p>
+        )}
+
+        <fieldset
+          style={{ border: 0, padding: 0, margin: '0 0 1rem' }}
+          hidden={Boolean(incomingPuzzleId)}
+        >
           <legend className="muted" style={{ padding: 0, marginBottom: '0.6rem' }}>
             Elige un rompecabezas
           </legend>
@@ -104,6 +122,14 @@ export default function HomePage() {
           error={createError}
           onSubmit={handleCreate}
         />
+      </section>
+
+      <section className="card" style={{ marginBottom: '1.5rem' }}>
+        <h2 style={{ marginTop: 0, fontSize: '1.05rem' }}>Usar una foto tuya</h2>
+        <p className="muted" style={{ marginBottom: '0.75rem' }}>
+          Sube una foto y conviértela en un rompecabezas. Sin cuenta.
+        </p>
+        <Link href="/puzzles/create">Crear un rompecabezas desde una foto →</Link>
       </section>
 
       <section className="card">
@@ -136,5 +162,23 @@ export default function HomePage() {
         )}
       </section>
     </main>
+  );
+}
+
+/**
+ * `useSearchParams` obliga a un límite de Suspense para que la portada siga siendo estática:
+ * sin él, Next no puede prerenderizarla porque el parámetro solo se conoce en el navegador.
+ */
+export default function HomePage() {
+  return (
+    <Suspense
+      fallback={
+        <main style={{ maxWidth: 720, margin: '0 auto', padding: '3rem 1.25rem' }}>
+          <p className="muted">Cargando…</p>
+        </main>
+      }
+    >
+      <HomeContent />
+    </Suspense>
   );
 }
