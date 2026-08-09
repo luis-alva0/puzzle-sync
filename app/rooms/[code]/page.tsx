@@ -4,13 +4,14 @@ import { use, useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AliasForm } from '@/components/AliasForm';
 import { Board, type BoardApi } from '@/components/Board';
+import { ConnectionStatus } from '@/components/ConnectionStatus';
 import { PlayerList } from '@/components/PlayerList';
 import { ApiError, fetchRoomState, joinRoom } from '@/lib/api/client';
 import { subscribeToRoom, type RoomChannelHandle } from '@/lib/realtime/channel';
 import { startPresence, type PresenceHandle } from '@/lib/realtime/presence';
 import { normalizeRoomCode } from '@/lib/rooms/code';
 import type { BoardState } from '@/types/board';
-import type { ConnectionStatus } from '@/types/realtime';
+import type { ConnectionStatus as ConnectionStatusValue } from '@/types/realtime';
 
 /**
  * Pantalla de la sala.
@@ -32,9 +33,10 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
   const code = normalizeRoomCode(rawCode);
 
   const [alias, setAlias] = useState<string | null>(aliasFromUrl ?? null);
+  const [rehydrating, setRehydrating] = useState(!aliasFromUrl);
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [board, setBoard] = useState<BoardState | null>(null);
-  const [status, setStatus] = useState<ConnectionStatus>('reconnecting');
+  const [status, setStatus] = useState<ConnectionStatusValue>('reconnecting');
   const [error, setError] = useState<{ code: string; message: string } | null>(null);
   const [joining, setJoining] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -106,13 +108,36 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
     [code, reloadBoard],
   );
 
-  // Si el alias llegó por la URL (el creador viene de la pantalla de inicio), entra solo.
+  /**
+   * Rehidratación del alias al volver a la sala (FR-022).
+   *
+   * La sesión anónima la persiste el SDK de Supabase en `localStorage`, así que el jugador
+   * sigue siendo el mismo `auth.uid()` tras recargar o reconectar. El alias se guarda por sala
+   * para no tener que volver a pedirlo: si ya se estuvo en esta sala, se entra directamente.
+   */
+  const aliasStorageKey = `puzzlesync:alias:${code}`;
+
+  /* eslint-disable react-hooks/set-state-in-effect --
+     `localStorage` solo existe tras montar en el navegador. Leerlo en el inicializador de
+     useState provocaría un desajuste de hidratación entre el render del servidor y el del
+     cliente, que es un fallo peor que la regla que se salta aquí. El efecto corre una sola
+     vez y su única salida es fijar el alias recuperado. */
+  useEffect(() => {
+    if (!rehydrating) return;
+    const stored = localStorage.getItem(aliasStorageKey);
+    if (stored) setAlias(stored);
+    setRehydrating(false);
+  }, [rehydrating, aliasStorageKey]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  // Con alias —de la URL o recuperado— se entra sin preguntar nada.
   const autoJoined = useRef(false);
   useEffect(() => {
-    if (autoJoined.current || !alias) return;
+    if (autoJoined.current || rehydrating || !alias) return;
     autoJoined.current = true;
+    localStorage.setItem(aliasStorageKey, alias);
     void enterRoom(alias);
-  }, [alias, enterRoom]);
+  }, [alias, rehydrating, enterRoom, aliasStorageKey]);
 
   useEffect(() => {
     return () => {
@@ -138,6 +163,15 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
           <p className="muted">{error.message}</p>
           <Link href="/">Volver al inicio</Link>
         </section>
+      </main>
+    );
+  }
+
+  // --- Recuperando la sesión guardada: evita el parpadeo del formulario ---
+  if (rehydrating) {
+    return (
+      <main style={{ maxWidth: 520, margin: '0 auto', padding: '4rem 1.25rem' }}>
+        <p className="muted">Cargando…</p>
       </main>
     );
   }
@@ -177,10 +211,8 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
         <button type="button" onClick={() => void copyInviteLink()}>
           {copied ? 'Enlace copiado' : 'Copiar enlace de invitación'}
         </button>
-        <span className="muted" style={{ marginLeft: 'auto' }} aria-live="polite">
-          {status === 'connected' && 'Conectado'}
-          {status === 'reconnecting' && 'Reconectando…'}
-          {status === 'disconnected' && 'Desconectado'}
+        <span style={{ marginLeft: 'auto' }}>
+          <ConnectionStatus status={status} />
         </span>
       </header>
 
