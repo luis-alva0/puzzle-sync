@@ -47,7 +47,7 @@ confirmar en < 15 s incluso con 500 piezas y 10 MB (SC-002)
 **Constraints**: 10 MB por archivo; solo JPG y PNG; cinco cantidades fijas; ningún secreto en el
 código; las mismas tres variables de entorno de 001, **ninguna nueva**
 
-**Scale/Scope**: 1 pantalla, 1 endpoint, 1 migración, 4 módulos de generación. Volumen bajo.
+**Scale/Scope**: 2 pantallas, 2 endpoints, 1 migración, 4 módulos de generación. Volumen bajo.
 
 ## Constitution Check
 
@@ -81,7 +81,7 @@ specs/002-crear-rompecabezas-desde-foto/
 ├── data-model.md                # Fase 1: extensión de `puzzles` y bucket
 ├── quickstart.md                # Fase 1: puesta en marcha y validación
 ├── contracts/                   # Fase 1
-│   ├── rest-api.md              #   POST /api/puzzles
+│   ├── rest-api.md              #   POST /api/puzzles + GET /api/puzzles/[id]
 │   └── piece-generation.md      #   Contrato cliente-cliente del generador
 ├── checklists/
 │   └── requirements.md
@@ -95,11 +95,16 @@ Solo se listan las rutas que esta feature crea o toca. El resto del árbol es de
 ```text
 app/
 ├── puzzles/
-│   └── create/
-│       └── page.tsx                  # NUEVO  Pantalla de creación, 3 pasos
-└── api/
-    └── puzzles/
-        └── route.ts                  # NUEVO  POST: valida, sube, inserta
+│   ├── create/
+│   │   └── page.tsx                  # NUEVO  Pantalla de creación, 3 pasos
+│   └── [id]/
+│       └── page.tsx                  # NUEVO  Destino del enlace: vista previa + crear sala
+├── api/
+│   └── puzzles/
+│       ├── route.ts                  # NUEVO  POST: valida, sube, inserta
+│       └── [id]/
+│           └── route.ts              # NUEVO  GET: sirve privados con service_role
+└── page.tsx                          # TOCADO Acepta un puzzleId arbitrario, no solo la semilla
 
 components/
 ├── ImageCropper.tsx                  # NUEVO  Encuadre, sobre react-easy-crop
@@ -153,6 +158,11 @@ petición HTTP.
 
 ## Pendientes conocidos
 
+- **El enlace necesita destino, y eso toca 001**: el `POST` devuelve `/puzzles/{uuid}`, así que
+  esa ruta tiene que existir, y desde ella se crea la sala. Como la migración restringe la lectura
+  de `puzzles` a los públicos, los privados se sirven por `GET /api/puzzles/[id]` con
+  `service_role`. Además, `app/page.tsx` de 001 tiene la semilla en duro y debe aceptar un
+  `puzzleId` cualquiera; sin ese cambio, un rompecabezas creado no se puede jugar.
 - **Impacto en 001, ya implementada**: `components/BoardCanvas.tsx` pinta hoy cada pieza como un
   rectángulo con `drawImage`. Las formas irregulares obligan a recortar con `Path2D` y a pintar
   una región mayor que la celda, porque las lengüetas sobresalen (research R8). Es la única parte

@@ -13,6 +13,11 @@ description: "Task list for 002-crear-rompecabezas-desde-foto"
 
 **Organization**: Agrupadas por historia de usuario. La Fase 7 no corresponde a ninguna historia: es el trabajo transversal de las formas irregulares, que además toca la feature 001.
 
+> **Revisión 2**: incorpora la remediación de los 11 hallazgos de `/speckit.analyze`. El cambio de
+> fondo es que el enlace que devuelve el endpoint ahora tiene destino: se añaden
+> `GET /api/puzzles/[id]`, la pantalla `app/puzzles/[id]/page.tsx` y el cambio en `app/page.tsx`
+> para aceptar un rompecabezas creado. Sin eso la feature terminaba en un 404.
+
 **Base existente**: esta feature parte de 001 ya implementada. Reutiliza `lib/api/errors.ts`, `lib/supabase/server.ts`, `lib/format/datetime.ts` y la sesión anónima, y **extiende** la tabla `puzzles` en lugar de crearla.
 
 ## Format: `[ID] [P?] [Story] Description`
@@ -44,7 +49,7 @@ description: "Task list for 002-crear-rompecabezas-desde-foto"
 - [ ] T006 Añadir en la misma migración los índices parciales `(visibility, created_at desc)` y `(visibility, play_count desc)` sobre `where visibility = 'public'`, que consumirá la feature 003
 - [ ] T007 Crear el bucket privado `puzzle-images` en la misma migración, con límite de 10 MB y tipos MIME `image/jpeg` e `image/png`, de forma idempotente
 - [ ] T008 Restringir en la misma migración la política de lectura de `puzzles` que creó 001: pasa de toda la tabla a solo `visibility = 'public'`. Sin esto, cualquiera con la llave anónima podría enumerar los rompecabezas privados
-- [ ] T009 Añadir en `supabase/migrations/0008_puzzles_from_photo.sql` la política de lectura del bucket, que permite `select` sobre los objetos cuyo primer segmento de ruta corresponde a un rompecabezas existente
+- [ ] T009 Añadir en `supabase/migrations/0008_puzzles_from_photo.sql` la política de lectura del bucket: permite `select` sobre un objeto solo si el rompecabezas de su primer segmento de ruta existe **y** tiene `visibility = 'public'`. Los privados los sirve `GET /api/puzzles/[id]` (research R5). Se descartó la URL firmada: caduca, y el enlace debe ser permanente
 - [ ] T010 [P] Test de elección de cuadrícula en `tests/unit/grid.test.ts`: las cinco opciones sobre varias relaciones de aspecto, piezas lo más cuadradas posible, nunca menos de 2 filas o columnas, y determinismo ante las mismas entradas
 - [ ] T011 [P] Test de validación de archivo en `tests/unit/validate-upload.test.ts`: números mágicos de JPG y PNG, rechazo de PDF y de un PDF renombrado a `.jpg`, límite de 10 MB **inclusive**, rechazo a 10 MB + 1 byte, y rechazo de un JPEG truncado
 - [ ] T012 Implementar `chooseGrid(targetPieces, cropWidth, cropHeight)` en `lib/puzzle-generation/grid.ts` como función pura, según [contracts/piece-generation.md](./contracts/piece-generation.md)
@@ -67,10 +72,14 @@ description: "Task list for 002-crear-rompecabezas-desde-foto"
 - [ ] T016 [US1] Generar el UUID por adelantado en `app/api/puzzles/route.ts`, para usarlo como carpeta en Storage antes de que exista la fila
 - [ ] T017 [US1] Implementar el borrado compensatorio en `app/api/puzzles/route.ts`: si la inserción falla tras una subida correcta, borrar el objeto. Storage y Postgres no comparten transacción (FR-033)
 - [ ] T018 [P] [US1] Crear el selector de cantidad de piezas en `components/PieceCountSelector.tsx` con las cinco opciones y la **cantidad real** calculada con `chooseGrid`, visible antes de confirmar (FR-019)
-- [ ] T019 [P] [US1] Crear la presentación del resultado en `components/PuzzleLinkResult.tsx`: enlace, acción de copiar, y la advertencia de que sin cuenta el enlace es la única vía de acceso (FR-026)
+- [ ] T019 [P] [US1] Crear la presentación del resultado en `components/PuzzleLinkResult.tsx`: enlace, acción de copiar, fecha de creación en hora de Perú con el helper de 001 (FR-034), y la advertencia de que sin cuenta el enlace es la única vía de acceso (FR-026)
 - [ ] T020 [US1] Crear la pantalla de creación en `app/puzzles/create/page.tsx` con los pasos subir → configurar → resultado, y el envío del `FormData` al endpoint
-- [ ] T021 [US1] Implementar en la pantalla la selección de archivo y su lectura como `File`, sin subirlo todavía: el envío ocurre al confirmar
-- [ ] T022 [US1] Añadir un enlace desde `app/page.tsx` a `/puzzles/create`, para que la pantalla sea alcanzable
+- [ ] T021 [US1] Implementar en `app/puzzles/create/page.tsx` la selección de archivo y su decodificación con `createImageBitmap(file, { imageOrientation: 'from-image' })`, obteniendo las **dimensiones** que necesita `chooseGrid` y mostrando una **vista previa** de la foto (FR-011). No se sube nada todavía: el envío ocurre al confirmar
+- [ ] T022 [US1] Advertir en `components/PieceCountSelector.tsx` cuando la resolución del recorte sea insuficiente para la cantidad elegida, comparando píxeles por pieza contra un umbral, **sin impedir continuar** (FR-021)
+- [ ] T023 [US1] Implementar `GET /api/puzzles/[id]` en `app/api/puzzles/[id]/route.ts`: valida la forma del UUID, lee la fila con `service_role`, y devuelve metadatos más URL de imagen con `createdAt` en hora de Perú. Responde `PUZZLE_NOT_FOUND` ante un identificador inexistente o mal formado (FR-031). Existe porque tras T008 un rompecabezas privado deja de ser legible desde el cliente
+- [ ] T024 [US1] Crear la pantalla destino del enlace en `app/puzzles/[id]/page.tsx`: vista previa, cantidad de piezas, y botón para **crear una sala** con ese rompecabezas (FR-027). Es lo que convierte el enlace en algo utilizable
+- [ ] T025 [US1] Modificar `app/page.tsx` de 001 para aceptar un `puzzleId` arbitrario además de la semilla en duro. Sin este cambio, un rompecabezas creado no llega nunca a una sala
+- [ ] T026 [US1] Añadir un enlace desde `app/page.tsx` a `/puzzles/create`, para que la pantalla de creación sea alcanzable
 
 **Checkpoint**: US1 funciona sola. Una foto se convierte en un rompecabezas con enlace permanente.
 
@@ -84,11 +93,12 @@ description: "Task list for 002-crear-rompecabezas-desde-foto"
 
 ### Implementation for User Story 2
 
-- [ ] T023 [US2] Crear el componente de encuadre en `components/ImageCropper.tsx` sobre `react-easy-crop`, con arrastre, zoom y marco redimensionable, devolviendo las coordenadas de recorte en píxeles de la imagen original
-- [ ] T024 [US2] Implementar el recorte real en `components/ImageCropper.tsx`: dibujar la región seleccionada en un canvas y exportarla como `Blob`. La biblioteca solo da coordenadas; el recorte es código propio
-- [ ] T025 [US2] Aplicar en `components/ImageCropper.tsx` un encuadre por defecto que abarque la mayor porción posible cuando el jugador no lo toca (FR-014)
-- [ ] T026 [US2] Exigir en `components/ImageCropper.tsx` un área de recorte mínima utilizable antes de permitir continuar (FR-015)
-- [ ] T027 [US2] Integrar el encuadre como paso intermedio en `app/puzzles/create/page.tsx`, y permitir volver atrás para subir otra foto sin reiniciar la aplicación
+- [ ] T027 [US2] Normalizar la orientación EXIF en `components/ImageCropper.tsx`, partiendo del `ImageBitmap` que T021 ya decodificó con `imageOrientation: 'from-image'` (FR-016). Sin esto, una foto de móvil se encuadra derecha y sale girada 90°
+- [ ] T028 [US2] Crear el componente de encuadre en `components/ImageCropper.tsx` sobre `react-easy-crop`, con arrastre, zoom y marco redimensionable, devolviendo las coordenadas de recorte en píxeles de la imagen **ya orientada**
+- [ ] T029 [US2] Implementar el recorte real en `components/ImageCropper.tsx`: dibujar la región seleccionada en un canvas y exportarla como `Blob`. La biblioteca solo da coordenadas; el recorte es código propio
+- [ ] T030 [US2] Aplicar en `components/ImageCropper.tsx` un encuadre por defecto que abarque la mayor porción posible cuando el jugador no lo toca (FR-014)
+- [ ] T031 [US2] Exigir en `components/ImageCropper.tsx` un área de recorte mínima utilizable antes de permitir continuar (FR-015)
+- [ ] T032 [US2] Integrar el encuadre como paso intermedio en `app/puzzles/create/page.tsx`, y permitir volver atrás para subir otra foto sin reiniciar la aplicación
 
 **Checkpoint**: US1 y US2 funcionan. El jugador controla qué porción de su foto se convierte en rompecabezas.
 
@@ -102,11 +112,11 @@ description: "Task list for 002-crear-rompecabezas-desde-foto"
 
 ### Implementation for User Story 3
 
-- [ ] T028 [US3] Añadir validación en el navegador en `app/puzzles/create/page.tsx`: tipo y tamaño antes de enviar, para dar respuesta inmediata. Es cortesía, **no** frontera de confianza
-- [ ] T029 [US3] Mostrar mensajes diferenciados por código de error en `app/puzzles/create/page.tsx`, conmutando sobre `code` y nunca sobre el texto: `INVALID_FILE_TYPE` indica los formatos admitidos, `FILE_TOO_LARGE` indica el límite
-- [ ] T030 [US3] Permitir en `app/puzzles/create/page.tsx` reintentar con otro archivo tras un rechazo, sin reiniciar el flujo (FR-010)
-- [ ] T031 [US3] Verificar por la ruta completa —de `app/puzzles/create/page.tsx` a `app/api/puzzles/route.ts`— el rechazo de un archivo con extensión válida y contenido ilegible, no solo en la prueba unitaria (FR-008)
-- [ ] T032 [US3] Verificar con `curl` directo al endpoint, declarando `type=image/jpeg` sobre un PDF, que el servidor lo rechaza igualmente. Es la comprobación que demuestra que la validación no mira el `Content-Type`
+- [ ] T033 [US3] Añadir validación en el navegador en `app/puzzles/create/page.tsx`: tipo y tamaño antes de enviar, para dar respuesta inmediata. Es cortesía, **no** frontera de confianza
+- [ ] T034 [US3] Mostrar mensajes diferenciados por código de error en `app/puzzles/create/page.tsx`, conmutando sobre `code` y nunca sobre el texto: `INVALID_FILE_TYPE` indica los formatos admitidos, `FILE_TOO_LARGE` indica el límite
+- [ ] T035 [US3] Permitir en `app/puzzles/create/page.tsx` reintentar con otro archivo tras un rechazo, sin reiniciar el flujo (FR-010)
+- [ ] T036 [US3] Verificar por la ruta completa —de `app/puzzles/create/page.tsx` a `app/api/puzzles/route.ts`— el rechazo de un archivo con extensión válida y contenido ilegible, no solo en la prueba unitaria (FR-008)
+- [ ] T037 [US3] Verificar con `curl` directo al endpoint, declarando `type=image/jpeg` sobre un PDF, que el servidor lo rechaza igualmente. Es la comprobación que demuestra que la validación no mira el `Content-Type`
 
 **Checkpoint**: las tres primeras historias funcionan. El flujo resiste entradas reales y malintencionadas.
 
@@ -120,10 +130,10 @@ description: "Task list for 002-crear-rompecabezas-desde-foto"
 
 ### Implementation for User Story 4
 
-- [ ] T033 [US4] Añadir la opción de hacer público en `components/PieceCountSelector.tsx` o en el paso de configuración de `app/puzzles/create/page.tsx`, **desmarcada por defecto** (FR-028)
-- [ ] T034 [US4] Mostrar en `app/puzzles/create/page.tsx`, junto a esa opción, la advertencia de que un rompecabezas público será visible para cualquiera y de que la decisión no se puede revertir (FR-029d)
-- [ ] T035 [US4] Enviar `isPublic` en el `FormData` y traducirlo a `visibility` en `app/api/puzzles/route.ts`, con `'private'` cuando el campo falta
-- [ ] T036 [US4] Verificar que no existe ningún camino de escritura que modifique `visibility` tras la creación (FR-029c): revisar el endpoint y confirmar que la ausencia de ese camino es la restricción
+- [ ] T038 [US4] Añadir la opción de hacer público en `components/PieceCountSelector.tsx` o en el paso de configuración de `app/puzzles/create/page.tsx`, **desmarcada por defecto** (FR-028)
+- [ ] T039 [US4] Mostrar en `app/puzzles/create/page.tsx`, junto a esa opción, la advertencia de que un rompecabezas público será visible para cualquiera y de que la decisión no se puede revertir (FR-029d)
+- [ ] T040 [US4] Enviar `isPublic` en el `FormData` y traducirlo a `visibility` en `app/api/puzzles/route.ts`, con `'private'` cuando el campo falta
+- [ ] T041 [US4] Verificar que no existe ningún camino de escritura que modifique `visibility` tras la creación (FR-029c): revisar el endpoint y confirmar que la ausencia de ese camino es la restricción
 
 **Checkpoint**: las cuatro historias funcionan. La feature está completa a nivel de producto.
 
@@ -135,14 +145,14 @@ description: "Task list for 002-crear-rompecabezas-desde-foto"
 
 **⚠️ Toca código ya entregado**: `components/BoardCanvas.tsx` es de la feature 001 y está en producción.
 
-- [ ] T037 [P] Test del generador pseudoaleatorio en `tests/unit/prng.test.ts`: `splitmix32` y `seedFromUuid` producen la misma secuencia ante la misma semilla, secuencias distintas ante semillas distintas, y no usan coma flotante
-- [ ] T038 [P] Test de la rejilla de bordes en `tests/unit/edges.test.ts`: determinismo ante la misma semilla, perímetro recto, y —lo más importante— que el borde derecho de una pieza y el izquierdo de su vecina **son el mismo borde**, no dos cálculos que casualmente coinciden
-- [ ] T039 Implementar `splitmix32` y `seedFromUuid` en `lib/puzzle-generation/prng.ts`. `Math.random`, `Date` y la iteración sobre claves de objeto quedan prohibidos en todo el módulo: romper esa regla hace que dos jugadores vean tableros distintos sin ningún error visible
-- [ ] T040 Implementar `buildEdgeGrid(seed, rows, cols)` y `pieceEdges(grid, row, col)` en `lib/puzzle-generation/edges.ts`, generando cada borde interior **una sola vez** y leyéndolo desde ambos lados
-- [ ] T041 Implementar `piecePath(edges, size)` en `lib/puzzle-generation/path.ts`, trazando las lengüetas con curvas de Bézier y devolviendo un `Path2D` cerrado
-- [ ] T042 Añadir a `tests/unit/edges.test.ts` una instantánea de la rejilla para un UUID fijo. Si el algoritmo cambia, este test **debe** fallar: cambiar la generación rompe los rompecabezas ya creados, que se dibujarían distintos a como se crearon
-- [ ] T043 Modificar `components/BoardCanvas.tsx` para recortar cada pieza con su `Path2D` y pintar una región de imagen **mayor** que la celda, porque las lengüetas sobresalen; trazar el contorno con el path en lugar de `strokeRect`
-- [ ] T044 Verificar en `app/rooms/[code]/page.tsx` que los rompecabezas de la semilla de 001 se siguen viendo correctamente tras el cambio de `components/BoardCanvas.tsx`: su perímetro es recto y las piezas interiores ahora tendrán lengüetas
+- [ ] T042 [P] Test del generador pseudoaleatorio en `tests/unit/prng.test.ts`: `splitmix32` y `seedFromUuid` producen la misma secuencia ante la misma semilla, secuencias distintas ante semillas distintas, y no usan coma flotante
+- [ ] T043 [P] Test de la rejilla de bordes en `tests/unit/edges.test.ts`: determinismo ante la misma semilla, perímetro recto, y —lo más importante— que el borde derecho de una pieza y el izquierdo de su vecina **son el mismo borde**, no dos cálculos que casualmente coinciden
+- [ ] T044 Implementar `splitmix32` y `seedFromUuid` en `lib/puzzle-generation/prng.ts`. `Math.random`, `Date` y la iteración sobre claves de objeto quedan prohibidos en todo el módulo: romper esa regla hace que dos jugadores vean tableros distintos sin ningún error visible
+- [ ] T045 Implementar `buildEdgeGrid(seed, rows, cols)` y `pieceEdges(grid, row, col)` en `lib/puzzle-generation/edges.ts`, generando cada borde interior **una sola vez** y leyéndolo desde ambos lados
+- [ ] T046 Implementar `piecePath(edges, size)` en `lib/puzzle-generation/path.ts`, trazando las lengüetas con curvas de Bézier y devolviendo un `Path2D` cerrado
+- [ ] T047 Añadir a `tests/unit/edges.test.ts` una instantánea de la rejilla para un UUID fijo. Si el algoritmo cambia, este test **debe** fallar: cambiar la generación rompe los rompecabezas ya creados, que se dibujarían distintos a como se crearon
+- [ ] T048 Modificar `components/BoardCanvas.tsx` para recortar cada pieza con su `Path2D` y pintar una región de imagen **mayor** que la celda, porque las lengüetas sobresalen; trazar el contorno con el path en lugar de `strokeRect`
+- [ ] T049 Verificar en `app/rooms/[code]/page.tsx` que los rompecabezas de la semilla de 001 se siguen viendo correctamente tras el cambio de `components/BoardCanvas.tsx`: su perímetro es recto y las piezas interiores ahora tendrán lengüetas
 
 **Checkpoint**: los rompecabezas se ven como rompecabezas de verdad, y todos los jugadores ven exactamente las mismas formas.
 
@@ -150,15 +160,16 @@ description: "Task list for 002-crear-rompecabezas-desde-foto"
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T045 [P] Test de integración del flujo completo en `tests/integration/create-puzzle.test.ts`: subida, fila creada con los valores correctos, objeto presente en Storage y enlace devuelto
-- [ ] T046 [P] Añadir a `tests/integration/create-puzzle.test.ts` el caso de visibilidad: privada por defecto, pública solo al marcarla
-- [ ] T047 Añadir a `tests/integration/create-puzzle.test.ts` el caso del objeto huérfano: forzar el fallo de la inserción y verificar que el objeto subido se borró
-- [ ] T048 [P] Añadir estados de carga y de error a `app/puzzles/create/page.tsx`, incluida la interrupción de la subida por pérdida de conexión
-- [ ] T049 [P] Añadir etiquetas ARIA y navegación por teclado a los controles de creación en `components/`, con especial atención al marco de recorte, que es el menos accesible
-- [ ] T050 Medir el proceso completo desde `app/puzzles/create/page.tsx` y confirmar SC-001 (< 60 s sin contar el encuadre) y SC-002 (generación < 15 s con 500 piezas y una foto de 10 MB)
-- [ ] T051 Ejecutar `npm run build` y `npm run check:secrets`, confirmando que la llave de servicio no llega al bundle pese a los nuevos módulos de servidor
-- [ ] T052 Ejecutar la validación completa descrita en [quickstart.md](./quickstart.md), los 6 escenarios de principio a fin
-- [ ] T053 Revisar el cumplimiento de la constitución antes del merge: dependencia nueva justificada por escrito, sin secretos, formato de error uniforme en el endpoint nuevo, y `npm test` en verde
+- [ ] T050 [P] Test de integración del flujo completo en `tests/integration/create-puzzle.test.ts`: subida, fila creada con los valores correctos, objeto presente en Storage y enlace devuelto
+- [ ] T051 [P] Añadir a `tests/integration/create-puzzle.test.ts` el caso de visibilidad: privada por defecto, pública solo al marcarla. Es la mitad de SC-005 que se puede verificar aquí; que los públicos **aparezcan** en el catálogo depende de la feature 003 y no es verificable en 002
+- [ ] T052 Añadir a `tests/integration/create-puzzle.test.ts` el caso del objeto huérfano: forzar el fallo de la inserción y verificar que el objeto subido se borró
+- [ ] T053 [P] Añadir estados de carga y de error a `app/puzzles/create/page.tsx`, incluida la interrupción de la subida por pérdida de conexión
+- [ ] T054 [P] Añadir etiquetas ARIA y navegación por teclado a los controles de creación en `components/`, con especial atención al marco de recorte, que es el menos accesible
+- [ ] T055 Medir el proceso completo desde `app/puzzles/create/page.tsx` y confirmar SC-001 (< 60 s sin contar el encuadre) y SC-002 (generación < 15 s con 500 piezas y una foto de 10 MB)
+- [ ] T056 Ejecutar `npm run build` y `npm run check:secrets`, confirmando que la llave de servicio no llega al bundle pese a los nuevos módulos de servidor
+- [ ] T057 Verificar la permanencia del enlace (SC-006): crear un rompecabezas, cerrar el navegador, y comprobar días después —o manipulando `created_at`— que `/puzzles/{uuid}` sigue sirviendo el rompecabezas y permitiendo crear una sala
+- [ ] T058 Ejecutar la validación completa descrita en [quickstart.md](./quickstart.md), los 6 escenarios de principio a fin
+- [ ] T059 Revisar el cumplimiento de la constitución antes del merge: dependencia nueva justificada por escrito, sin secretos, formato de error uniforme en el endpoint nuevo, y `npm test` en verde
 
 ---
 
@@ -191,9 +202,9 @@ Invertir los dos primeros pasos hace fallar la migración sobre los datos que 00
 
 - Fase 1: T002 y T003 en paralelo tras T001
 - Fase 2: T010 y T011 en paralelo; T012, T013 y T014 en paralelo entre sí
-- US1: T018 y T019 en paralelo
-- Fase 7: T037 y T038 en paralelo; luego T039 → T040 → T041 en secuencia (cada uno usa el anterior)
-- Fase 8: T045, T046, T048 y T049 en paralelo
+- US1: T018 y T019 en paralelo. T023 (endpoint de lectura) puede ir en paralelo a T020–T022
+- Fase 7: T042 y T043 en paralelo; luego T044 → T045 → T046 en secuencia (cada uno usa el anterior)
+- Fase 8: T050, T051, T053 y T054 en paralelo
 
 ---
 

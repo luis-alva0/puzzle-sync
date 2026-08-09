@@ -34,9 +34,13 @@ Las variables de entorno son **las mismas** que ya usa el proyecto. No hay ningu
 2. Subir un JPG de menos de 10 MB.
 3. Sin tocar el encuadre, elegir **100 piezas** y confirmar.
 
-**Esperado**: aparece el enlace `/puzzles/{uuid}` con acción de copiar, y la advertencia de que
-sin cuenta ese enlace es la única vía de acceso. La interfaz mostró la cantidad **real** antes de
-confirmar, que puede no ser exactamente 100 (research R4).
+**Esperado**: aparece el enlace `/puzzles/{uuid}` con acción de copiar, la fecha de creación en
+hora de Perú, y la advertencia de que sin cuenta ese enlace es la única vía de acceso. La interfaz
+mostró la cantidad **real** antes de confirmar, que puede no ser exactamente 100 (research R4).
+
+4. **Abrir el enlace.** Debe mostrar el rompecabezas y un botón para crear una sala con él. Es la
+   mitad de la feature que hace que la otra mitad sirva de algo: sin esta pantalla, el enlace es
+   un 404.
 
 **Comprobar en la base de datos**:
 
@@ -46,6 +50,13 @@ select nominal_piece_count, piece_count, grid_rows, grid_cols, visibility, sourc
 ```
 
 `visibility` debe ser `private` y `source` debe ser `user_photo`.
+
+### 1b. Rompecabezas privado accesible por su enlace
+
+Abrir el enlace de un rompecabezas **privado** en una ventana de incógnito.
+
+**Esperado**: se muestra. Conocer el UUID es la credencial. Y comprobar que un UUID inventado
+responde con "rompecabezas no encontrado", sin filtrar nada.
 
 ### 2. Encuadre (US2)
 
@@ -128,3 +139,6 @@ npm run test:db   # integración: flujo de creación, visibilidad, limpieza de h
 | Un PDF renombrado a `.jpg` pasa la validación | Se está mirando la extensión o el `Content-Type` en vez de los números mágicos |
 | Objetos huérfanos en Storage | El borrado compensatorio del `catch` no se está ejecutando cuando falla el `INSERT` |
 | La cantidad real no coincide con la elegida | Es lo esperado (research R4). Si molesta, el problema está en la interfaz que no la muestra antes de confirmar |
+| El enlace devuelto da 404 | Falta `app/puzzles/[id]/page.tsx` |
+| El enlace de un rompecabezas privado da error, el de uno público funciona | Falta `GET /api/puzzles/[id]`: tras la migración, los privados no son legibles con la llave anónima |
+| La foto sale girada 90° | No se normalizó la orientación EXIF: decodificar con `createImageBitmap(file, { imageOrientation: 'from-image' })` |

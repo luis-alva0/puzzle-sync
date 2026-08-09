@@ -1,8 +1,8 @@
 # Contract: REST API
 
-**Feature**: 002-crear-rompecabezas-desde-foto | Endpoint: `POST /api/puzzles`
+**Feature**: 002-crear-rompecabezas-desde-foto | Endpoints: `POST /api/puzzles`, `GET /api/puzzles/[id]`
 
-Un único endpoint. Reutiliza el helper de errores de 001 (`lib/api/errors.ts`) y su formato
+Dos endpoints. Reutiliza el helper de errores de 001 (`lib/api/errors.ts`) y su formato
 uniforme `{ error: { code, message } }` (Principio V).
 
 Requiere `Authorization: Bearer <jwt>` con la sesión anónima de Supabase, igual que el resto de
@@ -23,6 +23,7 @@ Ya existentes que este endpoint usa:
 |---|---|---|
 | `UNAUTHENTICATED` | 401 | Falta el JWT o es inválido |
 | `INVALID_PIECE_COUNT` | 400 | La cantidad no es una de las cinco opciones (FR-017) |
+| `PUZZLE_NOT_FOUND` | 404 | El UUID no corresponde a ningún rompecabezas (FR-031). Ya existe desde 001 |
 | `INTERNAL_ERROR` | 500 | Fallo de subida, de inserción o no previsto |
 
 `INVALID_PIECE_COUNT` también es nuevo. Los tres nuevos se añaden a `ErrorCode` y a
@@ -85,7 +86,49 @@ rompecabezas distintos, que es exactamente lo que dice el spec (edge case: no ha
 
 ---
 
-## Nota sobre lo que este endpoint NO hace
+## `GET /api/puzzles/[id]` — Leer un rompecabezas por su enlace
+
+Es lo que hace que el enlace devuelto por `POST` sirva de algo (FR-027).
+
+**Por qué existe y no se consulta la tabla desde el cliente**: la migración de esta feature
+restringe la política de lectura de `puzzles` a `visibility = 'public'` (research R5). A partir de
+ahí, un rompecabezas **privado** no es legible con la llave anónima, y su enlace no funcionaría.
+Este endpoint lo sirve con `service_role`, tras comprobar el UUID de la ruta.
+
+Conocer el UUID es la credencial. Es la misma regla de acceso que el spec define para el enlace
+(FR-024, FR-028), aplicada donde puede aplicarse.
+
+**Response `200`**:
+
+```json
+{
+  "puzzleId": "0f9c1a2b-3d4e-4f50-8a1b-2c3d4e5f6071",
+  "imageUrl": "https://…/puzzle-images/0f9c…/cropped.jpg",
+  "gridRows": 10,
+  "gridCols": 10,
+  "pieceCount": 100,
+  "visibility": "private",
+  "createdAt": "2026-08-09T14:32:10.000-05:00"
+}
+```
+
+**Comportamiento**
+
+1. Valida que el parámetro de ruta tenga forma de UUID → `PUZZLE_NOT_FOUND` si no.
+2. Busca la fila con `service_role` → `PUZZLE_NOT_FOUND` si no existe.
+3. Devuelve los metadatos y una URL de imagen utilizable.
+4. `createdAt` se serializa con el helper de 001, en hora de Perú (FR-034).
+
+**No requiere autenticación de miembro de nada**: cualquiera con el UUID puede leerlo, igual que
+cualquiera con el enlace de una sala puede entrar en ella. Sí requiere la sesión anónima, como el
+resto de la API.
+
+**Respuesta a un UUID inexistente o mal formado**: `PUZZLE_NOT_FOUND`, sin revelar si el
+identificador existió alguna vez ni información de otros rompecabezas (FR-031).
+
+---
+
+## Nota sobre lo que estos endpoints NO hacen
 
 - **No genera imágenes por pieza.** Las formas se calculan en el navegador desde el UUID
   (research R3). El servidor almacena una sola imagen: el recorte.

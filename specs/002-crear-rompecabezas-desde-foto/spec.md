@@ -301,7 +301,9 @@ como público y verificar que sí aparece en el catálogo.
 - **SC-004**: El 95% de los jugadores completan la creación en su primer intento, sin ayuda
   externa ni abandono del flujo.
 - **SC-005**: El 0% de los rompecabezas **privados** aparecen en listados públicos o resultados
-  de exploración de la aplicación, y el 100% de los marcados como públicos sí aparecen.
+  de exploración de la aplicación. La otra mitad —que el 100% de los marcados como públicos sí
+  aparezcan— solo es verificable cuando exista el catálogo (especificación 003); en esta
+  funcionalidad se verifica únicamente que la marca de visibilidad queda correctamente guardada.
 - **SC-006**: Un rompecabezas creado sigue accesible y utilizable por su enlace de forma
   indefinida, sin caducidad.
 - **SC-007**: El rompecabezas generado reconstruye la imagen recortada sin huecos ni

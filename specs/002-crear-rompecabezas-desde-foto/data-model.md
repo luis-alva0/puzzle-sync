@@ -109,9 +109,10 @@ adivinable.
 > - `visibility = 'public'` → legible por cualquiera.
 > - `visibility = 'private'` → legible solo consultando por `id` exacto, nunca en un listado.
 >
-> Postgres no distingue "consulta por clave" de "listado" en una política. La forma práctica es
-> restringir la política a `visibility = 'public'` y servir los privados a través del route
-> handler con `service_role`, que ya comprueba el UUID de la ruta. Es una tarea del plan.
+> Postgres no distingue "consulta por clave" de "listado" en una política. **Resuelto así**: la
+> política se restringe a `visibility = 'public'`, y los privados se sirven por
+> `GET /api/puzzles/[id]` con `service_role`, que ya comprueba el UUID de la ruta. Ese endpoint
+> existe precisamente por esto.
 
 ---
 

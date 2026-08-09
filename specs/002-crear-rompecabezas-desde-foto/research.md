@@ -68,6 +68,18 @@ escrito indicando por qué la plataforma no lo cubre):
 —dibujar la región en un canvas y exportarla— se hace con la API del navegador, en código propio
 de unas 20 líneas.
 
+**Orientación EXIF (FR-016)**: las fotos de móvil llegan con la rotación en los metadatos, no en
+los píxeles. Si no se normaliza, el jugador encuadra una foto derecha y obtiene un rompecabezas
+girado 90°. Se resuelve con la plataforma, sin biblioteca ni parseo de EXIF a mano:
+
+```ts
+await createImageBitmap(file, { imageOrientation: 'from-image' })
+```
+
+El navegador aplica la orientación al decodificar. El recorte trabaja ya sobre píxeles derechos,
+y lo que se sube a Storage no lleva metadatos de rotación. Es también de donde salen las
+dimensiones que necesita `chooseGrid`.
+
 ---
 
 ## R3. Formas de pieza deterministas sin generar imágenes
@@ -138,11 +150,24 @@ resuelve con la política RLS del bucket, no haciéndolo público.
   almacenamiento y menos dato personal custodiado.
 - Se sube con `service_role` desde el route handler. El cliente nunca escribe en Storage.
 
-**Lectura**: los rompecabezas públicos se leen a través de una política que permite `select` a
-cualquiera; los privados, solo a quien conozca el UUID, que ya es la regla de acceso del propio
-rompecabezas. La URL se firma con caducidad larga o se sirve por una política de lectura pública
-sobre el bucket, según lo que resulte más simple al implementar; ambas opciones cumplen el
-requisito y la decisión concreta se toma en la tarea correspondiente.
+**Lectura — decidido, no diferido**: política sobre el bucket que consulta la visibilidad del
+rompecabezas al que pertenece el objeto.
+
+```text
+select permitido  ⟺  existe puzzles.id = <primer segmento de la ruta>  ∧  visibility = 'public'
+```
+
+Los rompecabezas **privados** no se sirven por el bucket: los entrega
+`GET /api/puzzles/[id]`, que usa `service_role` y ya comprueba el UUID de la ruta.
+
+Se descarta la URL firmada con caducidad larga: obliga a decidir una caducidad —y una URL firmada
+que caduca rompe un enlace que el spec promete permanente (FR-023)— o a renovarla, que es un
+mecanismo más que mantener. La política es estática y no caduca.
+
+Consecuencia que hay que tener presente: tras restringir la política de lectura de `puzzles` a
+`visibility = 'public'`, **un rompecabezas privado deja de ser legible desde el cliente**. Sin un
+endpoint de servidor que lo sirva, su enlace no funcionaría. De ahí que exista
+`GET /api/puzzles/[id]`.
 
 **Limpieza ante fallo parcial**: si la subida tiene éxito y el `INSERT` falla, el objeto queda
 huérfano. El route handler borra el objeto en el `catch`. Es una compensación explícita, no una
