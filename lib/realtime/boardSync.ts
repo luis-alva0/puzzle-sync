@@ -1,0 +1,137 @@
+import type { Piece } from '@/types/board';
+
+/**
+ * Precedencia entre la pista visual y el hecho confirmado (research R4, FR-021, FR-025).
+ *
+ * Dos fuentes alimentan el tablero:
+ *
+ *   - CONFIRMADA — `GET /state` y Postgres Changes. Es la verdad.
+ *   - PROVISIONAL — broadcast `piece_drag` de otro jugador. Es una pista visual para que el
+ *     movimiento se vea fluido sin escribir en la base de datos 20 veces por segundo.
+ *
+ * La regla es una sola línea: **un hecho confirmado descarta la pista provisional de ese
+ * grupo**. Eso es lo que hace que un broadcast perdido, duplicado o desordenado sea inofensivo,
+ * y por qué no hace falta lógica de deduplicación en ninguna parte.
+ *
+ * Lógica pura, sin dependencias de Supabase ni del DOM: es la pieza de sincronización que el
+ * Principio VI exige poder probar sin infraestructura.
+ */
+
+export interface ProvisionalPosition {
+  x: number;
+  y: number;
+}
+
+export interface BoardSyncState {
+  /** Estado confirmado, indexado por id de pieza. */
+  confirmed: Map<string, Piece>;
+  /** Desplazamiento provisional por grupo, aplicado solo al pintar. */
+  provisional: Map<string, ProvisionalPosition>;
+}
+
+export function createBoardSync(pieces: readonly Piece[] = []): BoardSyncState {
+  return {
+    confirmed: new Map(pieces.map((piece) => [piece.id, piece])),
+    provisional: new Map(),
+  };
+}
+
+/**
+ * Reemplaza por completo el estado confirmado a partir de `GET /state`.
+ *
+ * Reemplazar en vez de fusionar es deliberado: durante una desconexión se perdieron eventos y
+ * no hay forma de reproducirlos, así que cualquier intento de parchear un diff parte de una
+ * base que puede estar mal (FR-023).
+ */
+export function replaceConfirmed(state: BoardSyncState, pieces: readonly Piece[]): BoardSyncState {
+  return {
+    confirmed: new Map(pieces.map((piece) => [piece.id, piece])),
+    // Todo lo provisional queda invalidado: era una suposición sobre un estado que ya no rige.
+    provisional: new Map(),
+  };
+}
+
+/** Aplica un cambio confirmado de una pieza y descarta la pista provisional de su grupo. */
+export function applyConfirmedPiece(state: BoardSyncState, piece: Piece): BoardSyncState {
+  const confirmed = new Map(state.confirmed);
+  confirmed.set(piece.id, piece);
+
+  const provisional = new Map(state.provisional);
+  provisional.delete(piece.groupId);
+
+  // El grupo puede haber cambiado con una fusión: la pista del grupo anterior también sobra.
+  const previous = state.confirmed.get(piece.id);
+  if (previous && previous.groupId !== piece.groupId) {
+    provisional.delete(previous.groupId);
+  }
+
+  return { confirmed, provisional };
+}
+
+/**
+ * Registra la posición provisional de un grupo que otro jugador está arrastrando.
+ *
+ * Se ignora si el grupo no existe en el estado confirmado: un broadcast sobre algo que no
+ * conocemos es basura o llega de una sala que ya no es la nuestra.
+ */
+export function applyProvisionalDrag(
+  state: BoardSyncState,
+  groupId: string,
+  position: ProvisionalPosition,
+): BoardSyncState {
+  const groupExists = [...state.confirmed.values()].some((piece) => piece.groupId === groupId);
+  if (!groupExists) return state;
+
+  const provisional = new Map(state.provisional);
+  provisional.set(groupId, position);
+  return { confirmed: state.confirmed, provisional };
+}
+
+/** Descarta la pista provisional de un grupo: llega `piece_drop` o se confirmó el movimiento. */
+export function clearProvisional(state: BoardSyncState, groupId: string): BoardSyncState {
+  if (!state.provisional.has(groupId)) return state;
+  const provisional = new Map(state.provisional);
+  provisional.delete(groupId);
+  return { confirmed: state.confirmed, provisional };
+}
+
+/**
+ * Piezas tal como deben pintarse: lo confirmado, desplazado por lo provisional.
+ *
+ * El desplazamiento se calcula respecto del **ancla** del grupo —la pieza de menor fila y
+ * columna— para que todas las piezas del grupo se muevan juntas conservando su posición
+ * relativa.
+ */
+export function renderPieces(state: BoardSyncState): Piece[] {
+  const pieces = [...state.confirmed.values()];
+  if (state.provisional.size === 0) return pieces;
+
+  const anchors = new Map<string, Piece>();
+  for (const piece of pieces) {
+    if (!state.provisional.has(piece.groupId)) continue;
+    const current = anchors.get(piece.groupId);
+    if (
+      !current ||
+      piece.gridRow < current.gridRow ||
+      (piece.gridRow === current.gridRow && piece.gridCol < current.gridCol)
+    ) {
+      anchors.set(piece.groupId, piece);
+    }
+  }
+
+  return pieces.map((piece) => {
+    const hint = state.provisional.get(piece.groupId);
+    const anchor = anchors.get(piece.groupId);
+    if (!hint || !anchor) return piece;
+    return {
+      ...piece,
+      x: piece.x + (hint.x - anchor.x),
+      y: piece.y + (hint.y - anchor.y),
+    };
+  });
+}
+
+/** Todas las piezas de un grupo, en el estado confirmado. */
+export function piecesInGroup(state: BoardSyncState, groupId: string): Piece[] {
+  return [...state.confirmed.values()].filter((piece) => piece.groupId === groupId);
+}
