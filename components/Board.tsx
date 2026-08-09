@@ -187,19 +187,26 @@ export function Board({
       channel?.broadcastDrop({ groupId: drag.groupId, playerId });
 
       const supabase = getSupabaseBrowserClient();
-      const { error } = await supabase.rpc('release_piece', {
-        p_piece_id: drag.pieceId,
-        p_player_id: playerId,
-        p_x: targetX,
-        p_y: targetY,
-      });
+      const { data, error } = await supabase
+        .rpc('release_piece', {
+          p_piece_id: drag.pieceId,
+          p_player_id: playerId,
+          p_x: targetX,
+          p_y: targetY,
+        })
+        .single<{ merged_group_ids: string[]; final_group_id: string | null }>();
 
       if (error) {
         console.warn('[board] no se pudo soltar la pieza:', error.message);
       }
 
-      // La pista provisional se descarta: a partir de aquí manda lo que confirme el servidor.
-      setSync((current) => clearProvisional(current, drag.groupId));
+      // Se descartan las pistas provisionales del grupo soltado y de todos los que absorbió
+      // al encajar: sus identificadores ya no existen tras la fusión. Las posiciones
+      // definitivas —ya alineadas por `release_piece`— llegan por Postgres Changes.
+      const staleGroups = [drag.groupId, ...(data?.merged_group_ids ?? [])];
+      setSync((current) =>
+        staleGroups.reduce((state, groupId) => clearProvisional(state, groupId), current),
+      );
     },
     [channel, playerId],
   );
