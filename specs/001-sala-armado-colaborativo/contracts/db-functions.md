@@ -34,10 +34,21 @@ RETURNING id;
 | `held_by_alias` | `text` | Alias de quien la tiene, cuando `success = false` |
 | `piece_ids` | `uuid[]` | Piezas efectivamente capturadas |
 
+> **Corrección durante la implementación.** El `UPDATE` condicional de arriba no basta cuando el
+> grupo tiene más de una pieza. Un `UPDATE` es atómico frente a predicados sobre columnas de la
+> **propia fila**: bajo READ COMMITTED, la segunda transacción reevalúa el `WHERE` contra la
+> versión nueva (EvalPlanQual) y falla correctamente. Pero aquí el predicado es un `NOT EXISTS`
+> sobre el conjunto del grupo, y la reevaluación de subconsultas usa el snapshot original, así
+> que dos capturas simultáneas sobre un grupo de varias piezas podrían ambas verlo libre.
+>
+> La implementación bloquea el grupo con `SELECT ... FOR UPDATE` antes de comprobar el
+> arrendamiento. La contención es por grupo —unas pocas filas— y la garantía pasa a ser
+> incondicional. Ver `supabase/migrations/0005_capture_fn.sql`.
+
 **Garantías**
 
-- Un único `UPDATE` ⇒ atómico por definición de Postgres. Con dos llamadas concurrentes sobre la
-  misma pieza, exactamente una devuelve `success = true` (**FR-013**).
+- El grupo se bloquea antes de evaluar el arrendamiento, así que con dos llamadas concurrentes
+  sobre la misma pieza exactamente una devuelve `success = true` (**FR-013**).
 - Si el grupo ya está capturado por otro jugador con arrendamiento vigente → `success = false`
   (**FR-020**).
 - Si el arrendamiento existente está vencido, la captura tiene éxito (**FR-015**).
