@@ -98,7 +98,12 @@ export default function HomePage() {
           </div>
         </fieldset>
 
-        <AliasForm submitLabel="Crear sala" busy={busy} error={createError} onSubmit={handleCreate} />
+        <AliasForm
+          submitLabel="Crear sala"
+          busy={busy}
+          error={createError}
+          onSubmit={handleCreate}
+        />
       </section>
 
       <section className="card">

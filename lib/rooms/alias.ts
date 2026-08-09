@@ -42,11 +42,6 @@ export function validateAlias(raw: unknown): AliasValidation {
   return { ok: true, alias };
 }
 
-/** Atajo booleano, para la validación en el formulario. */
-export function isValidAlias(raw: unknown): boolean {
-  return validateAlias(raw).ok;
-}
-
 /**
  * Desambigua alias repetidos dentro de una sala añadiendo un sufijo numérico.
  *

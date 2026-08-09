@@ -82,8 +82,7 @@ describe('generateRoomCode', () => {
   it('sigue generando cuando la fuente devuelve bytes descartados por sesgo', () => {
     // 255 >= limit (248), así que todos se descartan; a la segunda tanda ya sirven.
     let call = 0;
-    const source = (size: number) =>
-      new Uint8Array(size).fill(call++ === 0 ? 255 : 0);
+    const source = (size: number) => new Uint8Array(size).fill(call++ === 0 ? 255 : 0);
     expect(generateRoomCode(source)).toHaveLength(ROOM_CODE_LENGTH);
   });
 });

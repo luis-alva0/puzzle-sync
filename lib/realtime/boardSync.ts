@@ -29,24 +29,16 @@ export interface BoardSyncState {
   provisional: Map<string, ProvisionalPosition>;
 }
 
+/**
+ * Estado inicial, y también el reemplazo completo tras `GET /state`.
+ *
+ * Reemplazar en vez de fusionar es deliberado: durante una desconexión se perdieron eventos y
+ * no hay forma de reproducirlos, así que parchear un diff partiría de una base que puede estar
+ * mal (FR-023). Es idempotente por construcción.
+ */
 export function createBoardSync(pieces: readonly Piece[] = []): BoardSyncState {
   return {
     confirmed: new Map(pieces.map((piece) => [piece.id, piece])),
-    provisional: new Map(),
-  };
-}
-
-/**
- * Reemplaza por completo el estado confirmado a partir de `GET /state`.
- *
- * Reemplazar en vez de fusionar es deliberado: durante una desconexión se perdieron eventos y
- * no hay forma de reproducirlos, así que cualquier intento de parchear un diff parte de una
- * base que puede estar mal (FR-023).
- */
-export function replaceConfirmed(state: BoardSyncState, pieces: readonly Piece[]): BoardSyncState {
-  return {
-    confirmed: new Map(pieces.map((piece) => [piece.id, piece])),
-    // Todo lo provisional queda invalidado: era una suposición sobre un estado que ya no rige.
     provisional: new Map(),
   };
 }
@@ -129,9 +121,4 @@ export function renderPieces(state: BoardSyncState): Piece[] {
       y: piece.y + (hint.y - anchor.y),
     };
   });
-}
-
-/** Todas las piezas de un grupo, en el estado confirmado. */
-export function piecesInGroup(state: BoardSyncState, groupId: string): Piece[] {
-  return [...state.confirmed.values()].filter((piece) => piece.groupId === groupId);
 }

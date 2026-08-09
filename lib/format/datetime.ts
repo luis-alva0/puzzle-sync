@@ -13,31 +13,19 @@ export const PERU_UTC_OFFSET_MINUTES = -5 * 60;
 
 const PERU_OFFSET_SUFFIX = '-05:00';
 
-function pad(value: number, length = 2): string {
-  return String(value).padStart(length, '0');
-}
-
 /**
- * Serializa un instante como ISO 8601 con el offset de Perú.
+ * Serializa un instante como ISO 8601 con el offset de Perú: `2026-08-09T14:32:10.000-05:00`.
  *
- * Ejemplo: `2026-08-09T14:32:10-05:00`
- *
- * Se construye a mano en lugar de usar `toLocaleString` con zona horaria porque el resultado
- * debe ser estable y parseable, no dependiente del locale del proceso.
+ * Se desplaza el instante y se reetiqueta la `Z` que produce `toISOString`, en lugar de usar
+ * `toLocaleString` con zona horaria: el resultado debe ser estable y parseable, no depender
+ * del locale del proceso.
  */
 export function toPeruIso(instant: Date | string): string {
   const date = typeof instant === 'string' ? new Date(instant) : instant;
-  if (Number.isNaN(date.getTime())) {
-    throw new TypeError(`Fecha inválida: ${String(instant)}`);
-  }
-
-  const shifted = new Date(date.getTime() + PERU_UTC_OFFSET_MINUTES * 60_000);
-
-  return (
-    `${shifted.getUTCFullYear()}-${pad(shifted.getUTCMonth() + 1)}-${pad(shifted.getUTCDate())}` +
-    `T${pad(shifted.getUTCHours())}:${pad(shifted.getUTCMinutes())}:${pad(shifted.getUTCSeconds())}` +
-    PERU_OFFSET_SUFFIX
-  );
+  if (Number.isNaN(date.getTime())) throw new TypeError(`Fecha inválida: ${String(instant)}`);
+  return new Date(date.getTime() + PERU_UTC_OFFSET_MINUTES * 60_000)
+    .toISOString()
+    .replace('Z', PERU_OFFSET_SUFFIX);
 }
 
 /** Igual que `toPeruIso`, pero tolera `null` — habitual en `completed_at`. */

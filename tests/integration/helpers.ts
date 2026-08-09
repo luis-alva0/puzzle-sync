@@ -86,9 +86,7 @@ export async function setupRoom(
     .single();
   if (puzzleError) throw puzzleError;
 
-  const sessions = await Promise.all(
-    Array.from({ length: playerCount }, () => anonymousClient()),
-  );
+  const sessions = await Promise.all(Array.from({ length: playerCount }, () => anonymousClient()));
 
   const code = generateRoomCode();
   const { data: created, error: createError } = await admin

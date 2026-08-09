@@ -33,34 +33,6 @@ export function correctPosition(gridRow: number, gridCol: number): Point {
   return { x: gridCol * PIECE_SIZE, y: gridRow * PIECE_SIZE };
 }
 
-/**
- * Desplazamiento correcto entre dos celdas de la cuadrícula.
- * Si dos piezas están conectadas, esta es la diferencia exacta entre sus posiciones.
- */
-export function correctOffset(
-  fromRow: number,
-  fromCol: number,
-  toRow: number,
-  toCol: number,
-): Point {
-  return {
-    x: (toCol - fromCol) * PIECE_SIZE,
-    y: (toRow - fromRow) * PIECE_SIZE,
-  };
-}
-
-/** ¿Son estas dos celdas vecinas ortogonales en la cuadrícula? Las diagonales no encajan. */
-export function areAdjacent(
-  rowA: number,
-  colA: number,
-  rowB: number,
-  colB: number,
-): boolean {
-  const dr = Math.abs(rowA - rowB);
-  const dc = Math.abs(colA - colB);
-  return dr + dc === 1;
-}
-
 /** Dimensiones del rompecabezas resuelto, en unidades de tablero. */
 export function solvedSize(gridRows: number, gridCols: number): { width: number; height: number } {
   return { width: gridCols * PIECE_SIZE, height: gridRows * PIECE_SIZE };
@@ -72,7 +44,7 @@ export function solvedSize(gridRows: number, gridCols: number): { width: number;
  * Se usa para dispersar las piezas al crear la sala. Determinista para que la dispersión sea
  * reproducible en los tests; no tiene ninguna pretensión criptográfica.
  */
-export function createSeededRandom(seed: number): () => number {
+function createSeededRandom(seed: number): () => number {
   let state = seed >>> 0 || 1;
   return () => {
     // Constantes de Numerical Recipes.
@@ -94,11 +66,7 @@ export interface ScatteredPiece {
  * Se garantiza que ninguna pieza empieza en su posición correcta ni encajada con su vecina:
  * un rompecabezas que arranca parcialmente resuelto sería un fallo visible.
  */
-export function scatterPieces(
-  gridRows: number,
-  gridCols: number,
-  seed = 1,
-): ScatteredPiece[] {
+export function scatterPieces(gridRows: number, gridCols: number, seed = 1): ScatteredPiece[] {
   const random = createSeededRandom(seed);
   const { width, height } = solvedSize(gridRows, gridCols);
   const spreadX = width + SCATTER_MARGIN * 2;
@@ -114,8 +82,8 @@ export function scatterPieces(
       // respecto de la posición correcta. Con un área de dispersión mucho mayor que la
       // tolerancia, esto converge de inmediato.
       for (let attempt = 0; attempt < 20; attempt++) {
-        x = Math.round((random() * spreadX - SCATTER_MARGIN) * 100) / 100;
-        y = Math.round((random() * spreadY - SCATTER_MARGIN) * 100) / 100;
+        x = random() * spreadX - SCATTER_MARGIN;
+        y = random() * spreadY - SCATTER_MARGIN;
         if (Math.abs(x - correct.x) > SNAP_TOLERANCE || Math.abs(y - correct.y) > SNAP_TOLERANCE) {
           break;
         }

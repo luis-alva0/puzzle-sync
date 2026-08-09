@@ -8,17 +8,13 @@
 
 import type { BoardState, PuzzleSummary } from './board';
 
-export const ERROR_CODES = [
-  'UNAUTHENTICATED',
-  'INVALID_ALIAS',
-  'ROOM_NOT_FOUND',
-  'ROOM_FULL',
-  'PUZZLE_NOT_FOUND',
-  'PIECE_LOCKED',
-  'INTERNAL_ERROR',
-] as const;
-
-export type ErrorCode = (typeof ERROR_CODES)[number];
+export type ErrorCode =
+  | 'UNAUTHENTICATED'
+  | 'INVALID_ALIAS'
+  | 'ROOM_NOT_FOUND'
+  | 'ROOM_FULL'
+  | 'PUZZLE_NOT_FOUND'
+  | 'INTERNAL_ERROR';
 
 export interface ApiErrorBody {
   error: {
@@ -34,7 +30,6 @@ export const ERROR_STATUS: Record<ErrorCode, number> = {
   ROOM_NOT_FOUND: 404,
   ROOM_FULL: 409,
   PUZZLE_NOT_FOUND: 404,
-  PIECE_LOCKED: 409,
   INTERNAL_ERROR: 500,
 };
 

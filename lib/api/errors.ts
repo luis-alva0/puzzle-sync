@@ -14,7 +14,6 @@ const DEFAULT_MESSAGES: Record<ErrorCode, string> = {
   ROOM_NOT_FOUND: 'No encontramos esa sala. Revisa el enlace o crea una nueva.',
   ROOM_FULL: 'La sala está llena: ya tiene el máximo de jugadores conectados.',
   PUZZLE_NOT_FOUND: 'No encontramos ese rompecabezas.',
-  PIECE_LOCKED: 'Otro jugador tiene esa pieza en este momento.',
   INTERNAL_ERROR: 'Algo falló de nuestro lado. Inténtalo de nuevo.',
 };
 
@@ -24,11 +23,6 @@ export function apiError(code: ErrorCode, message?: string): Response {
     error: { code, message: message ?? DEFAULT_MESSAGES[code] },
   };
   return Response.json(body, { status: ERROR_STATUS[code] });
-}
-
-/** Construye una respuesta correcta. Contraparte de `apiError`, para simetría en las rutas. */
-export function apiSuccess<T>(data: T, status = 200): Response {
-  return Response.json(data, { status });
 }
 
 /**

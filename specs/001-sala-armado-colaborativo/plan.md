@@ -38,7 +38,8 @@ Detalle y alternativas descartadas en [research.md](./research.md).
 **Storage**: Supabase Postgres. Imágenes de rompecabezas en Supabase Storage.
 
 **Testing**: Vitest para lógica pura (`npm test`, sin infraestructura). Pruebas de integración
-contra Supabase local para la concurrencia de la función de captura (`npm run test:db`).
+contra Supabase local para todo lo que vive en Postgres —concurrencia de la captura y algoritmo
+de emparejamiento— con `npm run test:db`.
 
 **Target Platform**: Navegador de escritorio con puntero. Aplicación desplegada en Railway.
 
@@ -54,7 +55,7 @@ Ningún secreto en el código. `SUPABASE_SERVICE_ROLE_KEY` exclusivamente en el 
 timestamps presentados en `America/Lima` (UTC-5) sin lógica de horario de verano.
 
 **Scale/Scope**: 4 jugadores concurrentes por sala; hasta 500 piezas por rompecabezas; volumen de
-salas simultáneas bajo (producto de un solo mantenedor). ~5 pantallas, 3 endpoints REST, 4
+salas simultáneas bajo (producto de un solo mantenedor). ~5 pantallas, 3 endpoints REST, 6
 funciones de base de datos.
 
 ## Constitution Check
@@ -68,7 +69,7 @@ funciones de base de datos.
 | **III. Acceso sin Cuentas** | ✅ PASS | Ninguna pantalla de registro ni login. El jugador crea o entra a una sala y escribe un alias. La sesión anónima se establece en segundo plano y el usuario nunca la ve. El alias no otorga permisos ni se reserva (FR-004). |
 | **IV. Resiliencia de Sesión** | ✅ PASS | Postgres es el estado autoritativo; el cliente es réplica descartable. Reconexión automática vía SDK + reemplazo completo del estado con `GET /state`. Todas las escrituras son posiciones absolutas, nunca deltas ⇒ idempotentes. Indicador de conexión visible. |
 | **V. Contrato Uniforme de Errores** | ✅ PASS | Un único helper en `lib/api/errors.ts` produce `{ error: { code, message } }`. Códigos como constantes en `types/api.ts`. El cliente conmuta sobre `code`, nunca sobre `message`. Ningún error expone trazas ni secretos. |
-| **VI. Testing Proporcional al Riesgo** | ⚠️ PASS con excepción justificada | Las dos áreas que el principio nombra están cubiertas. La excepción: verificar la atomicidad de `capture_piece` exige un Postgres real. Ver Complexity Tracking. |
+| **VI. Testing Proporcional al Riesgo** | ✅ PASS | Las dos áreas que el principio nombra están cubiertas, cada una donde vive: la sincronización en `npm test` (lógica pura, sin infraestructura) y el emparejamiento en `npm run test:db` (vive en `release_piece`, en Postgres). El principio se enmendó a la versión 1.2.0 para prohibir explícitamente duplicar una regla solo para poder probarla sin infraestructura, que es lo que la primera implementación había hecho. Ver Complexity Tracking. |
 | **Git Workflow** | ✅ PASS | Aplica en la fase de tareas: un commit por tarea de `tasks.md`, Conventional Commits con el ID como scope. |
 | **Restricciones Técnicas y de Datos** | ✅ PASS | Canvas 2D elegido y documentado una sola vez (research R3). Retención indefinida: sin TTL, y el histórico protegido con `ON DELETE RESTRICT`. Timestamps `timestamptz` presentados con offset fijo `-05:00`. |
 | **Flujo de Desarrollo y Despliegue** | ✅ PASS | Railway despliega con cada push a la principal. Migraciones versionadas en `supabase/migrations/` y aplicadas explícitamente antes del merge (research R9). |
@@ -129,10 +130,8 @@ lib/
 ├── realtime/
 │   ├── channel.ts                    # Suscripción, broadcast, postgres_changes
 │   ├── presence.ts                   # Presence + heartbeat cada 10 s
-│   └── reconcile.ts                  # Reemplazo de estado al reconectar  ← test
+│   └── boardSync.ts                  # Precedencia confirmado/provisional  ← test
 ├── puzzle/
-│   ├── matching.ts                   # Detección de encaje entre vecinas   ← test
-│   ├── groups.ts                     # Unión y fusión de grupos            ← test
 │   └── geometry.ts                   # Cuadrícula, posiciones, tolerancia
 ├── rooms/
 │   ├── code.ts                       # Generación de código de 6 chars     ← test
@@ -162,10 +161,15 @@ son la única capa de servidor. La estructura sigue literalmente la indicada en 
 planificación: API en `app/api/rooms`, pantalla de sala en `app/rooms/[code]`, componentes en
 `components/`, helpers de Supabase y Realtime en `lib/`, tipos compartidos en `types/`.
 
-La subdivisión de `lib/` no es decorativa: aísla en módulos de funciones **puras** las cuatro
-piezas de lógica crítica que el Principio VI obliga a testear (`matching`, `groups`, `alias`,
-`code`, más `reconcile`), separándolas del acceso a Supabase. Esa separación es lo que permite que
-`npm test` corra sin infraestructura.
+La subdivisión de `lib/` aísla en módulos de funciones **puras** la lógica crítica que sí vive en
+TypeScript —`alias`, `code`, `boardSync`— separándola del acceso a Supabase, y eso es lo que
+permite que `npm test` corra sin infraestructura.
+
+El emparejamiento y la fusión de grupos **no** están aquí: viven en `release_piece`, en Postgres.
+Hubo una implementación paralela en TypeScript y se eliminó. La aplicación nunca la llamaba, así
+que era una segunda copia de la misma regla que se desincronizaría en cuanto se tocara una de las
+dos, y probarla no decía nada sobre la que se ejecuta. Su cobertura está en
+`tests/integration/merge-race.test.ts`.
 
 ## Complexity Tracking
 
@@ -173,7 +177,7 @@ piezas de lógica crítica que el Principio VI obliga a testear (`matching`, `gr
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
-| El test de la carrera de captura requiere un Postgres real (`supabase start`), pese a que el Principio VI exige que las pruebas corran sin infraestructura externa | La atomicidad de `capture_piece` bajo concurrencia es exactamente la lógica crítica que el Principio VI nombra, y es una propiedad del motor de base de datos: no existe forma de verificarla sin ese motor | Simular la carrera con dobles de prueba verificaría el simulacro, no la garantía real de Postgres — es decir, daría una prueba en verde sobre precisamente la condición que puede romper el producto. Se mitiga separando los comandos: `npm test` sigue sin infraestructura y es el ciclo de desarrollo; `npm run test:db` se ejecuta antes de mergear un cambio a las funciones SQL |
+| El emparejamiento de piezas y la carrera de captura solo se pueden probar con un Postgres real (`supabase start`), pese a que el Principio VI pide pruebas unitarias sin infraestructura externa | Ambas son propiedades del motor de base de datos: la atomicidad de `capture_piece` bajo concurrencia, y el algoritmo de encaje que vive en `release_piece`. No existe forma de verificarlas sin ese motor | La alternativa que se intentó primero —reimplementar el emparejamiento en TypeScript para poder probarlo sin infraestructura— se descartó y se eliminó del repositorio: creaba dos copias de la misma regla, garantizaba que se desincronizaran, y sus pruebas en verde no decían nada sobre el SQL que realmente corre. Verificar la copia es peor que no verificar: es confianza falsa. Se mitiga separando comandos: `npm test` sin infraestructura para el ciclo de desarrollo, `npm run test:db` antes de mergear cambios a funciones SQL |
 
 ## Pendientes conocidos
 
@@ -183,7 +187,7 @@ piezas de lógica crítica que el Principio VI obliga a testear (`matching`, `gr
 - **Longitud del alias**: resuelto. El spec fija ahora 2–20 caracteres tras recortar espacios
   (FR-002), alineado con el input de planificación y con `lib/rooms/alias.ts`. Ya no hay dos
   fuentes de verdad.
-- **Orden de `release_piece`**: la función se crea en su forma mínima dentro de US2 (soltar y
-  liberar el bloqueo) y US3 la extiende con encaje y fusión. Sin ese reparto, US2 no sería
-  demostrable de forma independiente: una pieza capturada quedaría bloqueada hasta que expirase
-  el arrendamiento a los 30 segundos.
+- **`release_piece` en una sola migración**: durante la implementación se crearon tres versiones
+  sucesivas (mínima en US2, con encaje en US3, con completado en US5). Como ninguna llegó a
+  aplicarse a una base de datos, se colapsaron en `0007_release_fn.sql`. Las migraciones pasan de
+  9 a 7.

@@ -1,5 +1,5 @@
 import { getSupabaseServiceClient, getAuthUserId } from '@/lib/supabase/server';
-import { apiError, apiSuccess, withErrorHandling } from '@/lib/api/errors';
+import { apiError, withErrorHandling } from '@/lib/api/errors';
 import { validateAlias } from '@/lib/rooms/alias';
 import { isValidRoomCode, normalizeRoomCode } from '@/lib/rooms/code';
 import type { JoinRoomRequest, JoinRoomResponse } from '@/types/api';
@@ -49,7 +49,8 @@ export const POST = withErrorHandling(
 
     if (!data.found) return apiError('ROOM_NOT_FOUND');
     if (data.full_room) return apiError('ROOM_FULL');
-    if (!data.player_id || !data.room_id || !data.puzzle_id) throw new Error('join_room incompleto');
+    if (!data.player_id || !data.room_id || !data.puzzle_id)
+      throw new Error('join_room incompleto');
 
     const { data: puzzle, error: puzzleError } = await supabase
       .from('puzzles')
@@ -70,6 +71,6 @@ export const POST = withErrorHandling(
         gridCols: puzzle.grid_cols,
       },
     };
-    return apiSuccess(response);
+    return Response.json(response);
   },
 );

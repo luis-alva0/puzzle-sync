@@ -42,7 +42,6 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
   const [joining, setJoining] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const channelRef = useRef<RoomChannelHandle | null>(null);
   const presenceRef = useRef<PresenceHandle | null>(null);
   const [channel, setChannel] = useState<RoomChannelHandle | null>(null);
 
@@ -97,7 +96,6 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
             if (room.status === 'completed') void reloadBoard();
           },
         });
-        channelRef.current = handle;
         setChannel(handle);
         presenceRef.current = startPresence(handle.channel, joined.playerId, chosenAlias);
       } catch (cause) {
@@ -146,11 +144,12 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
   }, [alias, rehydrating, enterRoom, aliasStorageKey]);
 
   useEffect(() => {
+    if (!channel) return;
     return () => {
       presenceRef.current?.stop();
-      void channelRef.current?.teardown();
+      void channel.teardown();
     };
-  }, []);
+  }, [channel]);
 
   async function copyInviteLink() {
     await navigator.clipboard.writeText(window.location.origin + `/rooms/${code}`);

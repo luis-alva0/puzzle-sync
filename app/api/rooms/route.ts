@@ -1,5 +1,5 @@
 import { getSupabaseServiceClient, getAuthUserId } from '@/lib/supabase/server';
-import { apiError, apiSuccess, withErrorHandling } from '@/lib/api/errors';
+import { apiError, withErrorHandling } from '@/lib/api/errors';
 import { validateAlias } from '@/lib/rooms/alias';
 import { generateRoomCode } from '@/lib/rooms/code';
 import { scatterPieces } from '@/lib/puzzle/geometry';
@@ -74,7 +74,7 @@ export const POST = withErrorHandling(async (request: Request): Promise<Response
         gridCols: puzzle.grid_cols,
       },
     };
-    return apiSuccess(response, 201);
+    return Response.json(response, { status: 201 });
   }
 
   // Con 31^6 combinaciones, agotar 5 intentos significa que algo va muy mal, no mala suerte.

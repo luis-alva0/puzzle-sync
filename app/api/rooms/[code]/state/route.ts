@@ -1,5 +1,5 @@
 import { getSupabaseServiceClient, getAuthUserId } from '@/lib/supabase/server';
-import { apiError, apiSuccess, withErrorHandling } from '@/lib/api/errors';
+import { apiError, withErrorHandling } from '@/lib/api/errors';
 import { isValidRoomCode, normalizeRoomCode } from '@/lib/rooms/code';
 import { toPeruIso, toPeruIsoOrNull } from '@/lib/format/datetime';
 import type { RoomStateResponse } from '@/types/api';
@@ -129,6 +129,6 @@ export const GET = withErrorHandling(
       serverTime: toPeruIso(new Date()),
     };
 
-    return apiSuccess(response);
+    return Response.json(response);
   },
 );

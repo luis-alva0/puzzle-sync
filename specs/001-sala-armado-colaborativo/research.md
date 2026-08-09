@@ -157,6 +157,10 @@ resultado); advisory locks (estado fuera de las tablas, se pierde al reconectar)
 (igual a su `id`). Fusionar dos grupos es
 `UPDATE pieces SET group_id = $ganador WHERE group_id = $perdedor`.
 
+La manipulación de grupos vive **solo** en `release_piece`, en SQL. No hay una capa equivalente
+en TypeScript: se escribió una y se eliminó por duplicar la regla sin que la aplicación la
+llamara nunca.
+
 **Rationale**: Es la representación más simple que cumple **FR-017** y **FR-018**. Mover un grupo
 es un `UPDATE ... WHERE group_id = $x`; consultar un grupo es un índice sobre `group_id`.
 
@@ -186,16 +190,21 @@ demostrable de forma independiente. La forma mínima evita adelantar decisiones 
 **Decisión**: Dos niveles separados.
 
 1. **Unitarias puras con Vitest**, sin infraestructura, ejecutadas por `npm test`:
-   - `lib/puzzle/matching.ts` — detección de emparejamiento entre piezas adyacentes.
-   - `lib/puzzle/groups.ts` — unión y fusión de grupos.
    - `lib/rooms/alias.ts` — validación de longitud 2–20.
-   - `lib/rooms/code.ts` — alfabeto, longitud y ausencia de caracteres ambiguos.
-   - `lib/realtime/reconcile.ts` — reconciliación del estado del tablero al reconectar.
+   - `lib/rooms/code.ts` — alfabeto, longitud, ausencia de caracteres ambiguos y sesgo.
+   - `lib/realtime/boardSync.ts` — precedencia del hecho confirmado sobre la pista provisional,
+     y reemplazo completo del estado al reconectar.
 2. **Integración contra Supabase local** (`supabase start`), ejecutada por `npm run test:db`,
    fuera del ciclo por defecto:
-   - Carrera de captura: dos llamadas concurrentes a `capture_piece` sobre la misma pieza; se
-     verifica que exactamente una tiene éxito.
+   - Carrera de captura: dos llamadas concurrentes a `capture_piece` sobre la misma pieza.
    - Expiración del arrendamiento: captura vencida tomada por otro jugador.
+   - **Emparejamiento y fusión**: tolerancia, no adyacencia, diagonales, cascada y completado.
+
+**Por qué el emparejamiento está en el nivel 2 y no en el 1.** La primera implementación lo puso
+en ambos: una copia en TypeScript para poder probarlo sin infraestructura, y la real en SQL. Se
+eliminó la copia. Dos implementaciones de la misma regla se desincronizan en cuanto se toca una,
+y unas pruebas en verde sobre la que no se ejecuta son peores que ninguna prueba: dan confianza
+falsa justo donde el producto puede romperse.
 
 **Tensión declarada**: el Principio VI dice que las pruebas deben correr sin infraestructura
 externa. La atomicidad de una función de Postgres no es verificable sin Postgres: no hay forma de

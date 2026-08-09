@@ -32,11 +32,9 @@ const LABELS: Record<Status, { text: string; color: string; hint: string }> = {
 
 interface ConnectionStatusProps {
   status: Status;
-  /** Muestra la explicación además de la etiqueta. */
-  verbose?: boolean;
 }
 
-export function ConnectionStatus({ status, verbose = false }: ConnectionStatusProps) {
+export function ConnectionStatus({ status }: ConnectionStatusProps) {
   const label = LABELS[status];
 
   return (
@@ -61,11 +59,6 @@ export function ConnectionStatus({ status, verbose = false }: ConnectionStatusPr
       <span style={{ color: status === 'connected' ? 'var(--text-muted)' : label.color }}>
         {label.text}
       </span>
-      {verbose && (
-        <span className="muted" style={{ fontSize: '0.82rem' }}>
-          {label.hint}
-        </span>
-      )}
     </span>
   );
 }

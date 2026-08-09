@@ -337,8 +337,31 @@ expiración del arrendamiento y fusión concurrente). Están escritas y se salta
 cuando falta la infraestructura; se ejecutan con `npm run test:db` una vez levantado Supabase.
 
 **Verificado en este entorno**: lint sin errores, `tsc --noEmit` limpio, build de producción
-correcto, 77 pruebas unitarias en verde, y `npm run check:secrets` confirmando que ninguna
+correcto, 43 pruebas unitarias en verde, y `npm run check:secrets` confirmando que ninguna
 credencial de servidor llega al bundle del cliente.
+
+### Revisión de sobreingeniería (posterior a T077)
+
+Una pasada de revisión centrada en complejidad innecesaria recortó ~900 líneas. Lo relevante
+para quien lea las tareas de arriba:
+
+- **T047, T048, T050, T051 quedaron sin efecto.** `lib/puzzle/matching.ts` y `lib/puzzle/groups.ts`
+  eran una reimplementación en TypeScript del algoritmo que corre en `release_piece`. La
+  aplicación nunca los importaba: existían solo para poder probarlos sin infraestructura. Se
+  eliminaron junto con sus 286 líneas de pruebas, y la cobertura del emparejamiento se trasladó
+  a `tests/integration/merge-race.test.ts`, donde ejercita el SQL real. El Principio VI se
+  enmendó a la versión 1.2.0 para prohibir esa duplicación de forma explícita.
+- **T058 quedó sin efecto.** `lib/realtime/reconcile.ts` envolvía `createBoardSync` sin añadir
+  nada; la pantalla ya llamaba a `replacePieces` directamente. Sus pruebas útiles —las de
+  precedencia entre hecho confirmado y pista provisional— viven ahora en
+  `tests/unit/boardSync.test.ts`.
+- **Las migraciones pasan de 9 a 7.** Las tres versiones sucesivas de `release_piece` (T040,
+  T052, T063) se colapsaron en `0007_release_fn.sql`, ya que ninguna llegó a aplicarse a una
+  base de datos.
+
+Recuento tras el recorte: 43 pruebas unitarias y 21 de integración (antes 77 y 15). La cifra de
+unitarias baja porque desaparecieron las que probaban código que no se ejecutaba; la de
+integración sube porque el emparejamiento pasó a probarse donde de verdad corre.
 
 **Antes de la primera ejecución real**: habilitar Anonymous Sign-In en el proyecto de Supabase
 (Authentication → Providers) y aplicar las 9 migraciones con `supabase db push`. Sin lo primero

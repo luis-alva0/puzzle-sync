@@ -1,20 +1,21 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.0.0 → 1.1.0
-Bump rationale: MINOR. Se añade una nueva sección de gobernanza ("Git Workflow") con reglas
-obligatorias de commit por tarea. Ningún principio existente fue modificado ni eliminado.
+Version change: 1.1.0 → 1.2.0
+Bump rationale: MINOR. Se expande materialmente el Principio VI para prohibir duplicar lógica
+con el único fin de poder probarla sin infraestructura. Ningún principio fue eliminado ni
+redefinido de forma incompatible.
 
-Principios modificados: ninguno.
+Principios modificados:
+- VI. Testing Proporcional al Riesgo → se añade la regla "probar donde la lógica vive"
 
-Secciones añadidas:
-- Git Workflow (commit atómico por tarea de tasks.md, Conventional Commits con ID de tarea)
-
+Secciones añadidas: ninguna.
 Secciones eliminadas: ninguna.
 
 Follow-up TODOs: ninguno.
 
 --- Historial ---
+1.1.0 (2026-08-09): Sección Git Workflow (commit atómico por tarea, Conventional Commits).
 1.0.0 (2026-08-09): Ratificación inicial. Principios I-VI, Restricciones Técnicas y de Datos,
 Flujo de Desarrollo y Despliegue, Governance.
 -->
@@ -124,17 +125,27 @@ cliente, y hace que un fallo en producción sea diagnosticable a partir del cód
 
 El rigor de testing es moderado y se concentra donde un error es caro.
 
-- Las pruebas unitarias son OBLIGATORIAS para la lógica crítica: el algoritmo de
+- Las pruebas automatizadas son OBLIGATORIAS para la lógica crítica: el algoritmo de
   emparejamiento y encaje de piezas, y la lógica de sincronización y reconciliación de estado
-  en tiempo real.
+  en tiempo real. Unitarias si esa lógica vive en la aplicación; de integración si vive en la
+  base de datos (ver la regla "se prueba donde la lógica vive", más abajo).
 - Todo bug corregido en esas áreas DEBE dejar una prueba que falle sin el arreglo.
 - NO se exige cobertura total, TDD estricto, ni pruebas para UI, estilos, wrappers triviales
   o código de andamiaje.
-- Las pruebas DEBEN correr sin infraestructura externa: la lógica crítica se mantiene en
-  funciones puras, separada del acceso a Supabase.
+- Las pruebas DEBEN correr sin infraestructura externa **siempre que la lógica que verifican
+  viva en la aplicación**: en ese caso se mantiene en funciones puras, separada del acceso a
+  Supabase.
+- **Se prueba donde la lógica vive.** Si una regla se implementa en la base de datos, su prueba
+  es de integración contra la base de datos. Está PROHIBIDO duplicar una regla en TypeScript con
+  el único fin de poder probarla sin infraestructura: dos implementaciones de la misma regla se
+  desincronizan, y una prueba en verde sobre la copia que no se ejecuta es peor que no tener
+  prueba, porque da confianza falsa exactamente donde el producto puede romperse.
+- Las pruebas que exijan infraestructura DEBEN vivir en un comando aparte del ciclo de
+  desarrollo, y ejecutarse antes de mergear cambios al código que verifican.
 
 **Rationale**: Un mantenedor único tiene un presupuesto de tiempo finito. Se gasta en las dos
-partes donde un error silencioso arruina la partida, no en perseguir un número de cobertura.
+partes donde un error silencioso arruina la partida, no en perseguir un número de cobertura ni
+en mantener sincronizadas dos copias de la misma regla.
 
 ## Restricciones Técnicas y de Datos
 
@@ -223,4 +234,4 @@ convención adoptada en el proyecto. Ante un conflicto, gana la constitución.
 - Una violación detectada en producción se trata como defecto y se corrige o se documenta
   explícitamente como deuda con su plan de remediación.
 
-**Version**: 1.1.0 | **Ratified**: 2026-08-09 | **Last Amended**: 2026-08-09
+**Version**: 1.2.0 | **Ratified**: 2026-08-09 | **Last Amended**: 2026-08-09

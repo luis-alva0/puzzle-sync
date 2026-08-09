@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
   validateAlias,
   normalizeAlias,
-  isValidAlias,
   disambiguateAliases,
   ALIAS_MIN_LENGTH,
   ALIAS_MAX_LENGTH,
@@ -59,11 +58,6 @@ describe('validateAlias (FR-002)', () => {
     expect(validateAlias(null)).toEqual({ ok: false, reason: 'not_a_string' });
     expect(validateAlias(42)).toEqual({ ok: false, reason: 'not_a_string' });
     expect(validateAlias(undefined)).toEqual({ ok: false, reason: 'not_a_string' });
-  });
-
-  it('isValidAlias coincide con validateAlias', () => {
-    expect(isValidAlias('Ana')).toBe(true);
-    expect(isValidAlias('A')).toBe(false);
   });
 
   it('el mínimo y el máximo son los del spec', () => {

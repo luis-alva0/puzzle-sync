@@ -36,25 +36,36 @@ if (!url || !serviceRoleKey) {
   process.exit(1);
 }
 
-/**
- * Los rompecabezas de la semilla, en la misma forma que supabase/seed.sql.
- * El archivo .sql sigue siendo la fuente para `supabase db reset`; esto es la ruta para
- * sembrar un proyecto remoto sin la CLI.
- */
-const seedSql = readFileSync('supabase/seed.sql', 'utf8');
-const rows = [...seedSql.matchAll(/\(\s*'([0-9a-f-]{36})',\s*'([^']+)',\s*(\d+),\s*(\d+)\s*\)/g)].map(
-  ([, id, imageUrl, gridRows, gridCols]) => ({
-    id,
-    image_url: imageUrl,
-    grid_rows: Number(gridRows),
-    grid_cols: Number(gridCols),
-  }),
-);
+// Los mismos rompecabezas que supabase/seed.sql, que sigue siendo la ruta para
+// `supabase db reset`. Esto es la ruta para sembrar un proyecto remoto sin la CLI.
+const SVG = (body) => `data:image/svg+xml;utf8,${body}`;
 
-if (rows.length === 0) {
-  console.error('No se pudo extraer ningún rompecabezas de supabase/seed.sql.');
-  process.exit(1);
-}
+const rows = [
+  {
+    id: '11111111-1111-4111-8111-111111111111',
+    image_url: SVG(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="%236c8cff"/><circle cx="100" cy="100" r="60" fill="none" stroke="white" stroke-width="8"/></svg>',
+    ),
+    grid_rows: 2,
+    grid_cols: 2,
+  },
+  {
+    id: '22222222-2222-4222-8222-222222222222',
+    image_url: SVG(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 400"><rect width="500" height="400" fill="%234ade80"/><circle cx="420" cy="80" r="42" fill="%23fbbf24"/></svg>',
+    ),
+    grid_rows: 4,
+    grid_cols: 5,
+  },
+  {
+    id: '33333333-3333-4333-8333-333333333333',
+    image_url: SVG(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><rect width="1000" height="1000" fill="%2311131a"/><circle cx="500" cy="500" r="400" fill="%23ff6b6b"/></svg>',
+    ),
+    grid_rows: 10,
+    grid_cols: 10,
+  },
+];
 
 const supabase = createClient(url, serviceRoleKey, {
   auth: { persistSession: false, autoRefreshToken: false },
@@ -69,5 +80,7 @@ if (error) {
 
 console.log(`Sembrados ${rows.length} rompecabezas:`);
 for (const row of rows) {
-  console.log(`  ${row.id}  ${row.grid_rows}x${row.grid_cols}  (${row.grid_rows * row.grid_cols} piezas)`);
+  console.log(
+    `  ${row.id}  ${row.grid_rows}x${row.grid_cols}  (${row.grid_rows * row.grid_cols} piezas)`,
+  );
 }
