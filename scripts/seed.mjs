@@ -38,6 +38,10 @@ if (!url || !serviceRoleKey) {
 
 // Los mismos rompecabezas que supabase/seed.sql, que sigue siendo la ruta para
 // `supabase db reset`. Esto es la ruta para sembrar un proyecto remoto sin la CLI.
+//
+// `visibility` y `source` van explícitos: sus valores por defecto en la tabla (`private` y
+// `user_photo`) son falsos para la semilla. `nominal_piece_count` se omite y queda NULL, que es
+// lo correcto: ninguna nació de elegir entre las cinco opciones.
 const SVG = (body) => `data:image/svg+xml;utf8,${body}`;
 
 const rows = [
@@ -48,6 +52,8 @@ const rows = [
     ),
     grid_rows: 2,
     grid_cols: 2,
+    visibility: 'public',
+    source: 'seed',
   },
   {
     id: '22222222-2222-4222-8222-222222222222',
@@ -56,6 +62,8 @@ const rows = [
     ),
     grid_rows: 4,
     grid_cols: 5,
+    visibility: 'public',
+    source: 'seed',
   },
   {
     id: '33333333-3333-4333-8333-333333333333',
@@ -64,6 +72,8 @@ const rows = [
     ),
     grid_rows: 10,
     grid_cols: 10,
+    visibility: 'public',
+    source: 'seed',
   },
 ];
 
