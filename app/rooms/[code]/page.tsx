@@ -212,15 +212,28 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
         }}
       >
         <h1 style={{ margin: 0, fontSize: '1.3rem' }}>
-          Sala <code style={{ letterSpacing: '0.14em' }}>{code}</code>
+          Sala{' '}
+          <code style={{ letterSpacing: '0.14em' }} aria-label={code.split('').join(' ')}>
+            {code}
+          </code>
         </h1>
-        <button type="button" onClick={() => void copyInviteLink()}>
+        <button
+          type="button"
+          onClick={() => void copyInviteLink()}
+          aria-label={`Copiar el enlace de invitación de la sala ${code.split('').join(' ')}`}
+        >
           {copied ? 'Enlace copiado' : 'Copiar enlace de invitación'}
         </button>
         <span style={{ marginLeft: 'auto' }}>
           <ConnectionStatus status={status} />
         </span>
       </header>
+
+      {error && (
+        <p className="card error" role="alert" style={{ marginBottom: '1rem' }}>
+          {error.message}
+        </p>
+      )}
 
       <div style={{ display: 'grid', gap: '1.25rem', gridTemplateColumns: 'minmax(0,1fr) 280px' }}>
         <section className="card">
@@ -244,7 +257,7 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
               onReady={handleBoardReady}
             />
           ) : (
-            <p className="muted" style={{ margin: 0 }}>
+            <p className="muted" role="status" aria-live="polite" style={{ margin: 0 }}>
               Cargando tablero…
             </p>
           )}
