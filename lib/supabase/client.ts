@@ -15,18 +15,20 @@ import { createClient, type SupabaseClient, type Session } from '@supabase/supab
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!url || !anonKey) {
-  throw new Error(
-    'Faltan NEXT_PUBLIC_SUPABASE_URL o NEXT_PUBLIC_SUPABASE_ANON_KEY. ' +
-      'Copiar .env.example a .env.local y rellenarlas.',
-  );
-}
-
 let browserClient: SupabaseClient | null = null;
 
 export function getSupabaseBrowserClient(): SupabaseClient {
+  // La comprobación va aquí y no en la evaluación del módulo: lanzar al importar rompe el
+  // prerender de Next durante el build, cuando las variables aún no están en el entorno.
+  if (!url || !anonKey) {
+    throw new Error(
+      'Faltan NEXT_PUBLIC_SUPABASE_URL o NEXT_PUBLIC_SUPABASE_ANON_KEY. ' +
+        'Copiar .env.example a .env.local y rellenarlas.',
+    );
+  }
+
   if (!browserClient) {
-    browserClient = createClient(url!, anonKey!, {
+    browserClient = createClient(url, anonKey, {
       auth: {
         // El SDK persiste la sesión en localStorage. Eso es lo que permite reconectar sin
         // volver a pedir el alias (FR-022), sin escribir código de persistencia propio.
