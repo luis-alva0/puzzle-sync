@@ -96,6 +96,13 @@ export default function PuzzleDetailPage({ params }: { params: Promise<{ id: str
           }}
         />
 
+        {puzzle.catalogStatus === 'retired' && (
+          <p className="muted" role="status" style={{ marginTop: 0, fontSize: '0.9rem' }}>
+            Este rompecabezas ya no aparece en el catálogo. Tu enlace sigue funcionando y puedes
+            jugarlo igualmente.
+          </p>
+        )}
+
         <h1 style={{ marginTop: 0, fontSize: '1.2rem' }}>
           Rompecabezas de {puzzle.pieceCount} piezas
         </h1>
