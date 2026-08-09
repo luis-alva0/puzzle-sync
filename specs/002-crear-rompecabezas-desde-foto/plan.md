@@ -16,8 +16,9 @@ Tres decisiones sostienen el diseño:
    imágenes por pieza. La complementariedad entre piezas vecinas se garantiza generando una
    rejilla de bordes compartidos, no una forma por pieza.
 2. **El servidor no confía en el navegador para nada.** El tipo de archivo se determina por sus
-   números mágicos, el tamaño por el cuerpo real recibido, y la cuadrícula la calcula el servidor.
-   La validación del cliente es cortesía, no frontera.
+   números mágicos, el tamaño por `file.size` del cuerpo ya recibido, las dimensiones parseando la
+   cabecera a mano, y la cuadrícula la calcula el servidor. La validación del cliente es cortesía,
+   no frontera.
 3. **Se extiende la tabla `puzzles` que ya existe**, no se crea. 001 la dejó en forma mínima
    precisamente para esto.
 
@@ -156,12 +157,18 @@ petición HTTP.
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
+| Lectura de ancho y alto parseando la cabecera de PNG y JPEG a mano, ~40 líneas | Node no trae nada nativo, y `chooseGrid` en el servidor necesita las dimensiones | `sharp` ya está en el árbol como transitiva de Next, pero usarla obligaría a declararla como dependencia directa —con la justificación escrita que exige el Principio I— y traería bindings nativos a `lib/upload/validate.ts`, que es justamente el módulo que se quiere probar en Node sin infraestructura. Cuarenta líneas de lectura de cabecera cuestan menos que eso, y el fallo del parseo detecta gratis el archivo truncado de FR-008 |
 | Primera dependencia de terceros del proyecto: `react-easy-crop` | El recorte con encuadre necesita arrastre, zoom con rueda y con pinza, y marco redimensionable, traducido a coordenadas de la imagen original. La plataforma no ofrece control de recorte alguno | Escribirlo a mano son cientos de líneas de manejo de punteros, y el gesto de pinza en táctil es el tipo de código que parece terminado sin estarlo. `cropperjs` es más grande e imperativo. Prescindir del recorte contradice una historia de usuario completa (US2) |
 | 002 crea columnas (`play_count`, `visibility`, `source`) que solo consume 003 | Nacen del mismo `ALTER TABLE` que las que 002 sí usa. Partirlas en dos migraciones para respetar la frontera entre features significaría tocar la misma tabla dos veces sin ganar nada | La alternativa, que 003 cree una tabla `catalog_entries` aparte, añade una tabla, una FK y un JOIN a cada listado, para datos que son atributos del propio rompecabezas (research R7) |
 | La detección de qué pieza está bajo el puntero sigue usando la caja envolvente, aunque las lengüetas sobresalgan | Con 500 piezas, `isPointInPath` por pieza en cada movimiento de puntero son 500 comprobaciones por evento | Se asume que un clic en la zona de solape entre dos lengüetas puede elegir la vecina. Si molesta en la práctica, la mejora es filtrar por caja y afinar con `isPointInPath` solo sobre esos pocos candidatos (research R8) |
 
 ## Pendientes conocidos
 
+- **El límite de 10 MB no se corta en streaming.** Una versión anterior del plan lo exigía;
+  `request.formData()` bufferiza el cuerpo entero y no hay punto donde cortar sin escribir un
+  parser multipart. Se aplica con rechazo temprano por `Content-Length` más `file.size` como
+  comprobación autoritativa (research R6). El techo asumido es que un cuerpo de 10 MB llega a
+  materializarse en memoria antes de rechazarse.
 - **`nominal_piece_count` admite NULL a propósito.** La semilla de 001 incluye un rompecabezas de
   4 piezas —el que usa para validar el completado— y 4 no es una de las cinco opciones. Con la
   columna `NOT NULL` copiando `piece_count`, la migración abortaría contra su propio `CHECK`. NULL

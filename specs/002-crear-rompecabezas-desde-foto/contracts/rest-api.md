@@ -66,20 +66,27 @@ devuelve para que no haya dudas sobre lo que quedó guardado.
 **Comportamiento**
 
 1. Verifica el JWT → `UNAUTHENTICATED`.
-2. Lee el `FormData` **en streaming**, cortando en cuanto se superan 10 MB → `FILE_TOO_LARGE`.
-   No se acepta el archivo entero para medirlo después.
-3. Comprueba los números mágicos del contenido → `INVALID_FILE_TYPE`. No se mira `Content-Type`
+2. Si viene `Content-Length` y supera 10 MB, rechaza ya → `FILE_TOO_LARGE`. Es un atajo barato
+   para el caso honesto; quien mienta en esa cabecera solo se retrasa a sí mismo.
+3. `await request.formData()` y comprueba `file.size` → `FILE_TOO_LARGE`. **Esta es la
+   comprobación autoritativa**, no la del paso 2.
+4. Comprueba los números mágicos del contenido → `INVALID_FILE_TYPE`. No se mira `Content-Type`
    ni la extensión: los controla quien envía la petición (research R6).
-4. Lee las dimensiones de la cabecera de la imagen. Si no se pueden leer, el archivo está
-   truncado o corrupto → `INVALID_FILE_TYPE` (FR-008).
-5. Valida `nominalPieceCount` contra el conjunto de cinco → `INVALID_PIECE_COUNT`.
-6. Calcula `chooseGrid(nominalPieceCount, width, height)` **en el servidor**. La cuadrícula nunca
+5. Lee ancho y alto parseando la cabecera a mano —`IHDR` en PNG, marcador `SOF` en JPEG—. Si el
+   parseo falla, el archivo está truncado o corrupto → `INVALID_FILE_TYPE` (FR-008).
+6. Valida `nominalPieceCount` contra el conjunto de cinco → `INVALID_PIECE_COUNT`.
+7. Calcula `chooseGrid(nominalPieceCount, width, height)` **en el servidor**, con las
+   dimensiones leídas en el paso 5. La cuadrícula nunca
    llega del cliente: si llegara, se podría pedir 1×5000.
-7. Genera el UUID del rompecabezas por adelantado, para poder usarlo como carpeta en Storage.
-8. Sube el objeto a `puzzle-images/{uuid}/cropped.jpg` con `service_role`.
-9. Inserta la fila en `puzzles`.
-10. Si el paso 9 falla, **borra el objeto** subido en el paso 8 y devuelve `INTERNAL_ERROR`. No
+8. Genera el UUID del rompecabezas por adelantado, para poder usarlo como carpeta en Storage.
+9. Sube el objeto a `puzzle-images/{uuid}/cropped.jpg` con `service_role`.
+10. Inserta la fila en `puzzles`.
+11. Si el paso 10 falla, **borra el objeto** subido en el paso 9 y devuelve `INTERNAL_ERROR`. No
     hay transacción entre Storage y Postgres; esto es una compensación explícita (FR-033).
+
+**La cuadrícula se calcula sobre la imagen recibida**, que es la ya recortada. El cliente muestra
+la cantidad real antes de confirmar usando esas mismas dimensiones, así que ambos números
+coinciden (FR-019).
 
 **Idempotencia**: no la tiene, y no la necesita. Dos envíos de la misma foto crean dos
 rompecabezas distintos, que es exactamente lo que dice el spec (edge case: no hay deduplicación).

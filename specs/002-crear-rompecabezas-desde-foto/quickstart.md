@@ -148,8 +148,10 @@ npm run test:db   # integración: flujo de creación, visibilidad, limpieza de h
 |---|---|
 | Dos jugadores ven piezas con formas distintas | Algo del módulo de generación usa `Math.random` o depende del orden de iteración |
 | Las piezas se ven cortadas por los bordes | El dibujado recorta con el path pero pinta solo la celda; las lengüetas sobresalen y hay que pintar una región mayor |
-| `FILE_TOO_LARGE` con un archivo pequeño | Se está midiendo `Content-Length` en vez del cuerpo real |
+| `FILE_TOO_LARGE` con un archivo pequeño | Se está decidiendo solo con `Content-Length`. Esa cabecera sirve de atajo, pero la que decide es `file.size` tras `formData()` |
 | Un PDF renombrado a `.jpg` pasa la validación | Se está mirando la extensión o el `Content-Type` en vez de los números mágicos |
+| Un JPEG truncado pasa la validación | No se está parseando la cabecera para leer ancho y alto: es ahí donde falla y se detecta |
+| La cantidad mostrada antes de confirmar no coincide con la guardada | El cliente está midiendo la imagen original en vez del recorte que envía |
 | Objetos huérfanos en Storage | El borrado compensatorio del `catch` no se está ejecutando cuando falla el `INSERT` |
 | La cantidad real no coincide con la elegida | Es lo esperado (research R4). Si molesta, el problema está en la interfaz que no la muestra antes de confirmar |
 | El enlace devuelto da 404 | Falta `app/puzzles/[id]/page.tsx` |

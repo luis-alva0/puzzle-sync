@@ -197,8 +197,8 @@ cliente.
 | Qué se valida | Cómo |
 |---|---|
 | Tipo real del archivo | **Números mágicos** de los primeros bytes: `FF D8 FF` para JPEG, `89 50 4E 47` para PNG. No se confía en `Content-Type` ni en la extensión: ambos los controla quien envía la petición. |
-| Tamaño ≤ 10 MB | Tamaño real del cuerpo recibido, no la cabecera `Content-Length`. |
-| Imagen legible | Que las dimensiones se puedan leer de la cabecera del archivo. Un JPEG truncado tiene los números mágicos correctos y es inservible (FR-008). |
+| Tamaño ≤ 10 MB | `file.size` del `File` ya recibido, que es la comprobación **autoritativa**. `Content-Length`, si viene, sirve solo como rechazo temprano y barato. |
+| Imagen legible | Que se puedan leer ancho y alto de la cabecera, parseándola a mano (ver abajo). Un JPEG truncado tiene los números mágicos correctos y es inservible (FR-008). |
 | Cantidad de piezas | Pertenencia al conjunto `{20, 50, 100, 200, 500}`. Un valor libre se rechaza (FR-017). |
 | Visibilidad | Solo `'private'` o `'public'`; ausente ⇒ `'private'` (FR-029). |
 
@@ -206,9 +206,46 @@ cliente.
 una frontera de confianza. Cualquiera puede hacer `POST` directamente al endpoint. El spec lo pide
 de forma explícita y el Principio II lo respalda: la protección no puede descansar en el cliente.
 
-**Nota sobre el límite de tamaño**: Next.js limita el cuerpo de las Server Actions, pero no el de
-un route handler que lee un `FormData` en streaming. El límite de 10 MB se aplica en código, y se
-corta la lectura al superarlo en lugar de aceptar el archivo entero y medirlo después.
+### Cómo se aplica el límite de tamaño
+
+**Decisión**: rechazo temprano por `Content-Length` cuando venga, comprobación autoritativa con
+`file.size` después de `request.formData()`, y el límite de cuerpo del servidor como red de
+seguridad.
+
+> **Corrección de una versión anterior.** Este documento decía que el límite se aplicaba
+> "cortando la lectura en streaming, sin aceptar el archivo entero", y prohibía mirar
+> `Content-Length`. **Eso no es construible con la API que se usa**: `request.formData()`
+> bufferiza el cuerpo completo antes de devolver nada, así que no existe un punto donde cortar.
+> Hacerlo de verdad exigiría leer `request.body` como stream y **parsear multipart a mano**, que
+> es muchísimo código para imponer un límite de tamaño.
+>
+> Mirar `Content-Length` no debilita nada: quien miente en esa cabecera solo se perjudica a sí
+> mismo, porque la comprobación real —`file.size`— viene después y es la que decide. Lo que la
+> cabecera aporta es cortar barato el caso honesto de una foto de 15 MB, sin bufferizarla.
+
+**Techo asumido**: un cuerpo malicioso de 10 MB sí se llega a materializar en memoria antes de
+rechazarse. Para el volumen de este producto es aceptable; si algún día deja de serlo, el paso
+siguiente es el límite de cuerpo a nivel de plataforma, no un parser multipart propio.
+
+### Cómo se leen las dimensiones de la imagen
+
+**Decisión**: parsear la cabecera **a mano**, sin dependencia.
+
+- **PNG**: ancho y alto son dos enteros de 32 bits en el chunk `IHDR`, en un desplazamiento fijo.
+  Ocho bytes.
+- **JPEG**: recorrer los segmentos hasta encontrar un marcador `SOF` (`FFC0`–`FFCF`, excluyendo
+  `FFC4`, `FFC8` y `FFCC`) y leer alto y ancho de su cabecera.
+
+Entre los dos son unas 40 líneas.
+
+**Alternativa descartada**: `sharp` está en el árbol de dependencias como transitiva de Next
+(0.35.3), así que usarla no descargaría nada nuevo — pero **sí obligaría a declararla como
+dependencia directa**, y el Principio I exige justificar por escrito cada una. No se justifica:
+traería bindings nativos a `lib/upload/validate.ts`, que es precisamente el módulo que se quiere
+poder probar unitariamente en Node sin infraestructura, para 40 líneas de lectura de cabecera.
+
+Un efecto secundario útil: si el parseo falla, el archivo está truncado o corrupto, que es
+justamente lo que FR-008 pide detectar. La detección sale gratis de la lectura.
 
 ---
 
