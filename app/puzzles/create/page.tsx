@@ -28,8 +28,8 @@ export default function CreatePuzzlePage() {
   const [image, setImage] = useState<LoadedImage | null>(null);
   const [crop, setCrop] = useState<CropResult | null>(null);
   const [pieceCount, setPieceCount] = useState<PieceCountOption | null>(100);
-  // Pasa a ser estado con interruptor en US4 (T042). Hasta entonces, privado siempre (FR-029).
-  const isPublic = false;
+  // Desmarcado por defecto: la privacidad no depende de que el jugador recuerde pedirla (FR-029).
+  const [isPublic, setIsPublic] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CreatePuzzleResponse | null>(null);
@@ -171,6 +171,26 @@ export default function CreatePuzzlePage() {
             onChange={setPieceCount}
             disabled={busy}
           />
+
+          <hr style={{ border: 0, borderTop: '1px solid var(--border)', margin: '1.25rem 0' }} />
+
+          <label style={{ display: 'flex', gap: '0.6rem', alignItems: 'flex-start' }}>
+            <input
+              type="checkbox"
+              checked={isPublic}
+              disabled={busy}
+              onChange={(event) => setIsPublic(event.target.checked)}
+              style={{ marginTop: '0.25rem', width: 'auto' }}
+            />
+            <span>
+              <strong>Hacerlo público</strong>
+              <span className="muted" style={{ display: 'block', fontSize: '0.88rem' }}>
+                Aparecerá en el catálogo y cualquiera podrá jugarlo.{' '}
+                <strong>Esta decisión no se puede deshacer.</strong> Si lo dejas sin marcar, solo
+                quien tenga el enlace podrá acceder.
+              </span>
+            </span>
+          </label>
         </section>
       )}
 
