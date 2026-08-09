@@ -23,7 +23,7 @@ import Cropper, { type Area } from 'react-easy-crop';
  * Por debajo de esto, incluso 20 piezas quedarían por debajo de 50×50 píxeles cada una y el
  * rompecabezas sería ilegible.
  */
-export const MIN_CROP_SIDE = 240;
+const MIN_CROP_SIDE = 240;
 
 export interface CropResult {
   blob: Blob;

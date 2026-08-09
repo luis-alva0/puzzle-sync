@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { adminClient, hasSupabase, skipReason } from './helpers';
 import { chooseGrid } from '@/lib/puzzle-generation/grid';
 import { validateImage } from '@/lib/upload/validate';
+import { pngOf } from '../helpers/images';
 
 /**
  * Flujo de creación de un rompecabezas contra Supabase local.
@@ -16,18 +17,6 @@ import { validateImage } from '@/lib/upload/validate';
  */
 
 const BUCKET = 'puzzle-images';
-
-/** PNG mínimo válido con las dimensiones pedidas. */
-function pngOf(width: number, height: number): Uint8Array {
-  const bytes = new Uint8Array(24);
-  bytes.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], 0);
-  bytes.set([0x00, 0x00, 0x00, 0x0d], 8);
-  bytes.set([0x49, 0x48, 0x44, 0x52], 12);
-  const view = new DataView(bytes.buffer);
-  view.setUint32(16, width);
-  view.setUint32(20, height);
-  return bytes;
-}
 
 interface CreatedPuzzle {
   id: string;

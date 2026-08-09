@@ -10,9 +10,13 @@ tableros distintos.
 
 ## `prng.ts`
 
-### `splitmix32(state: number): { value: number; next: number }`
+### `splitmix32(state: number): number`
 
-Generador entero de 32 bits. Aritmética con `Math.imul`, `>>>` y `^` únicamente.
+Mezclador entero de 32 bits. Aritmética con `Math.imul`, `>>>` y `^` únicamente.
+
+Devuelve un número, no un par `{ valor, siguiente }`: nadie usa el generador como flujo. Los dos
+consumidores —`seedFromUuid` y `hashCoords`— piden un valor a partir de una entrada concreta, y
+encadenar es volver a llamar con el resultado.
 
 **Garantías**:
 

@@ -84,11 +84,6 @@ export function BoardCanvas({
     () => buildEdgeGrid(seedFromUuid(puzzleId), gridRows, gridCols),
     [puzzleId, gridRows, gridCols],
   );
-  const edgeGridRef = useRef(edgeGrid);
-  useEffect(() => {
-    edgeGridRef.current = edgeGrid;
-  }, [edgeGrid]);
-
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -146,7 +141,7 @@ export function BoardCanvas({
 
       for (const piece of piecesRef.current) {
         const path = piecePath(
-          pieceEdges(edgeGridRef.current, piece.gridRow, piece.gridCol),
+          pieceEdges(edgeGrid, piece.gridRow, piece.gridCol),
           PIECE_SIZE,
         );
 
@@ -211,7 +206,7 @@ export function BoardCanvas({
     return () => {
       if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
     };
-  }, [gridRows, gridCols]);
+  }, [gridRows, gridCols, edgeGrid]);
 
   /** Traduce coordenadas de pantalla a unidades de tablero. */
   function toBoard(event: React.PointerEvent<HTMLCanvasElement>): { x: number; y: number } {

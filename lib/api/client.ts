@@ -35,10 +35,14 @@ export class ApiError extends Error {
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = await getAccessToken();
 
+  // Con `FormData` NO se fija `Content-Type`: el navegador tiene que poner el suyo con el
+  // `boundary`, y fijarlo a mano rompe el parseo en el servidor.
+  const isFormData = init.body instanceof FormData;
+
   const response = await fetch(path, {
     ...init,
     headers: {
-      'Content-Type': 'application/json',
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       Authorization: `Bearer ${token}`,
       ...init.headers,
     },
@@ -88,38 +92,19 @@ export function fetchRoomState(code: string): Promise<RoomStateResponse> {
  * obligaría a materializar los 10 MB antes de poder mirarlos. `Content-Type` se omite a
  * propósito para que el navegador ponga el `boundary`.
  */
-export async function createPuzzle(input: {
+export function createPuzzle(input: {
   image: File;
   nominalPieceCount: PieceCountOption;
   isPublic: boolean;
 }): Promise<CreatePuzzleResponse> {
-  const token = await getAccessToken();
-
   const form = new FormData();
   form.append('image', input.image);
   form.append('nominalPieceCount', String(input.nominalPieceCount));
   form.append('isPublic', String(input.isPublic));
 
-  const response = await fetch('/api/puzzles', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
-    body: form,
-  });
-
-  if (!response.ok) {
-    let body: ApiErrorBody | null = null;
-    try {
-      body = (await response.json()) as ApiErrorBody;
-    } catch {
-      // Sin JSON válido no dejamos al cliente sin código con el que decidir.
-    }
-    throw new ApiError(
-      body?.error?.code ?? 'INTERNAL_ERROR',
-      body?.error?.message ?? 'No se pudo crear el rompecabezas.',
-    );
-  }
-
-  return (await response.json()) as CreatePuzzleResponse;
+  // `multipart/form-data` y no JSON con base64: base64 infla el cuerpo un 33 % y obligaría a
+  // materializar los 10 MB antes de poder mirarlos.
+  return request<CreatePuzzleResponse>('/api/puzzles', { method: 'POST', body: form });
 }
 
 export function fetchPuzzle(id: string): Promise<PuzzleDetailResponse> {

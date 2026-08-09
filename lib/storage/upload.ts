@@ -13,10 +13,10 @@ import { getSupabaseServiceClient } from '@/lib/supabase/server';
  * en lugar de filtrar la llave de servicio (Principio II).
  */
 
-export const PUZZLE_IMAGES_BUCKET = 'puzzle-images';
+const PUZZLE_IMAGES_BUCKET = 'puzzle-images';
 
 /** El UUID del rompecabezas es el nombre de carpeta: no hace falta índice ni puede colisionar. */
-export function puzzleImagePath(puzzleId: string): string {
+function puzzleImagePath(puzzleId: string): string {
   return `${puzzleId}/cropped.jpg`;
 }
 

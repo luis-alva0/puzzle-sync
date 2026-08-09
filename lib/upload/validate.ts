@@ -38,13 +38,6 @@ function detectFormat(bytes: Uint8Array): ImageFormat | null {
   return null;
 }
 
-function readUint32BE(bytes: Uint8Array, offset: number): number {
-  return (
-    ((bytes[offset]! << 24) | (bytes[offset + 1]! << 16) | (bytes[offset + 2]! << 8) | bytes[offset + 3]!) >>>
-    0
-  );
-}
-
 /**
  * Dimensiones de un PNG: dos enteros de 32 bits al principio del chunk `IHDR`, que por
  * especificación es siempre el primero y está en un desplazamiento fijo.
@@ -54,8 +47,9 @@ function readPngSize(bytes: Uint8Array): { width: number; height: number } | nul
   if (bytes.length < 24) return null;
   if (String.fromCharCode(bytes[12]!, bytes[13]!, bytes[14]!, bytes[15]!) !== 'IHDR') return null;
 
-  const width = readUint32BE(bytes, 16);
-  const height = readUint32BE(bytes, 20);
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const width = view.getUint32(16);
+  const height = view.getUint32(20);
   return width > 0 && height > 0 ? { width, height } : null;
 }
 

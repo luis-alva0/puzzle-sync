@@ -15,11 +15,9 @@ import type { CreatePuzzleResponse } from '@/types/api';
 
 interface PuzzleLinkResultProps {
   result: CreatePuzzleResponse;
-  /** Momento de creación; si falta, se usa el actual. */
-  createdAt?: string;
 }
 
-export function PuzzleLinkResult({ result, createdAt }: PuzzleLinkResultProps) {
+export function PuzzleLinkResult({ result }: PuzzleLinkResultProps) {
   const [copied, setCopied] = useState(false);
   const fullUrl = typeof window !== 'undefined' ? window.location.origin + result.url : result.url;
 
@@ -38,7 +36,7 @@ export function PuzzleLinkResult({ result, createdAt }: PuzzleLinkResultProps) {
       <p className="muted" style={{ marginTop: 0 }}>
         {result.pieceCount} piezas ({result.gridCols} × {result.gridRows}) ·{' '}
         {result.visibility === 'public' ? 'Público' : 'Privado'} · Creado el{' '}
-        {formatPeruDisplay(createdAt ?? new Date())}
+        {formatPeruDisplay(new Date())}
       </p>
 
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', margin: '1rem 0' }}>

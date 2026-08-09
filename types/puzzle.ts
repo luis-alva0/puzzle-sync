@@ -13,7 +13,6 @@ export function isPieceCountOption(value: unknown): value is PieceCountOption {
 }
 
 export type PuzzleVisibility = 'private' | 'public';
-export type PuzzleSource = 'seed' | 'user_photo' | 'curated';
 
 /** Formatos admitidos, determinados por los números mágicos y no por la extensión. */
 export type ImageFormat = 'jpeg' | 'png';

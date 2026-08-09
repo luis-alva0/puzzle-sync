@@ -12,24 +12,19 @@
  */
 
 /**
- * Un paso del generador. Devuelve el valor y el estado siguiente en lugar de mutar, para que
- * la función sea pura y el orden de las llamadas no pueda producir resultados distintos.
+ * Mezcla un entero de 32 bits en otro. Pura: el mismo estado da siempre el mismo resultado, y
+ * el orden de las llamadas no puede alterarlo.
+ *
+ * Devuelve un número y no un par `{ valor, siguiente }`: aquí nadie usa el generador como flujo.
+ * Los dos consumidores —`seedFromUuid` y `hashCoords`— piden un valor a partir de una entrada
+ * concreta, y encadenar, cuando hace falta, es volver a llamar con el resultado.
  */
-export function splitmix32(state: number): { value: number; next: number } {
+export function splitmix32(state: number): number {
   let z = (state + 0x9e37_79b9) | 0;
-  const next = z;
-
   z = Math.imul(z ^ (z >>> 16), 0x21f0_aaad);
   z = Math.imul(z ^ (z >>> 15), 0x735a_2d97);
   z = z ^ (z >>> 15);
-
-  return { value: z >>> 0, next };
-}
-
-/** Flotante determinista en `[0, 1)` a partir de un estado. */
-export function nextFloat(state: number): { value: number; next: number } {
-  const { value, next } = splitmix32(state);
-  return { value: value / 0x1_0000_0000, next };
+  return z >>> 0;
 }
 
 /**
@@ -48,7 +43,7 @@ export function seedFromUuid(uuid: string): number {
   }
 
   // Una pasada de splitmix para dispersar: FNV-1a deja los bits altos poco mezclados.
-  return splitmix32(hash >>> 0).value;
+  return splitmix32(hash >>> 0);
 }
 
 /**
@@ -62,5 +57,5 @@ export function hashCoords(seed: number, row: number, col: number, axis: number)
   hash = Math.imul(hash ^ (row + 0x9e37), 0x85eb_ca6b);
   hash = Math.imul(hash ^ (col + 0x85eb), 0xc2b2_ae35);
   hash = Math.imul(hash ^ (axis + 0xc2b2), 0x27d4_eb2f);
-  return splitmix32(hash >>> 0).value;
+  return splitmix32(hash >>> 0);
 }

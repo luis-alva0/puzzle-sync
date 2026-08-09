@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { splitmix32, nextFloat, seedFromUuid, hashCoords } from '@/lib/puzzle-generation/prng';
+import { splitmix32, seedFromUuid, hashCoords } from '@/lib/puzzle-generation/prng';
 
 /**
  * Si este módulo deja de ser determinista, dos jugadores de la misma sala ven rompecabezas
@@ -17,21 +17,19 @@ describe('splitmix32', () => {
   it('devuelve un entero sin signo de 32 bits', () => {
     let state = 12345;
     for (let i = 0; i < 1_000; i++) {
-      const step = splitmix32(state);
-      expect(Number.isInteger(step.value)).toBe(true);
-      expect(step.value).toBeGreaterThanOrEqual(0);
-      expect(step.value).toBeLessThanOrEqual(0xffff_ffff);
-      state = step.next;
+      state = splitmix32(state);
+      expect(Number.isInteger(state)).toBe(true);
+      expect(state).toBeGreaterThanOrEqual(0);
+      expect(state).toBeLessThanOrEqual(0xffff_ffff);
     }
   });
 
-  it('estados distintos dan valores distintos', () => {
+  it('encadenado, no se repite: no cae en un ciclo corto', () => {
     const values = new Set<number>();
     let state = 7;
     for (let i = 0; i < 5_000; i++) {
-      const step = splitmix32(state);
-      values.add(step.value);
-      state = step.next;
+      state = splitmix32(state);
+      values.add(state);
     }
     // Con 5000 extracciones sobre 2^32, las colisiones deben ser anecdóticas.
     expect(values.size).toBeGreaterThan(4_990);
@@ -42,26 +40,13 @@ describe('splitmix32', () => {
       const out: number[] = [];
       let state = seed;
       for (let i = 0; i < 100; i++) {
-        const step = splitmix32(state);
-        out.push(step.value);
-        state = step.next;
+        state = splitmix32(state);
+        out.push(state);
       }
       return out;
     };
     expect(run(99)).toEqual(run(99));
     expect(run(99)).not.toEqual(run(100));
-  });
-});
-
-describe('nextFloat', () => {
-  it('siempre cae en [0, 1)', () => {
-    let state = 5;
-    for (let i = 0; i < 2_000; i++) {
-      const step = nextFloat(state);
-      expect(step.value).toBeGreaterThanOrEqual(0);
-      expect(step.value).toBeLessThan(1);
-      state = step.next;
-    }
   });
 });
 
