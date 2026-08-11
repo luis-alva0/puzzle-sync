@@ -122,8 +122,8 @@ del contorno exterior tienen el lado de fuera recto.
 contornea. **FR-009 a FR-013 ya se cumplen.** Esta fase se reduce a lo que falta —el fondo— y a
 confirmar que el cambio de reparto no rompió lo que ya funcionaba.
 
-- [ ] T022 [US2] Cambiar el fondo del tablero en `components/BoardCanvas.tsx` del gris oscuro actual a una superficie neutra tipo cartón, que no compita con las piezas (FR-014)
-- [ ] T023 [US2] Revisar en `components/BoardCanvas.tsx` que el contorno y la sombra de cada pieza siguen distinguiéndose sobre el fondo nuevo, ajustando opacidad y grosor si el cambio de fondo los deja invisibles (FR-013)
+- [X] T022 [US2] Cambiar el fondo del tablero en `components/BoardCanvas.tsx` del gris oscuro actual a una superficie neutra tipo cartón, que no compita con las piezas (FR-014)
+- [X] T023 [US2] Revisar en `components/BoardCanvas.tsx` que el contorno y la sombra de cada pieza siguen distinguiéndose sobre el fondo nuevo, ajustando opacidad y grosor si el cambio de fondo los deja invisibles (FR-013)
 - [ ] T024 [US2] Verificar visualmente sobre una sala real que las cuatro esquinas tienen dos lados rectos, que las piezas del borde tienen recto el lado exterior y que dos vecinas encajan sin hueco ni superposición (FR-009, FR-010, FR-011, SC-001, SC-008) — **requiere navegador**
 - [ ] T025 [US2] Verificar que cada pieza muestra su porción de imagen recortada por la silueta, lengüetas incluidas, y no un rectángulo (FR-012); y que **ninguna pieza aparece girada** ni existe control alguno para rotarla (FR-004, FR-005) — **requiere navegador**
 

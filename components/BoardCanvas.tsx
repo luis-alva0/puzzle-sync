@@ -26,6 +26,14 @@ import type { Piece, PlayerSummary } from '@/types/board';
  * `release_piece`. Dos piezas encajan por su posición de celda, no por si sus formas embonan.
  */
 
+/**
+ * Fondo del tablero: cartón claro, como en las referencias de jigsawexplorer.
+ *
+ * Neutro y de valor medio a propósito (FR-014). Un fondo muy oscuro o muy claro compite con las
+ * piezas: las zonas de la foto con ese mismo valor se funden con el tablero y la silueta se pierde.
+ */
+const BOARD_BACKGROUND = '#a1836a';
+
 interface BoardCanvasProps {
   pieces: Piece[];
   /** UUID del rompecabezas: es la semilla del generador de formas (research R3 de 002). */
@@ -123,14 +131,16 @@ export function BoardCanvas({
 
       context.setTransform(1, 0, 0, 1, 0, 0);
       context.clearRect(0, 0, canvas.width, canvas.height);
-      context.fillStyle = '#0d0f15';
+      // Superficie neutra tipo cartón (FR-014). El gris oscuro anterior competía con las piezas:
+      // sobre un fondo casi negro, las zonas oscuras de la foto se confundían con el tablero.
+      context.fillStyle = BOARD_BACKGROUND;
       context.fillRect(0, 0, canvas.width, canvas.height);
 
       context.setTransform(scale, 0, 0, scale, offsetX, offsetY);
 
       // T020: el rectángulo del área central, que es el hueco real que deja la banda. Antes se
       // dibujaba la silueta del rompecabezas resuelto en el origen, que ya no es donde está.
-      context.strokeStyle = 'rgba(255,255,255,0.12)';
+      context.strokeStyle = 'rgba(0,0,0,0.10)';
       context.lineWidth = 2 / scale;
       context.strokeRect(board.holeX, board.holeY, board.holeWidth, board.holeHeight);
 
@@ -174,18 +184,32 @@ export function BoardCanvas({
             PIECE_SIZE + overflow * 2,
           );
         } else {
-          context.fillStyle = '#232735';
+          context.fillStyle = '#c9bfae';
           context.fillRect(-overflow, -overflow, PIECE_SIZE + overflow * 2, PIECE_SIZE + overflow * 2);
         }
         context.restore();
 
         // Contorno con el path, no con strokeRect: la pieza ya no es un rectángulo.
+        //
+        // Sobre el cartón claro hace falta más contraste que sobre el fondo oscuro de antes: un
+        // contorno oscuro fino y una sombra corta, que es lo que despega la pieza del tablero y
+        // deja leer su silueta (FR-013). Las piezas ya unidas llevan el contorno más tenue para
+        // que un grupo se lea como un bloque y no como piezas sueltas pegadas.
         const inGroup = groupSizes.get(piece.groupId) ?? 1;
         context.save();
         context.translate(piece.x, piece.y);
-        context.strokeStyle = inGroup > 1 ? 'rgba(0,0,0,0.18)' : 'rgba(0,0,0,0.55)';
-        context.lineWidth = 1 / scale;
+
+        if (inGroup === 1) {
+          context.shadowColor = 'rgba(0,0,0,0.35)';
+          context.shadowBlur = 6 / scale;
+          context.shadowOffsetY = 2 / scale;
+        }
+        context.strokeStyle = inGroup > 1 ? 'rgba(0,0,0,0.30)' : 'rgba(0,0,0,0.65)';
+        context.lineWidth = (inGroup > 1 ? 1 : 1.5) / scale;
         context.stroke(path);
+        context.shadowColor = 'transparent';
+        context.shadowBlur = 0;
+        context.shadowOffsetY = 0;
 
         // Estado ocupado (FR-012 de 001): contorno y alias de quien la tiene.
         if (piece.capturedBy) {
@@ -202,7 +226,7 @@ export function BoardCanvas({
           context.textBaseline = 'bottom';
           const label = ` ${alias} `;
           const metrics = context.measureText(label);
-          context.fillStyle = 'rgba(0,0,0,0.7)';
+          context.fillStyle = 'rgba(0,0,0,0.75)';
           context.fillRect(piece.x, piece.y - 18 / scale, metrics.width, 16 / scale);
           context.fillStyle = '#fbbf24';
           context.fillText(label, piece.x, piece.y - 4 / scale);
