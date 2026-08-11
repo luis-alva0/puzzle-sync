@@ -92,12 +92,26 @@ export function BoardCanvas({
     };
   }, [imageUrl]);
 
-  // La rejilla de bordes solo cambia si cambian el rompecabezas o su cuadrícula, así que se
-  // calcula una vez y no en cada frame.
-  const edgeGrid = useMemo(
-    () => buildEdgeGrid(seedFromUuid(puzzleId), gridRows, gridCols),
-    [puzzleId, gridRows, gridCols],
-  );
+  /*
+   * Rejilla de bordes y **caché de siluetas**, calculadas una vez por rompecabezas.
+   *
+   * Antes se llamaba a `piecePath(...)` dentro del bucle de piezas, dentro del bucle de frames:
+   * con 150 piezas a 60 fps eran 9 000 objetos `Path2D` por segundo, y con 500 piezas, 30 000,
+   * cada uno retrazando sus curvas Bézier. Trabajo íntegramente repetido: la forma de una pieza
+   * depende de su celda y de la semilla, y ninguna de las dos cambia durante la partida.
+   *
+   * Es lo que hace alcanzable SC-006 (50 fps con 150 piezas).
+   */
+  const piecePaths = useMemo(() => {
+    const grid = buildEdgeGrid(seedFromUuid(puzzleId), gridRows, gridCols);
+    const paths: Path2D[] = [];
+    for (let row = 0; row < gridRows; row++) {
+      for (let col = 0; col < gridCols; col++) {
+        paths.push(piecePath(pieceEdges(grid, row, col), PIECE_SIZE));
+      }
+    }
+    return paths;
+  }, [puzzleId, gridRows, gridCols]);
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -176,10 +190,7 @@ export function BoardCanvas({
       const sourceOverflowY = image ? (overflow / PIECE_SIZE) * sourcePieceHeight : 0;
 
       for (const piece of piecesRef.current) {
-        const path = piecePath(
-          pieceEdges(edgeGrid, piece.gridRow, piece.gridCol),
-          PIECE_SIZE,
-        );
+        const path = piecePaths[piece.gridRow * gridCols + piece.gridCol]!;
 
         context.save();
         context.translate(piece.x, piece.y);
@@ -256,7 +267,7 @@ export function BoardCanvas({
     return () => {
       if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
     };
-  }, [gridRows, gridCols, edgeGrid]);
+  }, [gridRows, gridCols, piecePaths]);
 
   /** Traduce coordenadas de pantalla a unidades de tablero. */
   function toBoard(event: React.PointerEvent<HTMLCanvasElement>): { x: number; y: number } {

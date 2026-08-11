@@ -140,6 +140,11 @@ a la siguiente.
 | `lateral (select gen_random_uuid())` sin referenciar la fila | La subconsulta no está correlacionada: Postgres la evalúa **una vez** y todas las filas salen con el mismo UUID | CTE `as materialized`, como en `0011_fix_create_room_piece_ids.sql` |
 | Una columna de `returns table` con el mismo nombre que una columna de la tabla | `42702 column reference "x" is ambiguous` | Cualificar la columna (`rp.room_id`), no usar `#variable_conflict` |
 | `[auth.email] enable_signup = false` | `422 Email logins are disabled`: nadie puede iniciar sesión con contraseña, tampoco el administrador | No cierra el registro, apaga el proveedor entero |
+| Espaciar piezas usando `PIECE_SIZE` | Las lengüetas invaden a la vecina: piezas visualmente solapadas | Una pieza ocupa `PIECE_SIZE + 2 × tabOverflow`, no `PIECE_SIZE`. Ver `SLOT_PITCH` en `lib/puzzle/board-layout.ts` |
+| Centrar un rectángulo sin alinearlo a la rejilla | El área central queda a caballo entre dos huecos y la banda la invade | Forzar grosor de banda par: centra y alinea a la vez |
+| Cambiar el origen del canvas solo en el dibujado | El tablero se ve perfecto y el arrastre agarra donde no hay pieza | La transformación de `draw` y la de `toBoard` leen el mismo `dataset`; tocar una sin la otra las separa |
+| Poner un umbral estadístico a ojo | La prueba falla la mitad de las veces sin que nada esté roto | Medir primero la distribución. El 5 % de adyacencia inicial resultó estar **por debajo** de lo que da el azar |
+| Comprobar el encaje contra la posición correcta | Se mide algo que no es lo que decide el encaje | `release_piece` compara la **separación entre vecinas**, no la distancia a un punto fijo: el rompecabezas se puede armar en cualquier parte del tablero |
 
 ## Flujo de trabajo
 

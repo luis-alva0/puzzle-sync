@@ -179,17 +179,17 @@ desaparece al retirarlo, sin interrumpir la partida.
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T042 [P] Cachear los `Path2D` en `components/BoardCanvas.tsx` calculando uno por celda dentro del mismo `useMemo` que ya construye la rejilla de bordes, en lugar de reconstruirlos para cada pieza en cada frame (research R5)
-- [ ] T043 [P] Añadir en `app/rooms/[code]/page.tsx` el aviso de pantalla estrecha por debajo de 1024 px, que informa sin bloquear (FR-034, A-008)
+- [X] T042 [P] Cachear los `Path2D` en `components/BoardCanvas.tsx` calculando uno por celda dentro del mismo `useMemo` que ya construye la rejilla de bordes, en lugar de reconstruirlos para cada pieza en cada frame (research R5)
+- [X] T043 [P] Añadir en `app/rooms/[code]/page.tsx` el aviso de pantalla estrecha por debajo de 1024 px, que informa sin bloquear (FR-034, A-008)
 - [ ] T044 Medir el rendimiento con 150 piezas y confirmar SC-006 (50 fps o más durante el arrastre) — **requiere navegador**
 - [ ] T045 Medir el rendimiento con 500 piezas y confirmar que las piezas de 31 px se ven enteras y sin solapes (SC-009) — **requiere navegador**
 - [ ] T046 Confirmar SC-010 sobre una sala real: capturar el estado con `GET /state`, redimensionar la ventana, volver a capturarlo y comprobar que **ninguna coordenada cambió** (FR-033, SC-010) — **requiere navegador**
 - [ ] T047 Confirmar SC-003 abriendo la misma sala en dos navegadores **con ventanas de distinto tamaño**: la disposición debe ser la misma, cambiando solo la escala — **requiere navegador**
 - [ ] T048 Confirmar SC-005 adelantando `started_at` cinco minutos en la base de datos y comprobando que un segundo navegador muestra el mismo tiempo, incluso con la hora del sistema cambiada — **requiere navegador**
-- [ ] T049 Ejecutar `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:db` y `npm run build`, confirmando que las pruebas de integración —que construyen salas con el reparto nuevo— siguen en verde (FR-028)
+- [X] T049 Ejecutar `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:db` y `npm run build`, confirmando que las pruebas de integración —que construyen salas con el reparto nuevo— siguen en verde (FR-028)
 - [ ] T050 Ejecutar la validación completa de [quickstart.md](./quickstart.md), los 9 escenarios — **requiere navegador**
-- [ ] T051 Revisar el cumplimiento de la constitución antes del merge: sin dependencias nuevas, sin variables de entorno nuevas, sin migraciones, y commits en formato `tipo(Txxx):`
-- [ ] T052 Actualizar la tabla de trampas conocidas de `README.md` con lo que aparezca durante la implementación
+- [X] T051 Revisar el cumplimiento de la constitución antes del merge: sin dependencias nuevas, sin variables de entorno nuevas, sin migraciones, y commits en formato `tipo(Txxx):`
+- [X] T052 Actualizar la tabla de trampas conocidas de `README.md` con lo que aparezca durante la implementación
 
 ---
 
@@ -269,3 +269,41 @@ riesgo se introduce aquí y se descubre aquí.
 
 **T042 no es cosmético.** Con 150 piezas a 60 fps hoy se construyen 9 000 objetos `Path2D` por
 segundo. Si SC-006 no se cumple en T044, este es el primer sitio donde mirar.
+
+---
+
+## Estado de la implementación (2026-08-10)
+
+**44 de 52 tareas completadas.** Las 8 restantes necesitan un navegador y una persona mirando.
+
+| Tarea | Qué falta |
+|---|---|
+| T021 | Arrastrar una pieza y confirmar que el puntero agarra donde debe |
+| T024, T025 | Siluetas, lados rectos del contorno, recorte de la imagen, ausencia de rotación |
+| T041 | Que un movimiento ajeno llegue con la imagen de referencia visible |
+| T044, T045 | Rendimiento con 150 y con 500 piezas |
+| T046, T047, T048 | SC-010 (redimensionar), SC-003 (dos navegadores), SC-005 (cronómetro común) |
+| T050 | Los 9 escenarios de [quickstart.md](./quickstart.md) |
+
+**Verificado sin navegador**: 220 pruebas unitarias (127 → 220), 38 de integración, lint,
+typecheck, build y `check:secrets`. Y una comprobación que vale más que las demás: sobre una sala
+**recién creada de 150 piezas**, las posiciones que guardó el servidor caen todas dentro del
+tablero que dibuja el canvas, **ninguna en el área central y ninguna solapada**. Es la garantía de
+que `boardSize()` significa lo mismo a los dos lados.
+
+### Lo que la implementación desmintió del diseño
+
+Tres números y una regla del diseño resultaron equivocados al programar, y se corrigieron en sus
+documentos en lugar de dejarlos:
+
+1. **La tabla de tamaños de research** era un 10-15 % optimista. No contaba con el grosor mínimo
+   de banda ni con la alineación del área central a la rejilla. Las cifras de ahora están medidas.
+2. **El umbral de adyacencia del contrato**, al 5 %, estaba *por debajo* de lo que produce una
+   permutación uniforme (5,4 % de media, hasta 9,1 %). Habría fallado la mitad de las veces sin
+   que nada estuviera roto. Ahora es 15 %, con un control negativo que confirma que detecta el
+   caso sin barajar.
+3. **La garantía 3 del contrato** medía la distancia de cada pieza a su posición correcta, pero
+   `release_piece` encaja de forma **relativa** entre vecinas. Se comprobaba algo que no decide el
+   encaje. La rejilla ya garantiza lo correcto por construcción.
+4. **T029** se implementó en `app/rooms/[code]/page.tsx` y no en `components/Board.tsx`: es donde
+   llega la respuesta de estado con `serverTime`, y `Board` nunca la ve.
