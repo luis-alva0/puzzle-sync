@@ -105,3 +105,19 @@ a {
     transition: none !important;
   }
 }
+
+/*
+ * Aviso de pantalla estrecha del tablero (FR-034).
+ *
+ * Se resuelve con una media query y no con `matchMedia` en JavaScript: es una decisión puramente
+ * de presentación, y hacerla en CSS ahorra estado, un listener y su limpieza.
+ */
+.narrow-only {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .narrow-only {
+    display: block;
+  }
+}

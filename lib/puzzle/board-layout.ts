@@ -108,9 +108,8 @@ export function boardSize(gridRows: number, gridCols: number): BoardSize {
   const width = slotCols * SLOT_PITCH;
   const height = slotRows * SLOT_PITCH;
 
-  // El área central conserva la proporción del rompecabezas (FR-003): se toma el mayor rectángulo
-  // con esa proporción que quepa en los huecos reservados. Los huecos se reservaron redondeando
-  // hacia arriba, así que el resultado nunca queda por debajo del tamaño armado.
+  // Los huecos del área central se reservaron redondeando hacia arriba, así que el área nunca
+  // queda por debajo del rompecabezas armado (FR-003).
   const holeWidth = holeSlotCols * SLOT_PITCH;
   const holeHeight = holeSlotRows * SLOT_PITCH;
 
@@ -140,8 +139,9 @@ export interface Slot {
  * determinista; el desorden lo introduce la permutación de `layoutPieces`, no este recorrido.
  */
 export function bandSlots(board: BoardSize): Slot[] {
-  const firstHoleCol = Math.round(board.holeX / SLOT_PITCH);
-  const firstHoleRow = Math.round(board.holeY / SLOT_PITCH);
+  // Exacto sin redondear: `boardSize` fuerza que la banda tenga el mismo grosor a ambos lados.
+  const firstHoleCol = (board.slotCols - board.holeSlotCols) / 2;
+  const firstHoleRow = (board.slotRows - board.holeSlotRows) / 2;
   const lastHoleCol = firstHoleCol + board.holeSlotCols - 1;
   const lastHoleRow = firstHoleRow + board.holeSlotRows - 1;
 
@@ -200,9 +200,8 @@ function shuffledIndices(count: number, seed: number): number[] {
  * disposición inicial por construcción, sin necesidad de comprobar ni corregir nada.
  */
 export function layoutPieces(gridRows: number, gridCols: number, seed = 1): ScatteredPiece[] {
-  assertGrid(gridRows, gridCols);
+  const board = boardSize(gridRows, gridCols); // valida la cuadrícula
 
-  const board = boardSize(gridRows, gridCols);
   const slots = bandSlots(board);
   const pieceCount = gridRows * gridCols;
 
@@ -218,13 +217,12 @@ export function layoutPieces(gridRows: number, gridCols: number, seed = 1): Scat
   // porque las lengüetas sobresalen. Sin este desplazamiento las piezas de la primera fila y la
   // primera columna asoman fuera del tablero.
   const overflow = (PIECE_BOUNDS - PIECE_SIZE) / 2;
-  const slack = SLOT_PITCH - PIECE_BOUNDS;
 
   const pieces: ScatteredPiece[] = [];
-  let index = 0;
 
   for (let gridRow = 0; gridRow < gridRows; gridRow++) {
     for (let gridCol = 0; gridCol < gridCols; gridCol++) {
+      const index = gridRow * gridCols + gridCol;
       const slot = slots[order[index]!]!;
 
       // Dos valores independientes por pieza, derivados de la posición en el reparto.
@@ -233,11 +231,10 @@ export function layoutPieces(gridRows: number, gridCols: number, seed = 1): Scat
 
       // La caja envolvente queda dentro del hueco: `slot.x + [0, slack]`. La sacudida se mueve por
       // esa holgura y por eso nunca puede invadir el hueco vecino.
-      const x = slot.x + overflow + noiseX * slack;
-      const y = slot.y + overflow + noiseY * slack;
+      const x = slot.x + overflow + noiseX * SLOT_SLACK;
+      const y = slot.y + overflow + noiseY * SLOT_SLACK;
 
       pieces.push({ gridRow, gridCol, x, y });
-      index++;
     }
   }
 

@@ -42,7 +42,6 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
 
   // Estado local de la barra: nada de esto se comparte ni se persiste (FR-024).
   const [referenceVisible, setReferenceVisible] = useState(false);
-  const [narrowScreen, setNarrowScreen] = useState(false);
   const shellRef = useRef<HTMLElement | null>(null);
 
   /*
@@ -53,21 +52,6 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
    * porque ambos se corrigen contra la misma referencia.
    */
   const [clockOffsetMs, setClockOffsetMs] = useState(0);
-
-  /*
-   * Aviso de pantalla estrecha (FR-034).
-   *
-   * Se decide por el ancho de la ventana y no por el `user-agent`: lo que impide armar es que la
-   * banda perimetral no quepa, y eso le pasa igual a una ventana de escritorio empequeñecida.
-   * Avisa, no bloquea (A-008).
-   */
-  useEffect(() => {
-    const query = window.matchMedia('(max-width: 1023px)');
-    const sync = () => setNarrowScreen(query.matches);
-    sync();
-    query.addEventListener('change', sync);
-    return () => query.removeEventListener('change', sync);
-  }, []);
 
   const presenceRef = useRef<PresenceHandle | null>(null);
   const [channel, setChannel] = useState<RoomChannelHandle | null>(null);
@@ -252,16 +236,14 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
         fullscreenTarget={shellRef}
       />
 
-      {narrowScreen && (
-        <p
-          className="card"
-          role="status"
-          style={{ margin: 0, padding: '0.6rem 0.8rem', fontSize: '0.85rem' }}
-        >
-          Esta pantalla es estrecha para armar un rompecabezas. La experiencia está pensada para
-          escritorio o tableta, pero puedes seguir.
-        </p>
-      )}
+      <p
+        className="card narrow-only"
+        role="status"
+        style={{ margin: 0, padding: '0.6rem 0.8rem', fontSize: '0.85rem' }}
+      >
+        Esta pantalla es estrecha para armar un rompecabezas. La experiencia está pensada para
+        escritorio o tableta, pero puedes seguir.
+      </p>
 
       {error && (
         <p className="card error" role="alert" style={{ margin: 0 }}>

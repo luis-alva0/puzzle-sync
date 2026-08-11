@@ -98,7 +98,7 @@ export function BoardToolbar({
         currentPlayerId={currentPlayerId}
       />
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', margin: '0 auto' }}>
+      <div style={{ margin: '0 auto' }}>
         <ReferenceImage
           visible={referenceVisible}
           onVisibleChange={onReferenceVisibleChange}
@@ -121,19 +121,13 @@ export function BoardToolbar({
         style={{ padding: '0.35rem 0.6rem', lineHeight: 1 }}
       >
         <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
-          <g stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" fill="none">
-            {isFullscreen ? (
-              <>
-                <path d="M8 3v5H3M12 17v-5h5" />
-                <path d="M8 8L3 3M12 12l5 5" />
-              </>
-            ) : (
-              <>
-                <path d="M3 8V3h5M17 12v5h-5" />
-                <path d="M3 3l5 5M17 17l-5-5" />
-              </>
-            )}
-          </g>
+          <path
+            d={isFullscreen ? 'M8 3v5H3M12 17v-5h5M8 8L3 3M12 12l5 5' : 'M3 8V3h5M17 12v5h-5M3 3l5 5M17 17l-5-5'}
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            fill="none"
+          />
         </svg>
       </button>
     </header>

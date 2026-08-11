@@ -21,21 +21,12 @@ interface ReferenceImageProps {
 }
 
 export function ReferenceImage({ visible, onVisibleChange, imageUrl }: ReferenceImageProps) {
-  /*
-   * Que la URL exista no significa que la imagen cargue: puede haber caducado la firma o fallar
-   * la red. El icono tiene que decirlo, en lugar de ofrecer una ayuda que abre un hueco vacío.
-   *
-   * Se comprueba aquí con una carga propia en lugar de propagar el resultado desde el canvas por
-   * tres componentes. No cuesta una descarga extra: el canvas ya pidió esa misma URL y el
-   * navegador la sirve de su caché.
-   */
-  // Se guarda **qué** URL falló, no un booleano: así cambiar de rompecabezas reinicia el estado
-  // solo, sin tener que ponerlo a `false` dentro del efecto.
+  // Que la URL exista no significa que la imagen cargue. Se guarda **cuál** falló, no un booleano,
+  // para que cambiar de rompecabezas reinicie el estado sin tocarlo dentro del efecto.
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!imageUrl) return;
-
     const probe = new Image();
     probe.onerror = () => setFailedUrl(imageUrl);
     probe.src = imageUrl;
@@ -46,76 +37,44 @@ export function ReferenceImage({ visible, onVisibleChange, imageUrl }: Reference
 
   const available = Boolean(imageUrl) && failedUrl !== imageUrl;
 
-  // En táctil no hay «posar el ratón»: el toque alterna (FR-023). Se distingue del ratón por el
-  // tipo de puntero del propio evento, no por el ancho de la ventana.
-  const [touchLatched, setTouchLatched] = useState(false);
-
-  if (!available) {
-    return (
-      <span
-        role="img"
-        aria-label="La imagen de referencia no está disponible"
-        title="No se pudo cargar la imagen del rompecabezas"
-        style={{ opacity: 0.4, padding: '0.35rem 0.6rem', lineHeight: 1 }}
-      >
-        <ImageIcon />
-      </span>
-    );
-  }
-
   return (
     <button
       type="button"
+      disabled={!available}
       aria-pressed={visible}
-      aria-label="Ver la imagen completa del rompecabezas"
-      title="Ver la imagen completa"
+      aria-label={
+        available
+          ? 'Ver la imagen completa del rompecabezas'
+          : 'La imagen de referencia no está disponible'
+      }
+      title={available ? 'Ver la imagen completa' : 'No se pudo cargar la imagen'}
       style={{ padding: '0.35rem 0.6rem', lineHeight: 1, opacity: visible ? 1 : 0.85 }}
-      onPointerEnter={(event) => {
-        if (event.pointerType !== 'touch') onVisibleChange(true);
-      }}
-      onPointerLeave={(event) => {
-        if (event.pointerType !== 'touch' && !touchLatched) onVisibleChange(false);
-      }}
-      onClick={(event) => {
-        // El clic solo manda en táctil y con teclado; con ratón ya lo resuelve el hover.
-        if (event.detail === 0 || touchLatched || !visible) {
-          const next = !visible;
-          setTouchLatched(next);
-          onVisibleChange(next);
-        }
-      }}
-      onBlur={() => {
-        if (touchLatched) return;
-        onVisibleChange(false);
-      }}
+      // Con ratón manda el hover (FR-021, FR-022); `pointerType` deja fuera el táctil, así que el
+      // clic solo llega de un dedo o del teclado y ahí alterna (FR-023).
+      onPointerEnter={(event) => event.pointerType !== 'touch' && onVisibleChange(true)}
+      onPointerLeave={(event) => event.pointerType !== 'touch' && onVisibleChange(false)}
+      onClick={() => onVisibleChange(!visible)}
     >
-      <ImageIcon />
+      <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+        <rect
+          x="2.5"
+          y="4"
+          width="15"
+          height="12"
+          rx="1.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+        />
+        <circle cx="7" cy="8" r="1.3" fill="currentColor" />
+        <path
+          d="M4 14l3.5-4 2.5 3 2-2.5L16 14"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinejoin="round"
+        />
+      </svg>
     </button>
-  );
-}
-
-/** Marco con una montaña, el icono habitual de «imagen». En SVG para no añadir dependencias. */
-function ImageIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
-      <rect
-        x="2.5"
-        y="4"
-        width="15"
-        height="12"
-        rx="1.5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
-      />
-      <circle cx="7" cy="8" r="1.3" fill="currentColor" />
-      <path
-        d="M4 14l3.5-4 2.5 3 2-2.5L16 14"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-      />
-    </svg>
   );
 }
