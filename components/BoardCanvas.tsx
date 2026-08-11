@@ -44,6 +44,8 @@ interface BoardCanvasProps {
   players: PlayerSummary[];
   /** `room_players.id` de quien mira, para distinguir sus capturas de las ajenas. */
   currentPlayerId: string | null;
+  /** Dibuja la imagen completa en el área central como ayuda (FR-021). */
+  showReference?: boolean;
   /** Se llama con las coordenadas en unidades de tablero. */
   onPointerDownBoard?: (x: number, y: number) => void;
   onPointerMoveBoard?: (x: number, y: number) => void;
@@ -58,6 +60,7 @@ export function BoardCanvas({
   imageUrl,
   players,
   currentPlayerId,
+  showReference = false,
   onPointerDownBoard,
   onPointerMoveBoard,
   onPointerUpBoard,
@@ -69,6 +72,7 @@ export function BoardCanvas({
 
   const aliasRef = useRef(new Map<string, string>());
   const currentPlayerRef = useRef(currentPlayerId);
+  const showReferenceRef = useRef(showReference);
 
   // Las props se copian a refs para que el bucle de rAF lea siempre lo último sin tener que
   // reiniciarse en cada render. La copia va en un efecto, no en el cuerpo: mutar una ref
@@ -77,6 +81,7 @@ export function BoardCanvas({
     piecesRef.current = pieces;
     aliasRef.current = new Map(players.map((player) => [player.id, player.alias]));
     currentPlayerRef.current = currentPlayerId;
+    showReferenceRef.current = showReference;
   });
 
   useEffect(() => {
@@ -145,6 +150,17 @@ export function BoardCanvas({
       context.strokeRect(board.holeX, board.holeY, board.holeWidth, board.holeHeight);
 
       const image = imageRef.current;
+
+      // Ayuda de imagen (FR-021), **antes de las piezas**: así las que ya están colocadas en el
+      // centro se ven por encima de la referencia en lugar de quedar tapadas, que es lo que uno
+      // quiere al comparar (research R7).
+      if (showReferenceRef.current && image) {
+        context.save();
+        context.globalAlpha = 0.92;
+        context.drawImage(image, board.holeX, board.holeY, board.holeWidth, board.holeHeight);
+        context.restore();
+      }
+
       const sourcePieceWidth = image ? image.naturalWidth / gridCols : 0;
       const sourcePieceHeight = image ? image.naturalHeight / gridRows : 0;
 

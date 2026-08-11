@@ -142,17 +142,17 @@ legibles y que ninguno tapa piezas.
 **Se implementa antes que la US3** aunque tenga la misma prioridad: el icono que dispara la imagen
 de referencia vive en esta barra, así que la US3 no se puede probar sin ella.
 
-- [ ] T026 [P] [US4] Crear `lib/format/duration.ts` con el formateo del tiempo transcurrido como `m:ss`, pasando a `h:mm:ss` a partir de una hora
-- [ ] T027 [P] [US4] Crear `tests/unit/duration.test.ts` cubriendo el cero, el cambio de minuto, el paso a horas y los valores negativos, que pueden darse si el desfase de reloj se estima mal
-- [ ] T028 [US4] Crear `components/BoardToolbar.tsx` con la maqueta de la barra: menú a la izquierda, iconos al centro, estado y controles a la derecha, como elemento del DOM situado **encima** del canvas y no dibujado dentro (research R9, FR-015)
-- [ ] T029 [US4] Calcular en `components/Board.tsx` el desfase entre el reloj local y el del servidor a partir de `serverTime` de la respuesta de estado, y guardarlo para el cronómetro (research R6)
-- [ ] T030 [US4] Crear `components/ElapsedTime.tsx` que cuente desde `startedAt` corrigiendo con el desfase, se actualice cada segundo y **se detenga al completarse** el rompecabezas (FR-017, FR-018, FR-019)
-- [ ] T031 [US4] Integrar `components/ConnectionStatus.tsx` dentro de la barra y retirarlo de donde esté hoy, para que no aparezca duplicado (FR-016, FR-029)
-- [ ] T032 [US4] Añadir a `components/BoardToolbar.tsx` el control de pantalla completa sobre el contenedor del tablero, tomando el estado del evento `fullscreenchange` y no de un booleano propio, para que el botón siga siendo correcto si el navegador deniega la petición o el usuario sale con Escape (research R8, FR-020)
-- [ ] T033 [US4] Crear `components/BoardMenu.tsx` con las opciones provisionales de FR-026 —ver y copiar el código de sala, jugadores conectados, salir de la sala y ayuda— que se cierra al elegir una o al pulsar fuera (FR-027) (FR-025)
-- [ ] T034 [US4] Mover el contenido de `components/PlayerList.tsx` dentro del menú y retirarlo de la pantalla principal, sin duplicarlo (FR-029)
-- [ ] T035 [US4] Montar la barra en `app/rooms/[code]/page.tsx` de modo que ocupe la parte superior y el canvas reciba la altura restante, sin superponerse (FR-015)
-- [ ] T036 [P] [US4] Añadir etiquetas accesibles y navegación por teclado a los controles de `components/BoardToolbar.tsx` y `components/BoardMenu.tsx`: son botones reales del DOM precisamente para poder tenerlas
+- [X] T026 [P] [US4] Crear `lib/format/duration.ts` con el formateo del tiempo transcurrido como `m:ss`, pasando a `h:mm:ss` a partir de una hora
+- [X] T027 [P] [US4] Crear `tests/unit/duration.test.ts` cubriendo el cero, el cambio de minuto, el paso a horas y los valores negativos, que pueden darse si el desfase de reloj se estima mal
+- [X] T028 [US4] Crear `components/BoardToolbar.tsx` con la maqueta de la barra: menú a la izquierda, iconos al centro, estado y controles a la derecha, como elemento del DOM situado **encima** del canvas y no dibujado dentro (research R9, FR-015)
+- [X] T029 [US4] Calcular en `app/rooms/[code]/page.tsx` el desfase entre el reloj local y el del servidor a partir de `serverTime` de la respuesta de estado, y guardarlo para el cronómetro (research R6). *La tarea decía `components/Board.tsx`; se implementó en la página porque es donde llega la respuesta y `Board` nunca la ve.*
+- [X] T030 [US4] Crear `components/ElapsedTime.tsx` que cuente desde `startedAt` corrigiendo con el desfase, se actualice cada segundo y **se detenga al completarse** el rompecabezas (FR-017, FR-018, FR-019)
+- [X] T031 [US4] Integrar `components/ConnectionStatus.tsx` dentro de la barra y retirarlo de donde esté hoy, para que no aparezca duplicado (FR-016, FR-029)
+- [X] T032 [US4] Añadir a `components/BoardToolbar.tsx` el control de pantalla completa sobre el contenedor del tablero, tomando el estado del evento `fullscreenchange` y no de un booleano propio, para que el botón siga siendo correcto si el navegador deniega la petición o el usuario sale con Escape (research R8, FR-020)
+- [X] T033 [US4] Crear `components/BoardMenu.tsx` con las opciones provisionales de FR-026 —ver y copiar el código de sala, jugadores conectados, salir de la sala y ayuda— que se cierra al elegir una o al pulsar fuera (FR-027) (FR-025)
+- [X] T034 [US4] Mover el contenido de `components/PlayerList.tsx` dentro del menú y retirarlo de la pantalla principal, sin duplicarlo (FR-029)
+- [X] T035 [US4] Montar la barra en `app/rooms/[code]/page.tsx` de modo que ocupe la parte superior y el canvas reciba la altura restante, sin superponerse (FR-015)
+- [X] T036 [P] [US4] Añadir etiquetas accesibles y navegación por teclado a los controles de `components/BoardToolbar.tsx` y `components/BoardMenu.tsx`: son botones reales del DOM precisamente para poder tenerlas
 
 **Checkpoint**: la barra está completa y el cronómetro es común a todos los jugadores.
 

@@ -56,7 +56,8 @@ interface BoardProps {
   imageUrl: string;
   playerId: string;
   channel: RoomChannelHandle | null;
-  onReady?: (api: BoardApi) => void;
+  onReady?: (api: BoardApi) => void;  /** Muestra la imagen completa en el área central como ayuda. Local a cada jugador. */
+  showReference?: boolean;
 }
 
 interface DragState {
@@ -78,6 +79,7 @@ export function Board({
   playerId,
   channel,
   onReady,
+  showReference = false,
 }: BoardProps) {
   const [sync, setSync] = useState<BoardSyncState>(() => createBoardSync(initialPieces));
   const [denied, setDenied] = useState<string | null>(null);
@@ -225,6 +227,7 @@ export function Board({
           imageUrl={imageUrl}
           players={players}
           currentPlayerId={playerId}
+          showReference={showReference}
           onPointerDownBoard={(x, y) => void handlePointerDown(x, y)}
           onPointerMoveBoard={handlePointerMove}
           onPointerUpBoard={(x, y) => void handlePointerUp(x, y)}

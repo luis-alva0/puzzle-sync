@@ -4,9 +4,8 @@ import { use, useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AliasForm } from '@/components/AliasForm';
 import { Board, type BoardApi } from '@/components/Board';
+import { BoardToolbar } from '@/components/BoardToolbar';
 import { CompletionBanner } from '@/components/CompletionBanner';
-import { ConnectionStatus } from '@/components/ConnectionStatus';
-import { PlayerList } from '@/components/PlayerList';
 import { ApiError, fetchRoomState, joinRoom } from '@/lib/api/client';
 import { subscribeToRoom, type RoomChannelHandle } from '@/lib/realtime/channel';
 import { startPresence, type PresenceHandle } from '@/lib/realtime/presence';
@@ -40,7 +39,35 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
   const [status, setStatus] = useState<ConnectionStatusValue>('reconnecting');
   const [error, setError] = useState<{ code: string; message: string } | null>(null);
   const [joining, setJoining] = useState(false);
-  const [copied, setCopied] = useState(false);
+
+  // Estado local de la barra: nada de esto se comparte ni se persiste (FR-024).
+  const [referenceVisible, setReferenceVisible] = useState(false);
+  const [narrowScreen, setNarrowScreen] = useState(false);
+  const shellRef = useRef<HTMLElement | null>(null);
+
+  /*
+   * Desfase entre el reloj de este navegador y el del servidor (research R6).
+   *
+   * `GET /state` ya devuelve `serverTime`, así que el cronómetro común no necesita ningún endpoint
+   * ni campo nuevo. Con este desfase, dos jugadores con relojes distintos convergen al mismo valor
+   * porque ambos se corrigen contra la misma referencia.
+   */
+  const [clockOffsetMs, setClockOffsetMs] = useState(0);
+
+  /*
+   * Aviso de pantalla estrecha (FR-034).
+   *
+   * Se decide por el ancho de la ventana y no por el `user-agent`: lo que impide armar es que la
+   * banda perimetral no quepa, y eso le pasa igual a una ventana de escritorio empequeñecida.
+   * Avisa, no bloquea (A-008).
+   */
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 1023px)');
+    const sync = () => setNarrowScreen(query.matches);
+    sync();
+    query.addEventListener('change', sync);
+    return () => query.removeEventListener('change', sync);
+  }, []);
 
   const presenceRef = useRef<PresenceHandle | null>(null);
   const [channel, setChannel] = useState<RoomChannelHandle | null>(null);
@@ -54,8 +81,10 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
 
   const reloadBoard = useCallback(async () => {
     try {
+      const receivedAt = Date.now();
       const state = await fetchRoomState(code);
       setBoard(state);
+      setClockOffsetMs(new Date(state.serverTime).getTime() - receivedAt);
       // Reemplazo completo: durante una caída se perdieron eventos irreproducibles (FR-023).
       boardApiRef.current?.replacePieces(state.pieces);
     } catch (cause) {
@@ -151,12 +180,6 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
     };
   }, [channel]);
 
-  async function copyInviteLink() {
-    await navigator.clipboard.writeText(window.location.origin + `/rooms/${code}`);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2_000);
-  }
-
   // --- Errores terminales: la sala no existe o está llena (FR-006, FR-008) ---
   if (error && (error.code === 'ROOM_NOT_FOUND' || error.code === 'ROOM_FULL')) {
     return (
@@ -200,97 +223,79 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
   }
 
   return (
-    // El tablero ocupa la ventana: el canvas recibe la altura que sobra y ajusta su escala a ella,
-    // que es lo que hace cierto que el tablero completo quepa siempre (FR-032).
+    // El tablero ocupa la ventana: la barra arriba y el canvas recibe la altura que sobra, que
+    // es lo que hace cierto que el tablero completo quepa siempre (FR-032). La barra va FUERA del
+    // canvas para no tapar piezas (FR-015).
     <main
+      ref={shellRef}
       style={{
         height: '100dvh',
         display: 'flex',
         flexDirection: 'column',
-        maxWidth: 1400,
-        margin: '0 auto',
-        padding: '1rem 1.25rem',
-        gap: '0.75rem',
+        padding: '0.6rem',
+        gap: '0.6rem',
+        background: 'var(--bg)',
       }}
     >
-      <header
-        style={{
-          display: 'flex',
-          alignItems: 'baseline',
-          gap: '1rem',
-          flexWrap: 'wrap',
-          marginBottom: '1.5rem',
-        }}
-      >
-        <h1 style={{ margin: 0, fontSize: '1.3rem' }}>
-          Sala{' '}
-          <code style={{ letterSpacing: '0.14em' }} aria-label={code.split('').join(' ')}>
-            {code}
-          </code>
-        </h1>
-        <button
-          type="button"
-          onClick={() => void copyInviteLink()}
-          aria-label={`Copiar el enlace de invitación de la sala ${code.split('').join(' ')}`}
+      <BoardToolbar
+        code={code}
+        status={status}
+        players={board?.players ?? []}
+        maxPlayers={board?.room.maxPlayers ?? 4}
+        currentPlayerId={playerId}
+        startedAt={board?.room.startedAt ?? null}
+        completedAt={board?.room.completedAt ?? null}
+        clockOffsetMs={clockOffsetMs}
+        referenceVisible={referenceVisible}
+        onReferenceVisibleChange={setReferenceVisible}
+        referenceAvailable={Boolean(board?.puzzle.imageUrl)}
+        fullscreenTarget={shellRef}
+      />
+
+      {narrowScreen && (
+        <p
+          className="card"
+          role="status"
+          style={{ margin: 0, padding: '0.6rem 0.8rem', fontSize: '0.85rem' }}
         >
-          {copied ? 'Enlace copiado' : 'Copiar enlace de invitación'}
-        </button>
-        <span style={{ marginLeft: 'auto' }}>
-          <ConnectionStatus status={status} />
-        </span>
-      </header>
+          Esta pantalla es estrecha para armar un rompecabezas. La experiencia está pensada para
+          escritorio o tableta, pero puedes seguir.
+        </p>
+      )}
 
       {error && (
-        <p className="card error" role="alert" style={{ marginBottom: '1rem' }}>
+        <p className="card error" role="alert" style={{ margin: 0 }}>
           {error.message}
         </p>
       )}
 
-      <div
-        style={{
-          flex: 1,
-          minHeight: 0,
-          display: 'grid',
-          gap: '1.25rem',
-          gridTemplateColumns: 'minmax(0,1fr) 280px',
-        }}
-      >
-        <section className="card" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-          {board?.room.status === 'completed' && board.room.completedAt && (
-            <CompletionBanner
-              startedAt={board.room.startedAt}
-              completedAt={board.room.completedAt}
-              pieceCount={board.pieces.length}
-              playerCount={board.players.length}
-            />
-          )}
-          {board ? (
-            <Board
-              initialPieces={board.pieces}
-              puzzleId={board.puzzle.id}
-              players={board.players}
-              gridRows={board.puzzle.gridRows}
-              gridCols={board.puzzle.gridCols}
-              imageUrl={board.puzzle.imageUrl}
-              playerId={playerId}
-              channel={channel}
-              onReady={handleBoardReady}
-            />
-          ) : (
-            <p className="muted" role="status" aria-live="polite" style={{ margin: 0 }}>
-              Cargando tablero…
-            </p>
-          )}
-        </section>
+      {board?.room.status === 'completed' && board.room.completedAt && (
+        <CompletionBanner
+          startedAt={board.room.startedAt}
+          completedAt={board.room.completedAt}
+          pieceCount={board.pieces.length}
+          playerCount={board.players.length}
+        />
+      )}
 
-        <aside>
-          <PlayerList
-            players={board?.players ?? []}
-            maxPlayers={board?.room.maxPlayers ?? 4}
-            currentPlayerId={playerId}
-          />
-        </aside>
-      </div>
+      {board ? (
+        <Board
+          initialPieces={board.pieces}
+          puzzleId={board.puzzle.id}
+          players={board.players}
+          gridRows={board.puzzle.gridRows}
+          gridCols={board.puzzle.gridCols}
+          imageUrl={board.puzzle.imageUrl}
+          playerId={playerId}
+          channel={channel}
+          onReady={handleBoardReady}
+          showReference={referenceVisible}
+        />
+      ) : (
+        <p className="muted" role="status" aria-live="polite" style={{ margin: 0 }}>
+          Cargando tablero…
+        </p>
+      )}
     </main>
   );
 }
