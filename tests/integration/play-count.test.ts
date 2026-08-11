@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterEach } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { adminClient, cleanupRoom, hasSupabase, setupRoom, skipReason, type TestRoom } from './helpers';
 import { generateRoomCode } from '@/lib/rooms/code';
-import { scatterPieces } from '@/lib/puzzle/geometry';
+import { layoutPieces } from '@/lib/puzzle/board-layout';
 
 /**
  * El contador de partidas (FR-013 de 003).
@@ -48,7 +48,7 @@ describe.skipIf(!hasSupabase)('play_count', () => {
       p_auth_user_id: first.players[0]!.authUserId,
       p_alias: 'segundo',
       p_code: generateRoomCode(),
-      p_pieces: scatterPieces(2, 2, 7),
+      p_pieces: layoutPieces(2, 2, 7),
     });
     expect(error).toBeNull();
 

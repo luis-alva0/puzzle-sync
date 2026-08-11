@@ -215,19 +215,21 @@ export function Board({
   );
 
   return (
-    <div>
-      <BoardCanvas
-        pieces={pieces}
-        puzzleId={puzzleId}
-        gridRows={gridRows}
-        gridCols={gridCols}
-        imageUrl={imageUrl}
-        players={players}
-        currentPlayerId={playerId}
-        onPointerDownBoard={(x, y) => void handlePointerDown(x, y)}
-        onPointerMoveBoard={handlePointerMove}
-        onPointerUpBoard={(x, y) => void handlePointerUp(x, y)}
-      />
+    <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, minHeight: 0 }}>
+        <BoardCanvas
+          pieces={pieces}
+          puzzleId={puzzleId}
+          gridRows={gridRows}
+          gridCols={gridCols}
+          imageUrl={imageUrl}
+          players={players}
+          currentPlayerId={playerId}
+          onPointerDownBoard={(x, y) => void handlePointerDown(x, y)}
+          onPointerMoveBoard={handlePointerMove}
+          onPointerUpBoard={(x, y) => void handlePointerUp(x, y)}
+        />
+      </div>
       <p
         className="muted"
         role="status"

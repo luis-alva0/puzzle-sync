@@ -200,7 +200,19 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
   }
 
   return (
-    <main style={{ maxWidth: 1100, margin: '0 auto', padding: '2rem 1.25rem' }}>
+    // El tablero ocupa la ventana: el canvas recibe la altura que sobra y ajusta su escala a ella,
+    // que es lo que hace cierto que el tablero completo quepa siempre (FR-032).
+    <main
+      style={{
+        height: '100dvh',
+        display: 'flex',
+        flexDirection: 'column',
+        maxWidth: 1400,
+        margin: '0 auto',
+        padding: '1rem 1.25rem',
+        gap: '0.75rem',
+      }}
+    >
       <header
         style={{
           display: 'flex',
@@ -234,8 +246,16 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
         </p>
       )}
 
-      <div style={{ display: 'grid', gap: '1.25rem', gridTemplateColumns: 'minmax(0,1fr) 280px' }}>
-        <section className="card">
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: 'grid',
+          gap: '1.25rem',
+          gridTemplateColumns: 'minmax(0,1fr) 280px',
+        }}
+      >
+        <section className="card" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
           {board?.room.status === 'completed' && board.room.completedAt && (
             <CompletionBanner
               startedAt={board.room.startedAt}

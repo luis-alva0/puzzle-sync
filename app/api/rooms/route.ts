@@ -2,7 +2,7 @@ import { getSupabaseServiceClient, getAuthUserId } from '@/lib/supabase/server';
 import { apiError, withErrorHandling } from '@/lib/api/errors';
 import { validateAlias } from '@/lib/rooms/alias';
 import { generateRoomCode } from '@/lib/rooms/code';
-import { scatterPieces } from '@/lib/puzzle/geometry';
+import { layoutPieces } from '@/lib/puzzle/board-layout';
 import type { CreateRoomRequest, CreateRoomResponse } from '@/types/api';
 
 /** Intentos de generar un código antes de rendirse. Ver comentario en `insertRoom`. */
@@ -41,7 +41,7 @@ export const POST = withErrorHandling(async (request: Request): Promise<Response
   if (!puzzle) return apiError('PUZZLE_NOT_FOUND');
 
   // La dispersión se calcula aquí, en TypeScript testeable, y viaja a la función atómica.
-  const pieces = scatterPieces(puzzle.grid_rows, puzzle.grid_cols, Date.now() % 2_147_483_647);
+  const pieces = layoutPieces(puzzle.grid_rows, puzzle.grid_cols, Date.now() % 2_147_483_647);
 
   // La unicidad del código la garantiza la restricción UNIQUE de la base de datos, no el
   // generador. Reintentar ante colisión es más simple y más correcto que consultar antes:

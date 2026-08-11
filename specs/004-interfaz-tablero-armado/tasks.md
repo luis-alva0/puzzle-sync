@@ -84,23 +84,23 @@ parcialmente, que el rectángulo central queda libre, y que dos navegadores ven 
 
 ### Tests for User Story 1
 
-- [ ] T007 [P] [US1] Añadir a `tests/unit/board-layout.test.ts` **la prueba que justifica la funcionalidad**: para las cinco cantidades admitidas, comparar todos los pares de piezas y afirmar que sus cajas envolventes —con lengüetas, no la celda de 100— no se cortan (FR-002)
-- [ ] T008 [P] [US1] Añadir a `tests/unit/board-layout.test.ts` la cobertura exacta: hay `filas × columnas` piezas y cada celda aparece una sola vez
-- [ ] T009 [P] [US1] Añadir a `tests/unit/board-layout.test.ts` que ninguna pieza cae dentro del área central (FR-001) y que ninguna pareja vecina arranca encajada — la comprobación correcta es la separación **entre vecinas**, porque `release_piece` encaja de forma relativa, no contra una posición absoluta
-- [ ] T010 [P] [US1] Añadir a `tests/unit/board-layout.test.ts` el determinismo —misma semilla, mismo resultado— y el desorden de FR-008 con umbral medido, no elegido a ojo, y un control negativo que confirme que el umbral detecta el caso sin barajar
+- [X] T007 [P] [US1] Añadir a `tests/unit/board-layout.test.ts` **la prueba que justifica la funcionalidad**: para las cinco cantidades admitidas, comparar todos los pares de piezas y afirmar que sus cajas envolventes —con lengüetas, no la celda de 100— no se cortan (FR-002)
+- [X] T008 [P] [US1] Añadir a `tests/unit/board-layout.test.ts` la cobertura exacta: hay `filas × columnas` piezas y cada celda aparece una sola vez
+- [X] T009 [P] [US1] Añadir a `tests/unit/board-layout.test.ts` que ninguna pieza cae dentro del área central (FR-001) y que ninguna pareja vecina arranca encajada — la comprobación correcta es la separación **entre vecinas**, porque `release_piece` encaja de forma relativa, no contra una posición absoluta
+- [X] T010 [P] [US1] Añadir a `tests/unit/board-layout.test.ts` el determinismo —misma semilla, mismo resultado— y el desorden de FR-008 con umbral medido, no elegido a ojo, y un control negativo que confirme que el umbral detecta el caso sin barajar
 
 ### Implementation for User Story 1
 
-- [ ] T011 [US1] Implementar la permutación determinista en `lib/puzzle/board-layout.ts` reutilizando `splitmix32` de `lib/puzzle-generation/prng.ts`, en lugar del generador congruencial de `geometry.ts` (research R4)
-- [ ] T012 [US1] Implementar `layoutPieces(gridRows, gridCols, seed)` en `lib/puzzle/board-layout.ts`: asignar cada pieza a un hueco según la permutación y aplicar la sacudida acotada de research R2
-- [ ] T013 [US1] Sustituir la llamada a `scatterPieces` por `layoutPieces` en `app/api/rooms/route.ts`
-- [ ] T014 [P] [US1] Sustituir la llamada a `scatterPieces` por `layoutPieces` en `tests/integration/helpers.ts`
-- [ ] T015 [P] [US1] Sustituir la llamada a `scatterPieces` por `layoutPieces` en `tests/integration/play-count.test.ts`
-- [ ] T016 [US1] Eliminar `scatterPieces` y su generador congruencial `createSeededRandom` de `lib/puzzle/geometry.ts`, junto con la constante `SCATTER_MARGIN` que solo usaba él
-- [ ] T017 [US1] Reemplazar en `components/BoardCanvas.tsx` el cálculo propio del mundo —`solvedWidth + PIECE_SIZE * 4`— por una llamada a `boardSize()`, que es lo que evita que las piezas caigan fuera de lo dibujado (FR-031)
-- [ ] T018 [US1] Poner a cero `originX` y `originY` en `components/BoardCanvas.tsx`: con `boardSize()` las coordenadas empiezan en 0, mientras que hoy valen `PIECE_SIZE * 2`. Hay que cambiarlo **en los tres sitios** —el `translate` del dibujado y las dos entradas de `dataset` que lee `toBoard()`— o el tablero se dibuja desplazado 200 unidades y el arrastre agarra donde no hay pieza
-- [ ] T019 [US1] Ajustar en `components/BoardCanvas.tsx` el elemento `<canvas>` para que ocupe el espacio disponible en lugar de fijar `aspectRatio` a partir de la cuadrícula, de modo que el tablero completo quepa siempre en la ventana (FR-032), **centrando el tablero** en el espacio sobrante: con proporción 16:10 y ventanas de otra proporción siempre sobra margen en un eje
-- [ ] T020 [US1] Sustituir en `components/BoardCanvas.tsx` la silueta del rompecabezas resuelto por el rectángulo del área central que devuelve `boardSize()`, para que la referencia visual coincida con el hueco real (FR-003)
+- [X] T011 [US1] Implementar la permutación determinista en `lib/puzzle/board-layout.ts` reutilizando `splitmix32` de `lib/puzzle-generation/prng.ts`, en lugar del generador congruencial de `geometry.ts` (research R4)
+- [X] T012 [US1] Implementar `layoutPieces(gridRows, gridCols, seed)` en `lib/puzzle/board-layout.ts`: asignar cada pieza a un hueco según la permutación y aplicar la sacudida acotada de research R2
+- [X] T013 [US1] Sustituir la llamada a `scatterPieces` por `layoutPieces` en `app/api/rooms/route.ts`
+- [X] T014 [P] [US1] Sustituir la llamada a `scatterPieces` por `layoutPieces` en `tests/integration/helpers.ts`
+- [X] T015 [P] [US1] Sustituir la llamada a `scatterPieces` por `layoutPieces` en `tests/integration/play-count.test.ts`
+- [X] T016 [US1] Eliminar `scatterPieces` y su generador congruencial `createSeededRandom` de `lib/puzzle/geometry.ts`, junto con la constante `SCATTER_MARGIN` que solo usaba él
+- [X] T017 [US1] Reemplazar en `components/BoardCanvas.tsx` el cálculo propio del mundo —`solvedWidth + PIECE_SIZE * 4`— por una llamada a `boardSize()`, que es lo que evita que las piezas caigan fuera de lo dibujado (FR-031)
+- [X] T018 [US1] Poner a cero `originX` y `originY` en `components/BoardCanvas.tsx`: con `boardSize()` las coordenadas empiezan en 0, mientras que hoy valen `PIECE_SIZE * 2`. Hay que cambiarlo **en los tres sitios** —el `translate` del dibujado y las dos entradas de `dataset` que lee `toBoard()`— o el tablero se dibuja desplazado 200 unidades y el arrastre agarra donde no hay pieza
+- [X] T019 [US1] Ajustar en `components/BoardCanvas.tsx` el elemento `<canvas>` para que ocupe el espacio disponible en lugar de fijar `aspectRatio` a partir de la cuadrícula, de modo que el tablero completo quepa siempre en la ventana (FR-032), **centrando el tablero** en el espacio sobrante: con proporción 16:10 y ventanas de otra proporción siempre sobra margen en un eje
+- [X] T020 [US1] Sustituir en `components/BoardCanvas.tsx` la silueta del rompecabezas resuelto por el rectángulo del área central que devuelve `boardSize()`, para que la referencia visual coincida con el hueco real (FR-003)
 
 - [ ] T021 [US1] Comprobar que el arrastre sigue funcionando tras los cambios de escala y origen: `toBoard()` en `components/BoardCanvas.tsx` traduce coordenadas usando el origen y la escala, y T017–T019 modifican los dos. Es la comprobación que cierra la fase, no una tarea de pulido — **requiere navegador**
 

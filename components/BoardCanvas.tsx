@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useRef } from 'react';
-import { PIECE_SIZE, solvedSize } from '@/lib/puzzle/geometry';
+import { PIECE_SIZE } from '@/lib/puzzle/geometry';
+import { boardSize } from '@/lib/puzzle/board-layout';
 import { buildEdgeGrid, pieceEdges } from '@/lib/puzzle-generation/edges';
 import { piecePath, tabOverflow } from '@/lib/puzzle-generation/path';
 import { seedFromUuid } from '@/lib/puzzle-generation/prng';
@@ -90,12 +91,16 @@ export function BoardCanvas({
     const context = canvas.getContext('2d');
     if (!context) return;
 
-    const { width: solvedWidth, height: solvedHeight } = solvedSize(gridRows, gridCols);
-    // Margen alrededor del área resuelta, donde caen las piezas dispersas.
-    const worldWidth = solvedWidth + PIECE_SIZE * 4;
-    const worldHeight = solvedHeight + PIECE_SIZE * 4;
-    const originX = PIECE_SIZE * 2;
-    const originY = PIECE_SIZE * 2;
+    // El tamaño del mundo sale de `boardSize()`, la MISMA función que usa el servidor para
+    // repartir las piezas. Si cada lado calculase el suyo, las piezas quedarían colocadas donde
+    // nadie las pinta: el estado sería correcto y aun así invisible.
+    //
+    // No hay origen que desplazar: las coordenadas del reparto empiezan en (0, 0). Lo que sí hay
+    // es un desplazamiento de centrado, que depende de la ventana y por eso se recalcula en cada
+    // frame y NUNCA toca las posiciones de las piezas.
+    const board = boardSize(gridRows, gridCols);
+    const worldWidth = board.width;
+    const worldHeight = board.height;
 
     const draw = () => {
       const rect = canvas.getBoundingClientRect();
@@ -107,22 +112,27 @@ export function BoardCanvas({
       }
 
       const scale = Math.min(canvas.width / worldWidth, canvas.height / worldHeight);
+      // Con proporción de tablero fija y ventanas de cualquier proporción siempre sobra margen en
+      // un eje. Se reparte a los dos lados para que el tablero quede centrado.
+      const offsetX = (canvas.width - worldWidth * scale) / 2;
+      const offsetY = (canvas.height - worldHeight * scale) / 2;
+
       canvas.dataset.scale = String(scale);
-      canvas.dataset.originX = String(originX);
-      canvas.dataset.originY = String(originY);
+      canvas.dataset.offsetX = String(offsetX);
+      canvas.dataset.offsetY = String(offsetY);
 
       context.setTransform(1, 0, 0, 1, 0, 0);
       context.clearRect(0, 0, canvas.width, canvas.height);
       context.fillStyle = '#0d0f15';
       context.fillRect(0, 0, canvas.width, canvas.height);
 
-      context.setTransform(scale, 0, 0, scale, 0, 0);
-      context.translate(originX, originY);
+      context.setTransform(scale, 0, 0, scale, offsetX, offsetY);
 
-      // Silueta del rompecabezas resuelto, como referencia de dónde va todo.
+      // T020: el rectángulo del área central, que es el hueco real que deja la banda. Antes se
+      // dibujaba la silueta del rompecabezas resuelto en el origen, que ya no es donde está.
       context.strokeStyle = 'rgba(255,255,255,0.12)';
       context.lineWidth = 2 / scale;
-      context.strokeRect(0, 0, solvedWidth, solvedHeight);
+      context.strokeRect(board.holeX, board.holeY, board.holeWidth, board.holeHeight);
 
       const image = imageRef.current;
       const sourcePieceWidth = image ? image.naturalWidth / gridCols : 0;
@@ -214,13 +224,16 @@ export function BoardCanvas({
     const rect = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     const scale = Number(canvas.dataset.scale ?? 1);
-    const originX = Number(canvas.dataset.originX ?? 0);
-    const originY = Number(canvas.dataset.originY ?? 0);
+    const offsetX = Number(canvas.dataset.offsetX ?? 0);
+    const offsetY = Number(canvas.dataset.offsetY ?? 0);
 
     const pixelX = (event.clientX - rect.left) * dpr;
     const pixelY = (event.clientY - rect.top) * dpr;
 
-    return { x: pixelX / scale - originX, y: pixelY / scale - originY };
+    // Invierte exactamente la transformación del dibujado. Los dos leen del mismo `dataset`, que
+    // es lo que evita que se separen: si uno cambiase sin el otro, el tablero se vería bien y el
+    // arrastre agarraría donde no hay pieza.
+    return { x: (pixelX - offsetX) / scale, y: (pixelY - offsetY) / scale };
   }
 
   const connectedPieces = pieces.filter(
@@ -253,10 +266,12 @@ export function BoardCanvas({
         role="application"
         aria-label={`Tablero de rompecabezas de ${gridRows * gridCols} piezas`}
         style={{
+          // Ocupa todo el contenedor en vez de fijar su proporción a partir de la cuadrícula: el
+          // tablero completo debe caber siempre en la ventana (FR-032), y de ajustarlo se encarga
+          // la escala del dibujado, no el tamaño del elemento.
           width: '100%',
-          aspectRatio: `${gridCols + 4} / ${gridRows + 4}`,
+          height: '100%',
           display: 'block',
-          borderRadius: 'var(--radius)',
           touchAction: 'none',
           cursor: 'grab',
         }}
