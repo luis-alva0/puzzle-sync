@@ -24,8 +24,25 @@ Aplicación web de un solo repositorio, App Router de Next.js. Rutas desde la ra
 
 ## Git Workflow
 
-Tras **cada** tarea, `git add` y `git commit` con mensaje Conventional Commits que incluya el ID,
-antes de pasar a la siguiente. Ejemplo: `feat(T012): dibujar la imagen de referencia en el canvas`.
+Constitución v2.0.0: **un commit por fase**, no por tarea. Al alcanzar el checkpoint de cada fase,
+y antes de empezar la siguiente, `git add` de todo su trabajo y un único `git commit` con la
+historia de usuario como scope y el rango de tareas al final.
+
+Esta funcionalidad son **7 commits**:
+
+| Fase | Tareas | Mensaje |
+|---|---|---|
+| 1. Setup | T001 | `chore(setup): confirmar punto de partida limpio - T001` |
+| 2. Foundational | T002–T006 | `feat(foundational): definir el tamano del tablero y la rejilla de huecos - T002-T006` |
+| 3. US1 | T007–T019 | `feat(US1): repartir las piezas en banda perimetral sin solapes - T007-T019` |
+| 4. US2 | T020–T022 | `feat(US2): fondo neutro y legibilidad de las siluetas - T020-T022` |
+| 5. US4 | T023–T033 | `feat(US4): barra superior con conexion, cronometro y menu - T023-T033` |
+| 6. US3 | T034–T038 | `feat(US3): imagen de referencia en el area central - T034-T038` |
+| 7. Polish | T039–T050 | `perf(polish): cachear rutas y verificar rendimiento - T039-T050` |
+
+Si una fase deja el build o los tipos rotos, se corrige **dentro de esa misma fase** antes de
+commitear. Las correcciones que aparezcan al verificar y no pertenezcan a ninguna fase van en su
+propio commit, con scope descriptivo y sin rango de tareas.
 
 ---
 

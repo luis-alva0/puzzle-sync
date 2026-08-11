@@ -21,11 +21,10 @@ Trabajo existente fuera de cumplimiento:
 - Las features 001, 002 y 003 se ejecutaron con un commit por tarea (199 commits). Quedan fuera
   de la regla nueva y NO se reescriben: la historia ya publicada tiene más valor como registro
   de lo ocurrido que como ejemplo de la convención vigente.
-- specs/004-interfaz-tablero-armado/tasks.md lleva embebida la regla anterior en su sección
-  "Git Workflow" y debe actualizarse antes de implementarla.
+- specs/004-interfaz-tablero-armado/tasks.md llevaba embebida la regla anterior. Actualizada en
+  la misma sesión: sus 7 fases quedan mapeadas a 7 commits.
 
-Follow-up TODOs:
-- TODO(004-tasks): actualizar la sección Git Workflow de la tasks.md de la feature 004.
+Follow-up TODOs: ninguno.
 
 --- Historial ---
 1.2.0 (2026-08-09): Principio VI ampliado con "se prueba donde la lógica vive".
