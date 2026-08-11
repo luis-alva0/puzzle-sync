@@ -78,23 +78,30 @@ Tamaños que resultan, con el paso de 160 y una ventana de 1920 × 1080:
 | Piezas | Cuadrícula | Área central | Tablero | Huecos en banda | Pieza en pantalla |
 |---|---|---|---|---|---|
 | 20 | 4 × 5 | 4 × 3 | 8 × 5 | 28 | 135 px |
-| 50 | 5 × 10 | 7 × 4 | 12 × 7 | 56 | 96 px |
-| 100 | 10 × 10 | 7 × 7 | 16 × 10 | 111 | 68 px |
-| 104 | 8 × 13 | 9 × 5 | 16 × 10 | 115 | 68 px |
-| 150 | 10 × 15 | 10 × 7 | 20 × 12 | 170 | 56 px |
-| 200 | 10 × 20 | 13 × 7 | 23 × 14 | 231 | 48 px |
-| 500 | 20 × 25 | 16 × 13 | 36 × 22 | 584 | 31 px |
+| 50 | 5 × 10 | 7 × 4 | 13 × 8 | 76 | 84 px |
+| 100 | 10 × 10 | 7 × 7 | 17 × 11 | 138 | 61 px |
+| 104 | 8 × 13 | 9 × 5 | 17 × 11 | 142 | 61 px |
+| 150 | 10 × 15 | 10 × 7 | 20 × 13 | 190 | 52 px |
+| 200 | 10 × 20 | 13 × 7 | 23 × 15 | 254 | 45 px |
+| 500 | 20 × 25 | 16 × 13 | 36 × 23 | 620 | 29 px |
 
-**Los 31 px de las 500 piezas son el punto flaco de esta decisión, y conviene decirlo claro.** Es
+*Cifras medidas sobre la implementación, no estimadas.* La primera versión de esta tabla, escrita
+antes de programar, daba valores un 10-15 % mayores porque no contaba con dos detalles que
+aparecieron al implementar: la banda necesita un grosor mínimo de un hueco por lado, y el área
+central debe alinearse con la rejilla —lo que obliga a que el grosor sea igual a ambos lados y a
+veces añade una fila o una columna—. Sin esa alineación el rectángulo central queda a caballo
+entre dos huecos y la banda invade el área de armado.
+
+**Los 29 px de las 500 piezas son el punto flaco de esta decisión, y conviene decirlo claro.** Es
 la consecuencia directa de la respuesta Q1 —que todo quepa siempre en la ventana— y así quedó
-aceptado en A-009. Una pieza de 31 px se distingue, pero apuntar a ella con el ratón es incómodo.
+aceptado en A-009. Una pieza de 29 px se distingue, pero apuntar a ella con el ratón es incómodo.
 Si en la práctica molesta, la salida es añadir desplazamiento y ampliación como funcionalidad
 aparte, no rehacer esta.
 
 **Alternatives considered**:
 
 - **Tablero con la proporción del rompecabezas**: más simple de razonar, pero con 500 piezas baja
-  a 25 px en lugar de 31, un 20 % peor sin ninguna ventaja.
+  a unos 24 px en lugar de 29, sin ninguna ventaja a cambio.
 - **Proporción tomada de la ventana real**: daría el mejor aprovechamiento en cada pantalla, pero
   el tamaño del tablero **no puede depender de la ventana** sin romper FR-006. Es precisamente la
   trampa que el checklist de la especificación señala. 16:10 es un compromiso fijo entre 16:9 y

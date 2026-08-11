@@ -63,11 +63,11 @@ contra un blanco móvil.
 
 **⚠️ Ninguna historia puede empezar antes de terminar esta fase.**
 
-- [ ] T002 Crear `lib/puzzle/board-layout.ts` con las constantes de la rejilla: el paso derivado de `PIECE_SIZE` y `tabOverflow(PIECE_SIZE)` según research R2, nunca escrito a mano, y la proporción objetivo 16:10 de research R3
-- [ ] T003 Implementar `boardSize(gridRows, gridCols)` en `lib/puzzle/board-layout.ts` según [contracts/board-layout.md](./contracts/board-layout.md): devuelve ancho, alto y el rectángulo del área central, sin consultar `window` ni el DOM (FR-030)
-- [ ] T004 Escribir `tests/unit/board-layout.test.ts` con las garantías de `boardSize`: el área central nunca es menor que el rompecabezas resuelto, conserva su proporción, está centrado, y hay huecos de banda suficientes para las cinco cantidades admitidas (20, 50, 100, 200, 500) (FR-003, FR-007)
-- [ ] T005 Implementar en `lib/puzzle/board-layout.ts` la generación de huecos: recorrer el tablero con el paso de la rejilla y descartar los que caen dentro del área central
-- [ ] T006 Añadir a `tests/unit/board-layout.test.ts` las garantías de los huecos: dos huecos nunca se solapan, ninguno invade el área central, y la cantidad disponible cubre todas las piezas
+- [X] T002 Crear `lib/puzzle/board-layout.ts` con las constantes de la rejilla: el paso derivado de `PIECE_SIZE` y `tabOverflow(PIECE_SIZE)` según research R2, nunca escrito a mano, y la proporción objetivo 16:10 de research R3
+- [X] T003 Implementar `boardSize(gridRows, gridCols)` en `lib/puzzle/board-layout.ts` según [contracts/board-layout.md](./contracts/board-layout.md): devuelve ancho, alto y el rectángulo del área central, sin consultar `window` ni el DOM (FR-030)
+- [X] T004 Escribir `tests/unit/board-layout.test.ts` con las garantías de `boardSize`: el área central nunca es menor que el rompecabezas resuelto, conserva su proporción, está centrado, y hay huecos de banda suficientes para las cinco cantidades admitidas (20, 50, 100, 200, 500) (FR-003, FR-007)
+- [X] T005 Implementar en `lib/puzzle/board-layout.ts` la generación de huecos: recorrer el tablero con el paso de la rejilla y descartar los que caen dentro del área central
+- [X] T006 Añadir a `tests/unit/board-layout.test.ts` las garantías de los huecos: dos huecos nunca se solapan, ninguno invade el área central, y la cantidad disponible cubre todas las piezas
 
 **Checkpoint**: existe una única definición del tamaño del tablero, probada. A partir de aquí el
 servidor y el canvas pueden apoyarse en ella.
@@ -86,8 +86,8 @@ parcialmente, que el rectángulo central queda libre, y que dos navegadores ven 
 
 - [ ] T007 [P] [US1] Añadir a `tests/unit/board-layout.test.ts` **la prueba que justifica la funcionalidad**: para las cinco cantidades admitidas, comparar todos los pares de piezas y afirmar que sus cajas envolventes —con lengüetas, no la celda de 100— no se cortan (FR-002)
 - [ ] T008 [P] [US1] Añadir a `tests/unit/board-layout.test.ts` la cobertura exacta: hay `filas × columnas` piezas y cada celda aparece una sola vez
-- [ ] T009 [P] [US1] Añadir a `tests/unit/board-layout.test.ts` que ninguna pieza cae dentro del área central (FR-001) y que ninguna empieza dentro de la tolerancia de encaje respecto de su posición correcta, regla heredada del reparto actual
-- [ ] T010 [P] [US1] Añadir a `tests/unit/board-layout.test.ts` el determinismo —misma semilla, mismo resultado— y el desorden de FR-008: menos del 5 % de los pares vecinos en la imagen quedan vecinos en la banda
+- [ ] T009 [P] [US1] Añadir a `tests/unit/board-layout.test.ts` que ninguna pieza cae dentro del área central (FR-001) y que ninguna pareja vecina arranca encajada — la comprobación correcta es la separación **entre vecinas**, porque `release_piece` encaja de forma relativa, no contra una posición absoluta
+- [ ] T010 [P] [US1] Añadir a `tests/unit/board-layout.test.ts` el determinismo —misma semilla, mismo resultado— y el desorden de FR-008 con umbral medido, no elegido a ojo, y un control negativo que confirme que el umbral detecta el caso sin barajar
 
 ### Implementation for User Story 1
 

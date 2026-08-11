@@ -62,13 +62,24 @@ Posiciones iniciales de todas las piezas, repartidas por la banda perimetral.
 1. **Ninguna pieza se solapa con otra** (FR-002). Se comprueba sobre la caja envolvente que
    incluye las lengüetas, no sobre la celda de 100 × 100.
 2. **Ninguna pieza cae dentro del área central** de armado (FR-001).
-3. **Ninguna pieza empieza resuelta**: la distancia a su posición correcta supera la tolerancia de
-   encaje en al menos un eje. *Regla heredada del reparto actual, que hay que conservar.*
+3. **Ninguna pareja vecina arranca encajada.** Ojo al matiz, porque el reparto anterior lo tenía
+   mal: `release_piece` encaja de forma **relativa** —dos vecinas se unen cuando su separación se
+   acerca a `PIECE_SIZE` dentro de la tolerancia—, no contra una posición absoluta del tablero.
+   Medir la distancia de cada pieza a `correctPosition`, como hacía `scatterPieces`, comprueba
+   algo que no es lo que decide el encaje.
+
+   Con esta rejilla la garantía sale por construcción: las separaciones son múltiplos de
+   `SLOT_PITCH` (160) más una sacudida acotada, y ninguna cae en el `[75, 125]` que dispararía el
+   encaje. No hace falta comprobar ni corregir nada al repartir.
 4. **Cobertura exacta**: cada par `(gridRow, gridCol)` de la cuadrícula aparece una vez y solo una.
 5. **Determinista**: misma semilla, mismo resultado, en el servidor y en las pruebas.
 6. **Desordenada** (FR-008): dos piezas contiguas en la cuadrícula no acaban en huecos contiguos.
-   Se comprueba de forma estadística, no absoluta: en un reparto de 100 piezas, menos del 5 % de
-   los pares vecinos en la imagen quedan también vecinos en la banda.
+   Se comprueba de forma estadística, no absoluta: en un reparto de 100 piezas, **menos del 15 %**
+   de los pares vecinos en la imagen quedan también vecinos en la banda.
+
+   El 15 % está medido: una permutación uniforme deja un 5,4 % de media y hasta un 9,1 % sobre
+   40 semillas. Un umbral del 5 % —el que traía este contrato al escribirse— fallaría la mitad de
+   las veces sin que nada estuviera roto. Sin barajar, la cifra pasa del 50 %.
 7. Todas las posiciones caen dentro de `boardSize(gridRows, gridCols)`.
 
 **Errores**: `RangeError` si alguna dimensión es menor que 1.
