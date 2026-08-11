@@ -51,7 +51,7 @@ propio commit, con scope descriptivo y sin rango de tareas.
 Esta funcionalidad **no necesita preparación**: sin dependencias nuevas, sin variables de entorno,
 sin migraciones. Se anota para dejar constancia de que se comprobó, no por trámite.
 
-- [ ] T001 Confirmar que el punto de partida está limpio ejecutando `npm run lint`, `npm run typecheck` y `npm test`, y anotar el número de pruebas en verde como referencia para el final
+- [X] T001 Confirmar que el punto de partida está limpio ejecutando `npm run lint`, `npm run typecheck` y `npm test`, y anotar el número de pruebas en verde como referencia para el final
 
 ---
 
