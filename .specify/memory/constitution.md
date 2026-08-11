@@ -1,20 +1,34 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.1.0 → 1.2.0
-Bump rationale: MINOR. Se expande materialmente el Principio VI para prohibir duplicar lógica
-con el único fin de poder probarla sin infraestructura. Ningún principio fue eliminado ni
-redefinido de forma incompatible.
+Version change: 1.2.0 → 2.0.0
+Bump rationale: MAJOR. Se redefine de forma incompatible la regla central de Git Workflow: la
+unidad de commit pasa de la tarea a la fase. La regla nueva EXIGE agrupar varias tareas en un
+commit, que es exactamente lo que la anterior PROHIBÍA; no es una expansión de la guía, es su
+sustitución.
 
-Principios modificados:
-- VI. Testing Proporcional al Riesgo → se añade la regla "probar donde la lógica vive"
+Principios modificados: ninguno. Los seis principios quedan intactos.
+
+Secciones modificadas:
+- Git Workflow → un commit por fase, con la historia de usuario como scope y el rango de tareas
+  en el mensaje. Se añade la convención para las fases sin historia (Setup, Foundational,
+  Polish) y para los commits ajenos a tasks.md.
 
 Secciones añadidas: ninguna.
 Secciones eliminadas: ninguna.
 
-Follow-up TODOs: ninguno.
+Trabajo existente fuera de cumplimiento:
+- Las features 001, 002 y 003 se ejecutaron con un commit por tarea (199 commits). Quedan fuera
+  de la regla nueva y NO se reescriben: la historia ya publicada tiene más valor como registro
+  de lo ocurrido que como ejemplo de la convención vigente.
+- specs/004-interfaz-tablero-armado/tasks.md lleva embebida la regla anterior en su sección
+  "Git Workflow" y debe actualizarse antes de implementarla.
+
+Follow-up TODOs:
+- TODO(004-tasks): actualizar la sección Git Workflow de la tasks.md de la feature 004.
 
 --- Historial ---
+1.2.0 (2026-08-09): Principio VI ampliado con "se prueba donde la lógica vive".
 1.1.0 (2026-08-09): Sección Git Workflow (commit atómico por tarea, Conventional Commits).
 1.0.0 (2026-08-09): Ratificación inicial. Principios I-VI, Restricciones Técnicas y de Datos,
 Flujo de Desarrollo y Despliegue, Governance.
@@ -187,23 +201,40 @@ en mantener sincronizadas dos copias de la misma regla.
 
 ## Git Workflow
 
-El historial de Git es el registro de ejecución del plan. Un commit corresponde a una tarea.
+El historial de Git es el registro de ejecución del plan. **Un commit corresponde a una fase de
+`tasks.md`**, no a una tarea.
 
-- Al completar cada tarea individual de `tasks.md`, y ANTES de comenzar la siguiente, se DEBE
-  ejecutar `git add` sobre los archivos de esa tarea y `git commit`.
-- No se agrupan varias tareas en un solo commit, ni se deja una tarea a medio commitear.
-- El mensaje de commit DEBE seguir Conventional Commits e incluir el ID de la tarea como
-  scope: `<tipo>(<ID-tarea>): <descripción en imperativo>`.
-  - Ejemplo: `feat(T012): implementar validacion de formulario de login`
+- Al alcanzar el checkpoint de cada fase, y ANTES de comenzar la siguiente, se DEBE ejecutar
+  `git add` sobre todo el trabajo de esa fase y `git commit`.
+- Un commit agrupa **todas** las tareas de su fase. No se commitea tarea por tarea, ni se deja
+  una fase a medio commitear.
+- El mensaje DEBE seguir Conventional Commits, con la historia de usuario como scope y el rango
+  de tareas al final: `<tipo>(<historia>): <descripción en imperativo> - <T-inicial>-<T-final>`.
+  - Ejemplo: `feat(US1): implementar autenticacion de usuario - T001-T012`
+- Las fases sin historia de usuario asociada —Setup, Foundational, Polish— usan como scope el
+  nombre de la fase en minúscula.
+  - Ejemplo: `chore(setup): preparar dependencias y configuracion - T001-T004`
+- La descripción resume **qué quedó implementado** en la fase, no enumera las tareas: el rango
+  ya remite a `tasks.md` para el detalle.
 - Tipos permitidos: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `style`, `perf`.
 - La descripción va en imperativo y en minúscula, sin punto final.
 - Un commit NUNCA incluye archivos con secretos ni valores de variables de entorno reales
   (ver Principio II).
-- Si una tarea deja el build o los tipos rotos, se corrige dentro de esa misma tarea antes de
+- Si una fase deja el build o los tipos rotos, se corrige dentro de esa misma fase antes de
   commitear. La rama principal se mantiene siempre desplegable.
+- Los commits que no ejecutan una fase de `tasks.md` —correcciones encontradas al verificar,
+  documentación, mantenimiento— siguen Conventional Commits con un scope descriptivo y sin
+  rango de tareas.
 
-**Rationale**: Un commit por tarea hace que el avance sea auditable contra `tasks.md` y que
-revertir un paso concreto sea trivial, sin arrastrar trabajo no relacionado.
+**Rationale**: Un commit por fase hace que el historial se lea como la lista de incrementos
+entregados, que es la unidad en la que el trabajo tiene sentido para quien lo revisa: una fase
+completa deja la aplicación en un estado verificable, y una tarea suelta a menudo no. Revertir
+un incremento entero es además la operación que de verdad se necesita cuando algo sale mal;
+revertir una tarea aislada suele dejar el código a medias.
+
+El coste aceptado es que el historial es menos granular: un fallo introducido dentro de una fase
+no se puede aislar por commit. La `tasks.md` de la feature sigue siendo el registro fino de qué
+se hizo y en qué orden.
 
 ## Governance
 
@@ -234,4 +265,4 @@ convención adoptada en el proyecto. Ante un conflicto, gana la constitución.
 - Una violación detectada en producción se trata como defecto y se corrige o se documenta
   explícitamente como deuda con su plan de remediación.
 
-**Version**: 1.2.0 | **Ratified**: 2026-08-09 | **Last Amended**: 2026-08-09
+**Version**: 2.0.0 | **Ratified**: 2026-08-09 | **Last Amended**: 2026-08-10
