@@ -8,6 +8,13 @@
 
 **Input**: User description: "Asi de debe ver la interfaz del armado de rompecabezas (imagenes adjuntas). Tienes dos ejemplos, una con 104 piezas y otra con 150 piezas, mira como no se solapan entre ellas y se colocan de manera que en el centro queda un espacio libre. Las piezas deben estar rotadas en el sentido en el que van puestas, por el momento no se debe poder rotar piezas. En la barra de navegacion superior se debe poder ver elementos como: el estado de 'conectado', el tiempo transcurrido, un boton para entrar en full screen, un icono de imagen que al hacer hover sobre el con el mouse se muestra la imagen completa del rompecabezas para que sirva como ayuda para armar (asi como se ve en la tercera foto), y en la esquina izquierda un boton para desplegar el menu que aun no definimos (puedes implementar las opciones que creas convenientes, luego refinaremos esto). La forma de las piezas la debes copiar de la foto de referencia (para mayor investigacion se trata de https://www.jigsawexplorer.com/)."
 
+## Clarifications
+
+### Session 2026-08-10
+
+- Q: Con 500 piezas en un portátil la banda perimetral no cabe en la ventana. ¿Qué cede, el tamaño de las piezas o el tamaño del tablero? → A: Las piezas se reducen para que todo quepa siempre en la ventana. Sin desplazamiento ni zoom: el tablero completo está siempre a la vista.
+- Q: ¿El tablero debe funcionar en teléfono, o es una interfaz de escritorio? → A: Escritorio y tableta. En pantallas menores se avisa en lugar de degradar la experiencia.
+
 ---
 
 ## Contexto
@@ -147,10 +154,16 @@ legibles y que ninguno tapa piezas.
 ### Edge Cases
 
 - **Más piezas de las que caben**: un rompecabezas de 500 piezas necesita mucho más espacio
-  perimetral que uno de 20. El sistema debe seguir garantizando que no se solapan.
-  [NEEDS CLARIFICATION: ¿Cómo se resuelve? Ver Q1.]
-- **Pantallas pequeñas**: una banda perimetral que funciona en un monitor no cabe igual en un
-  teléfono. [NEEDS CLARIFICATION: ¿Está el teléfono en alcance? Ver Q2.]
+  perimetral que uno de 20. Se resuelve reduciendo el tamaño con que se dibuja todo el tablero,
+  no recortando la banda: el tablero entero está siempre a la vista y las piezas nunca se solapan.
+- **Ventanas de tamaños distintos**: dos jugadores con monitores diferentes ven el mismo tablero
+  a distinta escala. Las posiciones son las mismas; lo único que cambia es el tamaño con que cada
+  pantalla lo dibuja. Es lo que permite que el tablero quepa siempre sin romper el estado
+  compartido.
+- **Ventana demasiado pequeña**: por debajo de cierto tamaño las piezas dejan de ser
+  reconocibles. En ese caso se avisa en lugar de mostrar un tablero inservible.
+- **Teléfonos**: quedan fuera de alcance. Al entrar desde una pantalla pequeña se avisa de que la
+  experiencia está pensada para escritorio o tableta.
 - **Rompecabezas muy alargado**: una imagen panorámica produce una cuadrícula muy ancha y baja;
   la banda perimetral y el hueco central deben seguir la proporción de la imagen, no ser siempre
   un cuadrado.
@@ -230,6 +243,25 @@ legibles y que ninguno tapa piezas.
 - **FR-029**: Los elementos de la interfaz que hoy existen sueltos —indicador de conexión, lista
   de jugadores, aviso de completado— DEBEN integrarse en la nueva disposición sin duplicarse.
 
+**Cómo cabe el tablero en la pantalla**
+
+Estos requisitos separan dos cosas que es fácil confundir: **dónde** está cada pieza, que es un
+dato compartido e idéntico para todos, y **de qué tamaño** se dibuja el conjunto, que es una
+decisión local de cada pantalla.
+
+- **FR-030**: El tablero DEBE tener un tamaño propio, derivado de la cantidad de piezas y de la
+  proporción de la imagen, independiente de la ventana de cualquier jugador.
+- **FR-031**: Cada pantalla DEBE dibujar el tablero completo ajustado a su ventana, aplicando una
+  reducción o ampliación uniforme. Un rompecabezas de 500 piezas se ve más pequeño que uno de 20
+  en la misma ventana.
+- **FR-032**: El tablero completo DEBE estar siempre visible: el sistema NO DEBE exigir
+  desplazamiento ni ampliación para alcanzar una pieza.
+- **FR-033**: Redimensionar la ventana DEBE cambiar únicamente la escala del dibujo, nunca las
+  posiciones de las piezas.
+- **FR-034**: Por debajo de un tamaño de ventana en el que las piezas dejan de ser reconocibles,
+  el sistema DEBE avisar de que la experiencia está pensada para escritorio o tableta, en lugar
+  de mostrar un tablero inservible.
+
 ### Key Entities
 
 - **Disposición inicial**: el conjunto de posiciones que ocupa cada pieza al empezar la partida.
@@ -258,6 +290,11 @@ legibles y que ninguno tapa piezas.
   pantalla y sin ayuda, **dónde están las piezas y dónde se arma**.
 - **SC-008**: Las piezas del contorno exterior son identificables por su lado recto en el **100 %**
   de los casos.
+- **SC-009**: Con cualquier cantidad de piezas admitida (20, 50, 100, 200 y 500) y en cualquier
+  ventana de escritorio o tableta, **el tablero completo cabe en la pantalla** sin desplazamiento
+  y sin que dos piezas se solapen.
+- **SC-010**: Redimensionar la ventana **no cambia ninguna posición de pieza**: comparar el estado
+  antes y después devuelve exactamente las mismas coordenadas.
 
 ## Assumptions
 
@@ -275,6 +312,12 @@ legibles y que ninguno tapa piezas.
   referencia. El color exacto es una decisión de diseño, no un requisito.
 - **A-007**: La disposición inicial se calcula una sola vez al crear la sala y se guarda; no se
   recalcula al entrar cada jugador ni al redimensionar la ventana.
+- **A-008**: El aviso de pantalla pequeña no bloquea: quien insista puede seguir. Es una
+  advertencia, no una puerta cerrada.
+- **A-009**: Con 500 piezas en una ventana de portátil las piezas quedan pequeñas. Se acepta:
+  es la consecuencia de que todo quepa siempre, y quien elige 500 piezas asume un tablero denso.
+  Si resulta incómodo en la práctica, la salida es añadir desplazamiento y ampliación como
+  funcionalidad propia, no rehacer esta.
 
 ## Dependencies
 
@@ -288,7 +331,12 @@ legibles y que ninguno tapa piezas.
 ## Out of Scope
 
 - Rotación de piezas, ni como capacidad ni como control.
-- Herramientas de desplazamiento y selección por área que aparecen en las imágenes de referencia.
+- Desplazar y ampliar el tablero. Se descartó al decidir que el tablero entero cabe siempre en la
+  pantalla; el icono de mano de las imágenes de referencia existe precisamente porque allí sí se
+  puede desplazar.
+- Selección de varias piezas por área, que también aparece en las imágenes de referencia.
+- El teléfono como dispositivo de juego. Se detecta y se avisa, pero no se adapta la disposición
+  ni el arrastre táctil a pantallas estrechas.
 - Ordenar, filtrar o agrupar las piezas de la banda (por ejemplo, "mostrar solo los bordes").
 - Personalizar el fondo, el tamaño de las piezas o el nivel de dificultad.
 - Cambiar las reglas de captura, encaje, finalización o sincronización de la feature 001.

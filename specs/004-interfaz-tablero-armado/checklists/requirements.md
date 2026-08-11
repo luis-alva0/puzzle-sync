@@ -13,13 +13,13 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
 - [x] All acceptance scenarios are defined
 - [x] Edge cases are identified
-- [ ] Scope is clearly bounded
+- [x] Scope is clearly bounded
 - [x] Dependencies and assumptions identified
 
 ## Feature Readiness
@@ -31,14 +31,14 @@
 
 ## Notes
 
-Dos elementos pendientes, ambos por la misma causa: **qué pasa cuando las piezas no caben en la
-pantalla sin solaparse**.
+**16/16.** Los dos elementos que fallaban se resolvieron con las respuestas de la sesión de
+clarificación del 2026-08-10.
 
-- *No [NEEDS CLARIFICATION] markers remain*: quedan 2 marcadores, en Edge Cases.
-- *Scope is clearly bounded*: el alcance depende de la respuesta. Si entran el desplazamiento y el
-  zoom, la funcionalidad crece de forma considerable; si las piezas se reducen para caber, no.
+Lo que hay que vigilar en el diseño, porque es donde esta funcionalidad se puede contradecir a sí
+misma: **FR-006 dice que las posiciones son idénticas para todos y FR-031 dice que cada pantalla
+dibuja a su escala**. Se sostienen a la vez solo si el tablero tiene un tamaño propio, ajeno a
+cualquier ventana (FR-030), y la ventana únicamente decide con qué aumento se pinta. Si en algún
+momento el tamaño de la ventana entra en el cálculo de una posición, las dos cosas dejan de ser
+ciertas y dos jugadores ven tableros distintos.
 
-FR-002 ("ninguna pieza se solapa") es el requisito central de la funcionalidad y **no se puede
-cumplir para cualquier cantidad de piezas en cualquier pantalla** sin decidir esto primero. Con
-500 piezas en un portátil, o bien las piezas se hacen muy pequeñas, o bien el tablero se hace más
-grande que la ventana y hay que poder recorrerlo.
+SC-010 existe para atrapar exactamente ese fallo.
