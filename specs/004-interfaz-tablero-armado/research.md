@@ -75,7 +75,7 @@ meter un hueco apaisado en un tablero apaisado.
 
 Tamaños que resultan, con el paso de 160 y una ventana de 1920 × 1080:
 
-| Piezas | Cuadrícula | Hueco central | Tablero | Huecos en banda | Pieza en pantalla |
+| Piezas | Cuadrícula | Área central | Tablero | Huecos en banda | Pieza en pantalla |
 |---|---|---|---|---|---|
 | 20 | 4 × 5 | 4 × 3 | 8 × 5 | 28 | 135 px |
 | 50 | 5 × 10 | 7 × 4 | 12 × 7 | 56 | 96 px |

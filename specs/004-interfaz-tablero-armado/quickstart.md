@@ -140,7 +140,28 @@ Estrechar la ventana por debajo de 1024 px.
 **Esperado**: aparece el aviso de que la experiencia está pensada para escritorio o tableta. **No
 bloquea**: quien insista puede seguir usando el tablero (A-008).
 
-### 7. Rendimiento (SC-006)
+### 7. Las dos métricas de usabilidad (SC-002, SC-007)
+
+Son las únicas comprobaciones que **necesitan a otra persona**, y por eso es fácil que se queden
+sin hacer. Cuestan cinco minutos entre las dos.
+
+**SC-007 — primera impresión.** Sentar delante del tablero a alguien que no haya visto la
+aplicación, con un rompecabezas de 104 piezas ya cargado, y preguntarle sin dar ninguna pista:
+*"¿dónde están las piezas y dónde se arma?"*.
+
+**Esperado**: lo acierta a la primera y sin dudar. Si titubea, el problema no es que la persona
+no entienda: es que el área central no se lee como el sitio donde armar, y hay que darle una
+señal visual más clara.
+
+**SC-002 — encontrar una pieza.** Con el mismo rompecabezas de 104 piezas, señalar una zona de
+la imagen de referencia —"la ventana del tejado", "la puerta roja"— y cronometrar cuánto tarda
+en localizar esa pieza en la banda, **sin mover ninguna**.
+
+**Esperado**: menos de 15 segundos. Es la métrica que justifica la funcionalidad entera: con el
+reparto anterior, que solapa piezas, la tarea es directamente imposible sin apartar las de
+encima.
+
+### 8. Rendimiento (SC-006)
 
 Con **150 piezas**, abrir DevTools → Performance, grabar mientras se arrastra una pieza varios
 segundos.

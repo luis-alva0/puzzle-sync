@@ -31,7 +31,7 @@ sin distinción posible a nivel de esquema.
 BoardSize {
   width       número   ancho del tablero en unidades de tablero
   height      número   alto del tablero
-  holeX       número   esquina superior izquierda del área de armado
+  holeX       número   esquina superior izquierda del área central
   holeY       número
   holeWidth   número   ancho del área central libre
   holeHeight  número   alto del área central libre

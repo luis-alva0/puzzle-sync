@@ -165,7 +165,7 @@ legibles y que ninguno tapa piezas.
 - **Teléfonos**: quedan fuera de alcance. Al entrar desde una pantalla pequeña se avisa de que la
   experiencia está pensada para escritorio o tableta.
 - **Rompecabezas muy alargado**: una imagen panorámica produce una cuadrícula muy ancha y baja;
-  la banda perimetral y el hueco central deben seguir la proporción de la imagen, no ser siempre
+  la banda perimetral y el área central deben seguir la proporción de la imagen, no ser siempre
   un cuadrado.
 - **Piezas ya movidas**: si un jugador entra a una sala en curso, ve las piezas donde están, no
   la disposición inicial. La banda perimetral es solo el punto de partida.
@@ -266,7 +266,7 @@ decisión local de cada pantalla.
 
 - **Disposición inicial**: el conjunto de posiciones que ocupa cada pieza al empezar la partida.
   Se calcula una sola vez, al crear la sala, y queda guardada como parte del estado compartido.
-- **Área de armado**: el rectángulo central libre de piezas, con la proporción del rompecabezas.
+- **Área central**: el rectángulo central libre de piezas, con la proporción del rompecabezas.
   Es donde se muestra la imagen de referencia y donde se espera que se arme.
 - **Silueta de pieza**: la forma de cada pieza, determinada por sus cuatro lados. Ya existe en el
   proyecto; esta funcionalidad la lleva al tablero.

@@ -34,11 +34,11 @@ Esta funcionalidad son **7 commits**:
 |---|---|---|
 | 1. Setup | T001 | `chore(setup): confirmar punto de partida limpio - T001` |
 | 2. Foundational | T002–T006 | `feat(foundational): definir el tamano del tablero y la rejilla de huecos - T002-T006` |
-| 3. US1 | T007–T019 | `feat(US1): repartir las piezas en banda perimetral sin solapes - T007-T019` |
-| 4. US2 | T020–T022 | `feat(US2): fondo neutro y legibilidad de las siluetas - T020-T022` |
-| 5. US4 | T023–T033 | `feat(US4): barra superior con conexion, cronometro y menu - T023-T033` |
-| 6. US3 | T034–T038 | `feat(US3): imagen de referencia en el area central - T034-T038` |
-| 7. Polish | T039–T050 | `perf(polish): cachear rutas y verificar rendimiento - T039-T050` |
+| 3. US1 | T007–T021 | `feat(US1): repartir las piezas en banda perimetral sin solapes - T007-T021` |
+| 4. US2 | T022–T025 | `feat(US2): fondo neutro y legibilidad de las siluetas - T022-T025` |
+| 5. US4 | T026–T036 | `feat(US4): barra superior con conexion, cronometro y menu - T026-T036` |
+| 6. US3 | T037–T041 | `feat(US3): imagen de referencia en el area central - T037-T041` |
+| 7. Polish | T042–T052 | `perf(polish): cachear rutas y verificar rendimiento - T042-T052` |
 
 Si una fase deja el build o los tipos rotos, se corrige **dentro de esa misma fase** antes de
 commitear. Las correcciones que aparezcan al verificar y no pertenezcan a ninguna fase van en su
@@ -64,8 +64,8 @@ contra un blanco móvil.
 **⚠️ Ninguna historia puede empezar antes de terminar esta fase.**
 
 - [ ] T002 Crear `lib/puzzle/board-layout.ts` con las constantes de la rejilla: el paso derivado de `PIECE_SIZE` y `tabOverflow(PIECE_SIZE)` según research R2, nunca escrito a mano, y la proporción objetivo 16:10 de research R3
-- [ ] T003 Implementar `boardSize(gridRows, gridCols)` en `lib/puzzle/board-layout.ts` según [contracts/board-layout.md](./contracts/board-layout.md): devuelve ancho, alto y el rectángulo del área central, sin consultar `window` ni el DOM
-- [ ] T004 Escribir `tests/unit/board-layout.test.ts` con las garantías de `boardSize`: el hueco central nunca es menor que el rompecabezas resuelto, conserva su proporción, está centrado, y hay huecos de banda suficientes para las cinco cantidades admitidas (20, 50, 100, 200, 500)
+- [ ] T003 Implementar `boardSize(gridRows, gridCols)` en `lib/puzzle/board-layout.ts` según [contracts/board-layout.md](./contracts/board-layout.md): devuelve ancho, alto y el rectángulo del área central, sin consultar `window` ni el DOM (FR-030)
+- [ ] T004 Escribir `tests/unit/board-layout.test.ts` con las garantías de `boardSize`: el área central nunca es menor que el rompecabezas resuelto, conserva su proporción, está centrado, y hay huecos de banda suficientes para las cinco cantidades admitidas (20, 50, 100, 200, 500) (FR-003, FR-007)
 - [ ] T005 Implementar en `lib/puzzle/board-layout.ts` la generación de huecos: recorrer el tablero con el paso de la rejilla y descartar los que caen dentro del área central
 - [ ] T006 Añadir a `tests/unit/board-layout.test.ts` las garantías de los huecos: dos huecos nunca se solapan, ninguno invade el área central, y la cantidad disponible cubre todas las piezas
 
@@ -97,12 +97,15 @@ parcialmente, que el rectángulo central queda libre, y que dos navegadores ven 
 - [ ] T014 [P] [US1] Sustituir la llamada a `scatterPieces` por `layoutPieces` en `tests/integration/helpers.ts`
 - [ ] T015 [P] [US1] Sustituir la llamada a `scatterPieces` por `layoutPieces` en `tests/integration/play-count.test.ts`
 - [ ] T016 [US1] Eliminar `scatterPieces` y su generador congruencial `createSeededRandom` de `lib/puzzle/geometry.ts`, junto con la constante `SCATTER_MARGIN` que solo usaba él
-- [ ] T017 [US1] Reemplazar en `components/BoardCanvas.tsx` el cálculo propio del mundo —`solvedWidth + PIECE_SIZE * 4`— por una llamada a `boardSize()`, que es lo que evita que las piezas caigan fuera de lo dibujado
-- [ ] T018 [US1] Ajustar en `components/BoardCanvas.tsx` el elemento `<canvas>` para que ocupe el espacio disponible en lugar de fijar `aspectRatio` a partir de la cuadrícula, de modo que el tablero completo quepa siempre en la ventana (FR-032)
-- [ ] T019 [US1] Sustituir en `components/BoardCanvas.tsx` la silueta del rompecabezas resuelto por el rectángulo del área central que devuelve `boardSize()`, para que la referencia visual coincida con el hueco real
+- [ ] T017 [US1] Reemplazar en `components/BoardCanvas.tsx` el cálculo propio del mundo —`solvedWidth + PIECE_SIZE * 4`— por una llamada a `boardSize()`, que es lo que evita que las piezas caigan fuera de lo dibujado (FR-031)
+- [ ] T018 [US1] Poner a cero `originX` y `originY` en `components/BoardCanvas.tsx`: con `boardSize()` las coordenadas empiezan en 0, mientras que hoy valen `PIECE_SIZE * 2`. Hay que cambiarlo **en los tres sitios** —el `translate` del dibujado y las dos entradas de `dataset` que lee `toBoard()`— o el tablero se dibuja desplazado 200 unidades y el arrastre agarra donde no hay pieza
+- [ ] T019 [US1] Ajustar en `components/BoardCanvas.tsx` el elemento `<canvas>` para que ocupe el espacio disponible en lugar de fijar `aspectRatio` a partir de la cuadrícula, de modo que el tablero completo quepa siempre en la ventana (FR-032), **centrando el tablero** en el espacio sobrante: con proporción 16:10 y ventanas de otra proporción siempre sobra margen en un eje
+- [ ] T020 [US1] Sustituir en `components/BoardCanvas.tsx` la silueta del rompecabezas resuelto por el rectángulo del área central que devuelve `boardSize()`, para que la referencia visual coincida con el hueco real (FR-003)
+
+- [ ] T021 [US1] Comprobar que el arrastre sigue funcionando tras los cambios de escala y origen: `toBoard()` en `components/BoardCanvas.tsx` traduce coordenadas usando el origen y la escala, y T017–T019 modifican los dos. Es la comprobación que cierra la fase, no una tarea de pulido — **requiere navegador**
 
 **Checkpoint**: una sala nueva muestra las piezas repartidas en la banda, sin solapes y con el
-centro libre. El MVP de esta funcionalidad está entregado.
+centro libre, y las piezas se pueden arrastrar. El MVP de esta funcionalidad está entregado.
 
 ---
 
@@ -119,9 +122,10 @@ del contorno exterior tienen el lado de fuera recto.
 contornea. **FR-009 a FR-013 ya se cumplen.** Esta fase se reduce a lo que falta —el fondo— y a
 confirmar que el cambio de reparto no rompió lo que ya funcionaba.
 
-- [ ] T020 [US2] Cambiar el fondo del tablero en `components/BoardCanvas.tsx` del gris oscuro actual a una superficie neutra tipo cartón, que no compita con las piezas (FR-014)
-- [ ] T021 [US2] Revisar en `components/BoardCanvas.tsx` que el contorno y la sombra de cada pieza siguen distinguiéndose sobre el fondo nuevo, ajustando opacidad y grosor si el cambio de fondo los deja invisibles (FR-013)
-- [ ] T022 [US2] Verificar visualmente sobre una sala real que las cuatro esquinas tienen dos lados rectos, que las piezas del borde tienen recto el lado exterior y que dos vecinas encajan sin hueco ni superposición — **requiere navegador**
+- [ ] T022 [US2] Cambiar el fondo del tablero en `components/BoardCanvas.tsx` del gris oscuro actual a una superficie neutra tipo cartón, que no compita con las piezas (FR-014)
+- [ ] T023 [US2] Revisar en `components/BoardCanvas.tsx` que el contorno y la sombra de cada pieza siguen distinguiéndose sobre el fondo nuevo, ajustando opacidad y grosor si el cambio de fondo los deja invisibles (FR-013)
+- [ ] T024 [US2] Verificar visualmente sobre una sala real que las cuatro esquinas tienen dos lados rectos, que las piezas del borde tienen recto el lado exterior y que dos vecinas encajan sin hueco ni superposición (FR-009, FR-010, FR-011, SC-001, SC-008) — **requiere navegador**
+- [ ] T025 [US2] Verificar que cada pieza muestra su porción de imagen recortada por la silueta, lengüetas incluidas, y no un rectángulo (FR-012); y que **ninguna pieza aparece girada** ni existe control alguno para rotarla (FR-004, FR-005) — **requiere navegador**
 
 **Checkpoint**: las piezas se leen bien sobre el tablero.
 
@@ -138,17 +142,17 @@ legibles y que ninguno tapa piezas.
 **Se implementa antes que la US3** aunque tenga la misma prioridad: el icono que dispara la imagen
 de referencia vive en esta barra, así que la US3 no se puede probar sin ella.
 
-- [ ] T023 [P] [US4] Crear `lib/format/duration.ts` con el formateo del tiempo transcurrido como `m:ss`, pasando a `h:mm:ss` a partir de una hora
-- [ ] T024 [P] [US4] Crear `tests/unit/duration.test.ts` cubriendo el cero, el cambio de minuto, el paso a horas y los valores negativos, que pueden darse si el desfase de reloj se estima mal
-- [ ] T025 [US4] Crear `components/BoardToolbar.tsx` con la maqueta de la barra: menú a la izquierda, iconos al centro, estado y controles a la derecha, como elemento del DOM situado **encima** del canvas y no dibujado dentro (research R9, FR-015)
-- [ ] T026 [US4] Calcular en `components/Board.tsx` el desfase entre el reloj local y el del servidor a partir de `serverTime` de la respuesta de estado, y guardarlo para el cronómetro (research R6)
-- [ ] T027 [US4] Crear `components/ElapsedTime.tsx` que cuente desde `startedAt` corrigiendo con el desfase, se actualice cada segundo y **se detenga al completarse** el rompecabezas (FR-017, FR-018, FR-019)
-- [ ] T028 [US4] Integrar `components/ConnectionStatus.tsx` dentro de la barra y retirarlo de donde esté hoy, para que no aparezca duplicado (FR-016, FR-029)
-- [ ] T029 [US4] Añadir a `components/BoardToolbar.tsx` el control de pantalla completa sobre el contenedor del tablero, tomando el estado del evento `fullscreenchange` y no de un booleano propio, para que el botón siga siendo correcto si el navegador deniega la petición o el usuario sale con Escape (research R8, FR-020)
-- [ ] T030 [US4] Crear `components/BoardMenu.tsx` con las opciones provisionales de FR-026 —ver y copiar el código de sala, jugadores conectados, salir de la sala y ayuda— que se cierra al elegir una o al pulsar fuera (FR-027)
-- [ ] T031 [US4] Mover el contenido de `components/PlayerList.tsx` dentro del menú y retirarlo de la pantalla principal, sin duplicarlo (FR-029)
-- [ ] T032 [US4] Montar la barra en `app/rooms/[code]/page.tsx` de modo que ocupe la parte superior y el canvas reciba la altura restante, sin superponerse (FR-015)
-- [ ] T033 [P] [US4] Añadir etiquetas accesibles y navegación por teclado a los controles de `components/BoardToolbar.tsx` y `components/BoardMenu.tsx`: son botones reales del DOM precisamente para poder tenerlas
+- [ ] T026 [P] [US4] Crear `lib/format/duration.ts` con el formateo del tiempo transcurrido como `m:ss`, pasando a `h:mm:ss` a partir de una hora
+- [ ] T027 [P] [US4] Crear `tests/unit/duration.test.ts` cubriendo el cero, el cambio de minuto, el paso a horas y los valores negativos, que pueden darse si el desfase de reloj se estima mal
+- [ ] T028 [US4] Crear `components/BoardToolbar.tsx` con la maqueta de la barra: menú a la izquierda, iconos al centro, estado y controles a la derecha, como elemento del DOM situado **encima** del canvas y no dibujado dentro (research R9, FR-015)
+- [ ] T029 [US4] Calcular en `components/Board.tsx` el desfase entre el reloj local y el del servidor a partir de `serverTime` de la respuesta de estado, y guardarlo para el cronómetro (research R6)
+- [ ] T030 [US4] Crear `components/ElapsedTime.tsx` que cuente desde `startedAt` corrigiendo con el desfase, se actualice cada segundo y **se detenga al completarse** el rompecabezas (FR-017, FR-018, FR-019)
+- [ ] T031 [US4] Integrar `components/ConnectionStatus.tsx` dentro de la barra y retirarlo de donde esté hoy, para que no aparezca duplicado (FR-016, FR-029)
+- [ ] T032 [US4] Añadir a `components/BoardToolbar.tsx` el control de pantalla completa sobre el contenedor del tablero, tomando el estado del evento `fullscreenchange` y no de un booleano propio, para que el botón siga siendo correcto si el navegador deniega la petición o el usuario sale con Escape (research R8, FR-020)
+- [ ] T033 [US4] Crear `components/BoardMenu.tsx` con las opciones provisionales de FR-026 —ver y copiar el código de sala, jugadores conectados, salir de la sala y ayuda— que se cierra al elegir una o al pulsar fuera (FR-027) (FR-025)
+- [ ] T034 [US4] Mover el contenido de `components/PlayerList.tsx` dentro del menú y retirarlo de la pantalla principal, sin duplicarlo (FR-029)
+- [ ] T035 [US4] Montar la barra en `app/rooms/[code]/page.tsx` de modo que ocupe la parte superior y el canvas reciba la altura restante, sin superponerse (FR-015)
+- [ ] T036 [P] [US4] Añadir etiquetas accesibles y navegación por teclado a los controles de `components/BoardToolbar.tsx` y `components/BoardMenu.tsx`: son botones reales del DOM precisamente para poder tenerlas
 
 **Checkpoint**: la barra está completa y el cronómetro es común a todos los jugadores.
 
@@ -163,11 +167,11 @@ desaparece al retirarlo, sin interrumpir la partida.
 
 **Depende de la Phase 5**: el icono que la dispara está en la barra.
 
-- [ ] T034 [US3] Añadir a `components/BoardCanvas.tsx` una propiedad booleana que dibuje la imagen completa en el rectángulo del área central, **antes de las piezas**, para que las ya colocadas se vean por encima (research R7)
-- [ ] T035 [US3] Crear `components/ReferenceImage.tsx` con el icono de la barra que activa esa propiedad al entrar el ratón y la desactiva al salir (FR-021, FR-022)
-- [ ] T036 [US3] Añadir a `components/ReferenceImage.tsx` el comportamiento táctil: un toque muestra la imagen y otro la oculta (FR-023)
-- [ ] T037 [US3] Mostrar en `components/ReferenceImage.tsx` un aviso en el icono cuando la imagen no haya cargado, en lugar de dejar que se muestre un recuadro vacío
-- [ ] T038 [US3] Verificar que mostrar la imagen no interrumpe la partida: con la imagen visible, un movimiento de otro jugador debe llegar y aplicarse (FR-024) — **requiere navegador**
+- [ ] T037 [US3] Añadir a `components/BoardCanvas.tsx` una propiedad booleana que dibuje la imagen completa en el rectángulo del área central, **antes de las piezas**, para que las ya colocadas se vean por encima (research R7)
+- [ ] T038 [US3] Crear `components/ReferenceImage.tsx` con el icono de la barra que activa esa propiedad al entrar el ratón y la desactiva al salir (FR-021, FR-022)
+- [ ] T039 [US3] Añadir a `components/ReferenceImage.tsx` el comportamiento táctil: un toque muestra la imagen y otro la oculta (FR-023)
+- [ ] T040 [US3] Mostrar en `components/ReferenceImage.tsx` un aviso en el icono cuando la imagen no haya cargado, en lugar de dejar que se muestre un recuadro vacío
+- [ ] T041 [US3] Verificar que mostrar la imagen no interrumpe la partida: con la imagen visible, un movimiento de otro jugador debe llegar y aplicarse (FR-024), y **medir que aparece y desaparece en menos de 300 ms** desde que el ratón entra y sale del icono (SC-004) — **requiere navegador**
 
 **Checkpoint**: la ayuda de imagen funciona y es local a cada jugador.
 
@@ -175,18 +179,17 @@ desaparece al retirarlo, sin interrumpir la partida.
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T039 [P] Cachear los `Path2D` en `components/BoardCanvas.tsx` calculando uno por celda dentro del mismo `useMemo` que ya construye la rejilla de bordes, en lugar de reconstruirlos para cada pieza en cada frame (research R5)
-- [ ] T040 [P] Añadir en `app/rooms/[code]/page.tsx` el aviso de pantalla estrecha por debajo de 1024 px, que informa sin bloquear (FR-034, A-008)
-- [ ] T041 Comprobar que el arrastre sigue funcionando tras los cambios de escala: la traducción de coordenadas de pantalla a tablero de `components/BoardCanvas.tsx` depende del origen y la escala, que esta funcionalidad modifica
-- [ ] T042 Medir el rendimiento con 150 piezas y confirmar SC-006 (50 fps o más durante el arrastre) — **requiere navegador**
-- [ ] T043 Medir el rendimiento con 500 piezas y confirmar que las piezas de 31 px se ven enteras y sin solapes — **requiere navegador**
-- [ ] T044 Confirmar SC-010 sobre una sala real: capturar el estado con `GET /state`, redimensionar la ventana, volver a capturarlo y comprobar que **ninguna coordenada cambió** — **requiere navegador**
-- [ ] T045 Confirmar SC-003 abriendo la misma sala en dos navegadores **con ventanas de distinto tamaño**: la disposición debe ser la misma, cambiando solo la escala — **requiere navegador**
-- [ ] T046 Confirmar SC-005 adelantando `started_at` cinco minutos en la base de datos y comprobando que un segundo navegador muestra el mismo tiempo, incluso con la hora del sistema cambiada — **requiere navegador**
-- [ ] T047 Ejecutar `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:db` y `npm run build`, confirmando que las pruebas de integración —que construyen salas con el reparto nuevo— siguen en verde
-- [ ] T048 Ejecutar la validación completa de [quickstart.md](./quickstart.md), los 8 escenarios — **requiere navegador**
-- [ ] T049 Revisar el cumplimiento de la constitución antes del merge: sin dependencias nuevas, sin variables de entorno nuevas, sin migraciones, y commits en formato `tipo(Txxx):`
-- [ ] T050 Actualizar la tabla de trampas conocidas de `README.md` con lo que aparezca durante la implementación
+- [ ] T042 [P] Cachear los `Path2D` en `components/BoardCanvas.tsx` calculando uno por celda dentro del mismo `useMemo` que ya construye la rejilla de bordes, en lugar de reconstruirlos para cada pieza en cada frame (research R5)
+- [ ] T043 [P] Añadir en `app/rooms/[code]/page.tsx` el aviso de pantalla estrecha por debajo de 1024 px, que informa sin bloquear (FR-034, A-008)
+- [ ] T044 Medir el rendimiento con 150 piezas y confirmar SC-006 (50 fps o más durante el arrastre) — **requiere navegador**
+- [ ] T045 Medir el rendimiento con 500 piezas y confirmar que las piezas de 31 px se ven enteras y sin solapes (SC-009) — **requiere navegador**
+- [ ] T046 Confirmar SC-010 sobre una sala real: capturar el estado con `GET /state`, redimensionar la ventana, volver a capturarlo y comprobar que **ninguna coordenada cambió** (FR-033, SC-010) — **requiere navegador**
+- [ ] T047 Confirmar SC-003 abriendo la misma sala en dos navegadores **con ventanas de distinto tamaño**: la disposición debe ser la misma, cambiando solo la escala — **requiere navegador**
+- [ ] T048 Confirmar SC-005 adelantando `started_at` cinco minutos en la base de datos y comprobando que un segundo navegador muestra el mismo tiempo, incluso con la hora del sistema cambiada — **requiere navegador**
+- [ ] T049 Ejecutar `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:db` y `npm run build`, confirmando que las pruebas de integración —que construyen salas con el reparto nuevo— siguen en verde (FR-028)
+- [ ] T050 Ejecutar la validación completa de [quickstart.md](./quickstart.md), los 9 escenarios — **requiere navegador**
+- [ ] T051 Revisar el cumplimiento de la constitución antes del merge: sin dependencias nuevas, sin variables de entorno nuevas, sin migraciones, y commits en formato `tipo(Txxx):`
+- [ ] T052 Actualizar la tabla de trampas conocidas de `README.md` con lo que aparezca durante la implementación
 
 ---
 
@@ -226,10 +229,10 @@ funcionalidad, y escribir primero el aserto de no solape evita darlo por bueno d
 
 - **T007 a T010**: cuatro pruebas del mismo contrato, sobre distintas garantías.
 - **T014 y T015**: los dos llamadores de prueba, archivos distintos.
-- **T023 y T024**: el formateo de duración y su prueba, independientes del resto de la barra.
+- **T026 y T027**: el formateo de duración y su prueba, independientes del resto de la barra.
 - **Phase 3 y Phase 5 en paralelo**: el reparto y la barra no se tocan. Es el mayor ahorro
   disponible si se trabaja en dos frentes.
-- **T039 y T040**: archivos distintos.
+- **T042 y T043**: archivos distintos.
 
 ---
 
@@ -251,10 +254,18 @@ entregado.
 
 ### Lo que hay que vigilar
 
-**T017 es la tarea con más riesgo silencioso.** Si el canvas y el reparto acaban usando tamaños de
-tablero distintos, las piezas se colocan donde nadie las pinta y el fallo no salta en ninguna
-prueba: el estado es correcto, solo que invisible. Por eso `boardSize()` se construye en la Phase 2
-y ambos lados la llaman, en vez de que cada uno calcule el suyo como ocurre hoy.
+**T017 y T018 son las tareas con más riesgo silencioso**, y por el mismo motivo: producen un
+tablero cuyo estado es correcto pero invisible o descolocado, y **ninguna prueba lo detecta**.
 
-**T039 no es cosmético.** Con 150 piezas a 60 fps hoy se construyen 9 000 objetos `Path2D` por
-segundo. Si SC-006 no se cumple en T042, este es el primer sitio donde mirar.
+- **T017**: si el canvas y el reparto acaban usando tamaños de tablero distintos, las piezas se
+  colocan donde nadie las pinta. Por eso `boardSize()` se construye en la Phase 2 y ambos lados la
+  llaman, en vez de que cada uno calcule el suyo como ocurre hoy.
+- **T018**: el origen vale `PIECE_SIZE * 2` y con `boardSize()` debe pasar a cero. Si se cambia en
+  el dibujado pero no en el `dataset` que lee `toBoard()` —o al revés— el tablero se ve bien pero
+  el arrastre agarra 200 unidades más allá.
+
+Por eso **T021 cierra la fase comprobando el arrastre**, en lugar de dejarlo para el pulido: el
+riesgo se introduce aquí y se descubre aquí.
+
+**T042 no es cosmético.** Con 150 piezas a 60 fps hoy se construyen 9 000 objetos `Path2D` por
+segundo. Si SC-006 no se cumple en T044, este es el primer sitio donde mirar.

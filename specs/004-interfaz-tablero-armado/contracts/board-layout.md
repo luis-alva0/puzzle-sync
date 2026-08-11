@@ -107,7 +107,7 @@ Es cuadrático, pero con 500 piezas son 124 750 comparaciones: milisegundos. No 
 espacial.
 
 Se prueban además, con una prueba por garantía: la cobertura exacta, que ninguna pieza caiga en el
-hueco central, que ninguna empiece resuelta, el determinismo con la misma semilla, y el desorden.
+área central, que ninguna empiece resuelta, el determinismo con la misma semilla, y el desorden.
 
 **Lo que no se prueba con unitarias** es que lo dibujado coincida con lo calculado. Eso es visual y
 está en [quickstart.md](../quickstart.md); la protección estructural es que ambos lados llamen a

@@ -102,8 +102,8 @@ specs/004-interfaz-tablero-armado/
 
 ```
 lib/puzzle/
-├── geometry.ts           # MODIFICADO: boardSize(), scatterPieces() pasa a delegar
-└── board-layout.ts       # NUEVO: rejilla de huecos perimetrales, función pura
+├── geometry.ts           # MODIFICADO: pierde scatterPieces, createSeededRandom y SCATTER_MARGIN
+└── board-layout.ts       # NUEVO: boardSize(), layoutPieces() y la rejilla de huecos
 
 lib/format/
 └── duration.ts           # NUEVO: formatear el tiempo transcurrido como m:ss
@@ -121,9 +121,18 @@ components/
 app/rooms/[code]/
 └── page.tsx              # MODIFICADO: aviso de pantalla pequeña, contenedor a pantalla completa
 
+app/api/rooms/
+└── route.ts              # MODIFICADO: llama a layoutPieces en lugar de scatterPieces
+
 tests/unit/
 ├── board-layout.test.ts  # NUEVO: el aserto de no solape, y la cobertura de la banda
 └── duration.test.ts      # NUEVO
+
+tests/integration/
+├── helpers.ts            # MODIFICADO: el mismo cambio de llamada
+└── play-count.test.ts    # MODIFICADO: el mismo cambio de llamada
+
+README.md                 # MODIFICADO: trampas nuevas que aparezcan al implementar
 ```
 
 **Structure Decision**: se mantiene la estructura del App Router ya establecida. El reparto vive
