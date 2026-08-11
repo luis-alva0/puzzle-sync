@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 /**
  * Icono que muestra la imagen completa como ayuda para armar (FR-021 a FR-024).
@@ -16,11 +16,36 @@ import { useState } from 'react';
 interface ReferenceImageProps {
   visible: boolean;
   onVisibleChange: (visible: boolean) => void;
-  /** `false` si la imagen del rompecabezas no cargó: el icono lo dice en vez de mostrar un hueco. */
-  available: boolean;
+  /** URL firmada de la imagen del rompecabezas, o cadena vacía si aún no se conoce. */
+  imageUrl: string;
 }
 
-export function ReferenceImage({ visible, onVisibleChange, available }: ReferenceImageProps) {
+export function ReferenceImage({ visible, onVisibleChange, imageUrl }: ReferenceImageProps) {
+  /*
+   * Que la URL exista no significa que la imagen cargue: puede haber caducado la firma o fallar
+   * la red. El icono tiene que decirlo, en lugar de ofrecer una ayuda que abre un hueco vacío.
+   *
+   * Se comprueba aquí con una carga propia en lugar de propagar el resultado desde el canvas por
+   * tres componentes. No cuesta una descarga extra: el canvas ya pidió esa misma URL y el
+   * navegador la sirve de su caché.
+   */
+  // Se guarda **qué** URL falló, no un booleano: así cambiar de rompecabezas reinicia el estado
+  // solo, sin tener que ponerlo a `false` dentro del efecto.
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!imageUrl) return;
+
+    const probe = new Image();
+    probe.onerror = () => setFailedUrl(imageUrl);
+    probe.src = imageUrl;
+    return () => {
+      probe.onerror = null;
+    };
+  }, [imageUrl]);
+
+  const available = Boolean(imageUrl) && failedUrl !== imageUrl;
+
   // En táctil no hay «posar el ratón»: el toque alterna (FR-023). Se distingue del ratón por el
   // tipo de puntero del propio evento, no por el ancho de la ventana.
   const [touchLatched, setTouchLatched] = useState(false);

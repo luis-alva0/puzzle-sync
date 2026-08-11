@@ -30,7 +30,8 @@ interface BoardToolbarProps {
   clockOffsetMs: number;
   referenceVisible: boolean;
   onReferenceVisibleChange: (visible: boolean) => void;
-  referenceAvailable: boolean;
+  /** URL de la imagen del rompecabezas, para la ayuda de referencia. */
+  imageUrl: string;
   /** Contenedor que pasa a pantalla completa. Suele ser la página entera del tablero. */
   fullscreenTarget: React.RefObject<HTMLElement | null>;
 }
@@ -46,7 +47,7 @@ export function BoardToolbar({
   clockOffsetMs,
   referenceVisible,
   onReferenceVisibleChange,
-  referenceAvailable,
+  imageUrl,
   fullscreenTarget,
 }: BoardToolbarProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -101,7 +102,7 @@ export function BoardToolbar({
         <ReferenceImage
           visible={referenceVisible}
           onVisibleChange={onReferenceVisibleChange}
-          available={referenceAvailable}
+          imageUrl={imageUrl}
         />
       </div>
 

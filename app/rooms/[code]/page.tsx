@@ -248,7 +248,7 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
         clockOffsetMs={clockOffsetMs}
         referenceVisible={referenceVisible}
         onReferenceVisibleChange={setReferenceVisible}
-        referenceAvailable={Boolean(board?.puzzle.imageUrl)}
+        imageUrl={board?.puzzle.imageUrl ?? ''}
         fullscreenTarget={shellRef}
       />
 

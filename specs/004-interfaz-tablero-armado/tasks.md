@@ -167,10 +167,10 @@ desaparece al retirarlo, sin interrumpir la partida.
 
 **Depende de la Phase 5**: el icono que la dispara está en la barra.
 
-- [ ] T037 [US3] Añadir a `components/BoardCanvas.tsx` una propiedad booleana que dibuje la imagen completa en el rectángulo del área central, **antes de las piezas**, para que las ya colocadas se vean por encima (research R7)
-- [ ] T038 [US3] Crear `components/ReferenceImage.tsx` con el icono de la barra que activa esa propiedad al entrar el ratón y la desactiva al salir (FR-021, FR-022)
-- [ ] T039 [US3] Añadir a `components/ReferenceImage.tsx` el comportamiento táctil: un toque muestra la imagen y otro la oculta (FR-023)
-- [ ] T040 [US3] Mostrar en `components/ReferenceImage.tsx` un aviso en el icono cuando la imagen no haya cargado, en lugar de dejar que se muestre un recuadro vacío
+- [X] T037 [US3] Añadir a `components/BoardCanvas.tsx` una propiedad booleana que dibuje la imagen completa en el rectángulo del área central, **antes de las piezas**, para que las ya colocadas se vean por encima (research R7)
+- [X] T038 [US3] Crear `components/ReferenceImage.tsx` con el icono de la barra que activa esa propiedad al entrar el ratón y la desactiva al salir (FR-021, FR-022)
+- [X] T039 [US3] Añadir a `components/ReferenceImage.tsx` el comportamiento táctil: un toque muestra la imagen y otro la oculta (FR-023)
+- [X] T040 [US3] Mostrar en `components/ReferenceImage.tsx` un aviso en el icono cuando la imagen no haya cargado, en lugar de dejar que se muestre un recuadro vacío
 - [ ] T041 [US3] Verificar que mostrar la imagen no interrumpe la partida: con la imagen visible, un movimiento de otro jugador debe llegar y aplicarse (FR-024), y **medir que aparece y desaparece en menos de 300 ms** desde que el ratón entra y sale del icono (SC-004) — **requiere navegador**
 
 **Checkpoint**: la ayuda de imagen funciona y es local a cada jugador.
