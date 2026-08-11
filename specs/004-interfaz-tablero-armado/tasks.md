@@ -274,7 +274,7 @@ segundo. Si SC-006 no se cumple en T044, este es el primer sitio donde mirar.
 
 ## Estado de la implementación (2026-08-10)
 
-**44 de 52 tareas completadas.** Las 8 restantes necesitan un navegador y una persona mirando.
+**42 de 52 tareas completadas.** Las 10 restantes necesitan un navegador y una persona mirando.
 
 | Tarea | Qué falta |
 |---|---|
