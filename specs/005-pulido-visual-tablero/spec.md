@@ -14,6 +14,7 @@
 
 - Q: Cuando otro jugador encaja dos piezas, ¿suena también en mi pantalla? → A: Sí. Suena todo encaje de la sala, propio o ajeno: el progreso es común y enterarse de que el compañero avanza es parte de jugar juntos.
 - Q: Para que las piezas se vean un 25 % más grandes, ¿vale la pena sustituir la rejilla de huecos uniforme por un empaquetado por filas de anchura variable? → A: Sí. La rejilla uniforme fija el paso según la pieza más ancha posible; el empaquetado por filas usa la anchura real de cada una y sigue garantizando el no solape por construcción.
+- Q: Con el contorno plano convertido en relieve, ¿cómo se muestra que una pieza está capturada? → A: El relieve se mantiene siempre y la captura añade un halo de color por fuera del contorno. Las dos señales conviven en canales distintos.
 
 ---
 
@@ -207,6 +208,10 @@ diferencia entre jugables e incómodas.
   no debe sonar; si no, volver de una desconexión sería una traca.
 - **Piezas del borde exterior**: no tienen lengüeta hacia afuera, así que su relieve no puede
   suponer que las cuatro caras sobresalen.
+- **Grupo capturado**: el halo debe rodear el contorno **del grupo**, igual que el relieve, y no
+  aparecer en cada pieza por separado. Un bloque de veinte piezas con veinte halos sería ilegible.
+- **Halo y sombra a la vez**: la pieza capturada lleva halo por fuera y sombra por debajo. Los dos
+  se dibujan alrededor del contorno y no pueden mezclarse en un borrón.
 - **Grupo agarrado por su propia ancla**: es el caso que hoy funciona por casualidad; debe seguir
   funcionando después del arreglo.
 - **Grupo grande arrastrado deprisa**: mover cincuenta piezas a la vez no puede degradar el
@@ -256,6 +261,12 @@ diferencia entre jugables e incómodas.
   juntas interiores se dibujan como líneas de corte.
 - **FR-017**: El relieve NO DEBE oscurecer la imagen hasta impedir reconocer el contenido de la
   pieza.
+- **FR-017a**: Una pieza capturada DEBE conservar su relieve y añadir un **halo de color por
+  fuera** del contorno, no sustituir uno por otro.
+- **FR-017b**: El halo DEBE distinguir la captura propia de la ajena, como hoy, y DEBE convivir
+  con la etiqueta del alias que ya existe.
+- **FR-017c**: El halo DEBE dibujarse por fuera del contorno, sin invadir la imagen de la pieza:
+  la señal de "ocupada" no puede estropear la de "esto es cartón".
 
 **Sonido**
 
@@ -288,6 +299,8 @@ diferencia entre jugables e incómodas.
 **Lo que no cambia**
 
 - **FR-028**: Las reglas de captura, encaje, finalización y sincronización NO DEBEN cambiar.
+- **FR-028a**: La señal visual de pieza ocupada de la feature 001 DEBE seguir siendo reconocible a
+  distancia, sin obligar a leer la etiqueta del alias.
 - **FR-029**: La disposición inicial DEBE seguir siendo idéntica para todos los jugadores.
 - **FR-030**: Ninguna pieza DEBE solaparse con otra en la disposición inicial.
 
