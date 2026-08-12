@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -31,11 +31,12 @@
 
 ## Notes
 
-Queda **1 marcador**, en Edge Cases: si el encaje que hace otro jugador debe sonar también aquí.
-Es la única decisión que cambia comportamiento y que no tiene un valor por defecto evidente —en
-una sala de dos personas, oír los aciertos ajenos puede ser compañía o puede ser ruido.
+**16/16.** El único marcador se resolvió en la sesión del 2026-08-11: suenan todos los encajes de
+la sala. Eso subió el riesgo de ruido, así que la decisión trajo dos requisitos que antes no
+hacían falta —FR-020a, contra los sonidos solapados, y FR-018b, para que volver de una
+desconexión no dispare una traca de encajes ya ocurridos—.
 
-Todo lo demás quedó resuelto con supuestos declarados. Los dos que más conviene revisar:
+Los dos supuestos que más conviene revisar:
 
 - **A-001** da por buenas las dos causas localizadas antes de escribir la especificación. La del
   arrastre está confirmada leyendo el código; la de las costuras solo descarta la geometría, así

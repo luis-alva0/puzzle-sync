@@ -8,6 +8,12 @@
 
 **Input**: User description: "Vamos a corregir detalles de UI. Primero que nada, las piezas no encajan entre si, en la foto que te mande se ve como se unen pero quedan espacios entre ellas. Ademas, las fotos deben de tener un efecto de borde/profundidad que hace que se vea mas realista como una pieza fisica. Las formas de las piezas deben ser iguales que las del ejemplo, seguro debe de tener unos pocos modelos de piezas que se repiten pero debes identificarlos y copiarlos. Ademas, cuando se juntan las piezas correctas se debe reproducir un sonido para saber que se unieron, y al mover un grupo de piezas se debe mover sin bugs visuales (actualmente hay un bug visual debido a que se mueve un bloque como si se estuviar moviendo solo la primera pieza y luego cuando se suelta se vuelve a centrar). Copia las proporciones de UI del ejemplo, actualmente el canvas no ocupa toda la ventana disponible como se ve en la foto. Identifica otros aspectos que se puedan mejorar."
 
+## Clarifications
+
+### Session 2026-08-11
+
+- Q: Cuando otro jugador encaja dos piezas, ¿suena también en mi pantalla? → A: Sí. Suena todo encaje de la sala, propio o ajeno: el progreso es común y enterarse de que el compañero avanza es parte de jugar juntos.
+
 ---
 
 ## Contexto
@@ -190,10 +196,14 @@ diferencia entre jugables e incómodas.
 - **Sonido bloqueado por el navegador**: los navegadores no dejan sonar nada antes de que el
   usuario interactúe con la página. El primer encaje llega siempre después de un arrastre, así que
   no debería darse; si el navegador lo rechaza igualmente, no puede romper el encaje.
-- **Encaje provocado por otro jugador**: el tablero cambia sin que este jugador haya tocado nada.
-  [NEEDS CLARIFICATION: ¿suena también? Ver Q1.]
+- **Encaje provocado por otro jugador**: suena igual que el propio. Es progreso compartido y el
+  jugador quiere enterarse.
 - **Muchos encajes seguidos**: al completar los últimos huecos pueden encadenarse varias uniones
-  en poco tiempo. El sonido no puede solaparse consigo mismo hasta convertirse en ruido.
+  en poco tiempo, y con dos jugadores encajando a la vez el riesgo se duplica. El sonido no puede
+  solaparse consigo mismo hasta convertirse en ruido.
+- **Encaje ajeno que llega en ráfaga tras reconectar**: al recuperar el estado se descubren de
+  golpe todos los encajes ocurridos durante la ausencia. Eso NO es un encaje que acaba de pasar y
+  no debe sonar; si no, volver de una desconexión sería una traca.
 - **Piezas del borde exterior**: no tienen lengüeta hacia afuera, así que su relieve no puede
   suponer que las cuatro caras sobresalen.
 - **Grupo agarrado por su propia ancla**: es el caso que hoy funciona por casualidad; debe seguir
@@ -249,8 +259,13 @@ diferencia entre jugables e incómodas.
 **Sonido**
 
 - **FR-018**: Al producirse un encaje DEBE reproducirse un sonido breve.
+- **FR-018a**: DEBE sonar tanto el encaje propio como el que hace otro jugador de la sala.
+- **FR-018b**: Los encajes que se descubren al recuperar el estado tras una desconexión NO DEBEN
+  sonar: no acaban de ocurrir.
 - **FR-019**: Soltar una pieza sin encaje NO DEBE producir sonido.
 - **FR-020**: Un encaje en cascada que una varios grupos DEBE producir **un solo** sonido.
+- **FR-020a**: Varios encajes muy seguidos NO DEBEN acumular sonidos solapados. Con dos jugadores
+  encajando a la vez, el tablero debe sonar a rompecabezas y no a matraca.
 - **FR-021**: El jugador DEBE poder silenciar el sonido, y la preferencia DEBE recordarse entre
   visitas.
 - **FR-022**: Si el navegador impide reproducir sonido, el encaje DEBE completarse igual.
@@ -287,7 +302,10 @@ diferencia entre jugables e incómodas.
   perceptible, ni al agarrar ni al soltar.
 - **SC-003**: Una persona que ve una pieza suelta la identifica como pieza de rompecabezas
   **sin dudarlo**, incluso en un tablero de 500 piezas.
-- **SC-004**: El sonido se oye **antes de 100 ms** desde que las piezas encajan.
+- **SC-004**: El sonido se oye **antes de 100 ms** desde que las piezas encajan, y antes de
+  **1 segundo** cuando el encaje lo hizo otro jugador.
+- **SC-004a**: Diez encajes en cinco segundos producen **como mucho** un sonido cada 150 ms; nunca
+  dos superpuestos.
 - **SC-005**: La superficie del tablero ocupa **al menos el 92 %** del alto de la ventana y el
   **100 %** del ancho.
 - **SC-006**: Con 104 piezas, cada pieza se dibuja **al menos un 25 % más grande** que hoy.
@@ -305,6 +323,9 @@ diferencia entre jugables e incómodas.
   de audio: el navegador reproduce sonido de serie.
 - **A-003**: La preferencia de silencio se guarda en el navegador, como el alias. No viaja al
   servidor ni se comparte.
+- **A-003a**: El encaje ajeno se detecta con lo que ya llega por el canal de tiempo real; no hace
+  falta ningún mensaje nuevo. Por eso su sonido admite hasta 1 segundo de retraso mientras el
+  propio se exige inmediato: uno es reacción a tu gesto y el otro, noticia de lo que pasa.
 - **A-004**: "Unos pocos modelos que se repiten" se interpreta como un conjunto de perfiles fijos,
   elegido por borde de forma determinista a partir de la semilla del rompecabezas, para que dos
   jugadores sigan viendo lo mismo.
