@@ -16,6 +16,7 @@
 - Q: Para que las piezas se vean un 25 % más grandes, ¿vale la pena sustituir la rejilla de huecos uniforme por un empaquetado por filas de anchura variable? → A: Sí. La rejilla uniforme fija el paso según la pieza más ancha posible; el empaquetado por filas usa la anchura real de cada una y sigue garantizando el no solape por construcción.
 - Q: Con el contorno plano convertido en relieve, ¿cómo se muestra que una pieza está capturada? → A: El relieve se mantiene siempre y la captura añade un halo de color por fuera del contorno. Las dos señales conviven en canales distintos.
 - Q: ¿El clic del encaje es un archivo de audio del repositorio o se genera con código? → A: Se genera con código. Sin archivo que licenciar en un repositorio público, sin recurso que cargar y sin bytes en la descarga.
+- Q: En una sala retomada al día siguiente, ¿el cronómetro debe contar desde la creación o medir solo tiempo de juego? → A: Desde la creación, como está. No se toca: medir tiempo activo obligaría a acumularlo en el servidor y a definir qué cuenta como activo con varios jugadores.
 
 ---
 
@@ -374,8 +375,8 @@ diferencia entre jugables e incómodas.
 
 ## Dependencies
 
-- **D-001**: Depende de la feature 004, cuya banda perimetral, barra superior y tamaño de tablero
-  se ajustan aquí.
+- **D-001**: Depende de la feature 004 y **sustituye su rejilla de huecos uniforme** por un
+  empaquetado por filas. La barra superior y el tamaño de tablero también se ajustan aquí.
 - **D-002**: Depende de la generación de siluetas de la feature 002, cuyos perfiles de lengüeta se
   sustituyen.
 - **D-003**: El arreglo del arrastre toca la reconciliación de estado en tiempo real de la feature
@@ -386,6 +387,11 @@ diferencia entre jugables e incómodas.
 - Rotación de piezas.
 - Desplazar y ampliar el tablero.
 - Sonidos que no sean el del encaje: ni al capturar, ni al soltar, ni al completar.
+- Cambiar lo que mide el cronómetro. Se planteó porque en una sala retomada al día siguiente marca
+  un número enorme —21:42:34 en la captura que motivó esta funcionalidad— y se decidió dejarlo:
+  medir tiempo de juego real exige acumularlo en el servidor y definir qué cuenta como activo con
+  varios jugadores entrando y saliendo, y eso rompe la propiedad de la feature 004 de derivarlo de
+  un solo dato, que es lo que hace que una desconexión no lo desajuste.
 - Animaciones de encaje, partículas o celebración al terminar.
 - Elegir el fondo del tablero o el estilo de corte.
 - Cambiar las reglas de captura, encaje o sincronización.
