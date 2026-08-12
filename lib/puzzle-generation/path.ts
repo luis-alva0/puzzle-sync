@@ -88,6 +88,90 @@ export function piecePath(edges: PieceEdges, size: number): Path2D {
   return path;
 }
 
+/** Un lado de una pieza, para elegir qué trazar. */
+type Side = 'top' | 'right' | 'bottom' | 'left';
+
+/** Pieza tal como la ve el trazado de grupos: su celda y dónde está en el tablero. */
+export interface GroupMember {
+  gridRow: number;
+  gridCol: number;
+  /** Posición en el tablero, ya relativa al origen del grupo. */
+  x: number;
+  y: number;
+  edges: PieceEdges;
+}
+
+/** Los tres trazados de un grupo. Ver research R3. */
+export interface GroupPaths {
+  /** Contorno completo, para recortar y rellenar la imagen. */
+  filled: Path2D;
+  /** Solo los lados sin vecino dentro del grupo: relieve, sombra y halo. */
+  outline: Path2D;
+  /** Solo los lados con vecino: las líneas de corte. */
+  seams: Path2D;
+}
+
+/** Traza un lado suelto como subtrazado abierto, sin cerrar la figura. */
+function traceSide(path: Path2D, member: GroupMember, side: Side, size: number): void {
+  const { x, y } = member;
+  const e = member.edges;
+
+  if (side === 'top') {
+    path.moveTo(x, y);
+    traceEdge(path, x, y, x + size, y, e.top, -1, size);
+  } else if (side === 'right') {
+    path.moveTo(x + size, y);
+    traceEdge(path, x + size, y, x + size, y + size, e.right, 1, size);
+  } else if (side === 'bottom') {
+    path.moveTo(x + size, y + size);
+    traceEdge(path, x + size, y + size, x, y + size, e.bottom, 1, size);
+  } else {
+    path.moveTo(x, y + size);
+    traceEdge(path, x, y + size, x, y, e.left, -1, size);
+  }
+}
+
+/**
+ * Los tres trazados de un grupo, construidos en un solo recorrido.
+ *
+ * **Por qué tres y no uno.** El trazado compuesto sirve para recortar: con la regla de relleno
+ * `nonzero`, los contornos de piezas vecinas que se tocan cuentan como una sola figura y no queda
+ * agujero entre ellas. Pero **no sirve para el relieve**: `stroke()` recorrería también las juntas
+ * interiores y las biselaría como si fueran bordes, que es lo contrario de lo que se quiere.
+ *
+ * Saber si un lado es exterior es preguntarle al propio grupo si la celda vecina está dentro. Cada
+ * junta la traza solo la pieza de la izquierda o la de arriba, para no dibujarla dos veces.
+ *
+ * **Las coordenadas son relativas al origen del grupo.** Es lo que permite cachear estos trazados
+ * mientras el grupo se arrastra: la composición no cambia, así que el trazado tampoco, y solo hay
+ * que trasladarlo al pintar.
+ */
+export function groupPaths(members: GroupMember[], size: number): GroupPaths {
+  const filled = new Path2D();
+  const outline = new Path2D();
+  const seams = new Path2D();
+
+  const present = new Set(members.map((m) => `${m.gridRow},${m.gridCol}`));
+  const has = (row: number, col: number) => present.has(`${row},${col}`);
+
+  for (const member of members) {
+    const { gridRow: r, gridCol: c } = member;
+
+    // Contorno completo: se compone trasladando el trazado de la pieza.
+    filled.addPath(piecePath(member.edges, size), new DOMMatrix().translate(member.x, member.y));
+
+    // Arriba e izquierda: si hay vecino, la junta la dibuja ESTA pieza.
+    traceSide(has(r - 1, c) ? seams : outline, member, 'top', size);
+    traceSide(has(r, c - 1) ? seams : outline, member, 'left', size);
+
+    // Abajo y derecha: si hay vecino, ya la dibujó él; aquí solo interesa cuando NO lo hay.
+    if (!has(r + 1, c)) traceSide(outline, member, 'bottom', size);
+    if (!has(r, c + 1)) traceSide(outline, member, 'right', size);
+  }
+
+  return { filled, outline, seams };
+}
+
 /**
  * Cuánto sobresale una lengüeta, con margen.
  *

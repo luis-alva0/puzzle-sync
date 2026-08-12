@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { PIECE_SIZE } from '@/lib/puzzle/geometry';
 import { boardSize } from '@/lib/puzzle/board-layout';
 import { buildEdgeGrid, pieceEdges } from '@/lib/puzzle-generation/edges';
-import { piecePath, tabOverflow } from '@/lib/puzzle-generation/path';
+import { groupPaths, tabOverflow, type GroupPaths } from '@/lib/puzzle-generation/path';
 import { seedFromUuid } from '@/lib/puzzle-generation/prng';
 import type { Piece, PlayerSummary } from '@/types/board';
 
@@ -102,16 +102,23 @@ export function BoardCanvas({
    *
    * Es lo que hace alcanzable SC-006 (50 fps con 150 piezas).
    */
-  const piecePaths = useMemo(() => {
-    const grid = buildEdgeGrid(seedFromUuid(puzzleId), gridRows, gridCols);
-    const paths: Path2D[] = [];
-    for (let row = 0; row < gridRows; row++) {
-      for (let col = 0; col < gridCols; col++) {
-        paths.push(piecePath(pieceEdges(grid, row, col), PIECE_SIZE));
-      }
-    }
-    return paths;
-  }, [puzzleId, gridRows, gridCols]);
+  const edgeGrid = useMemo(
+    () => buildEdgeGrid(seedFromUuid(puzzleId), gridRows, gridCols),
+    [puzzleId, gridRows, gridCols],
+  );
+
+  /*
+   * Caché de los tres trazados de cada grupo, en **coordenadas relativas a su origen**.
+   *
+   * Que sean relativas es lo que hace útil el caché: al arrastrar, la composición del grupo no
+   * cambia —solo su posición— así que el trazado sirve tal cual y basta con trasladarlo al pintar.
+   * En coordenadas absolutas habría que reconstruirlo en cada frame, o peor: el caché quedaría
+   * desfasado y el grupo se vería congelado mientras lo mueves.
+   */
+  const groupCacheRef = useRef(new Map<string, { signature: string; paths: GroupPaths }>());
+  useEffect(() => {
+    groupCacheRef.current = new Map();
+  }, [edgeGrid]);
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -178,85 +185,128 @@ export function BoardCanvas({
       const sourcePieceWidth = image ? image.naturalWidth / gridCols : 0;
       const sourcePieceHeight = image ? image.naturalHeight / gridRows : 0;
 
-      // Tamaño de cada grupo, para distinguir visualmente los bloques ya conectados (FR-017).
-      const groupSizes = new Map<string, number>();
-      for (const piece of piecesRef.current) {
-        groupSizes.set(piece.groupId, (groupSizes.get(piece.groupId) ?? 0) + 1);
-      }
-
       // Holgura de la lengüeta: hay que pintar más allá de la celda o saldrían vacías.
       const overflow = tabOverflow(PIECE_SIZE);
       const sourceOverflowX = image ? (overflow / PIECE_SIZE) * sourcePieceWidth : 0;
       const sourceOverflowY = image ? (overflow / PIECE_SIZE) * sourcePieceHeight : 0;
 
+      // Agrupar antes de pintar: un grupo se dibuja de una vez, con un solo recorte, y por eso no
+      // quedan costuras entre sus piezas (research R2).
+      const byGroup = new Map<string, Piece[]>();
       for (const piece of piecesRef.current) {
-        const path = piecePaths[piece.gridRow * gridCols + piece.gridCol]!;
+        const bucket = byGroup.get(piece.groupId);
+        if (bucket) bucket.push(piece);
+        else byGroup.set(piece.groupId, [piece]);
+      }
+
+      // Los grupos capturados van al final: un bloque que alguien arrastra por debajo de otras
+      // piezas se ve mal, y con relieve y sombra se nota más.
+      const groups = [...byGroup.values()].sort(
+        (a, b) => Number(Boolean(a[0]!.capturedBy)) - Number(Boolean(b[0]!.capturedBy)),
+      );
+
+      for (const pieces of groups) {
+        const first = pieces[0]!;
+        const originX = Math.min(...pieces.map((p) => p.x));
+        const originY = Math.min(...pieces.map((p) => p.y));
+        const minRow = Math.min(...pieces.map((p) => p.gridRow));
+        const minCol = Math.min(...pieces.map((p) => p.gridCol));
+        const spanRows = Math.max(...pieces.map((p) => p.gridRow)) - minRow + 1;
+        const spanCols = Math.max(...pieces.map((p) => p.gridCol)) - minCol + 1;
+
+        // El caché se invalida por composición, no por posición.
+        const signature = pieces
+          .map((p) => `${p.gridRow},${p.gridCol}`)
+          .sort()
+          .join('|');
+        let entry = groupCacheRef.current.get(first.groupId);
+        if (!entry || entry.signature !== signature) {
+          entry = {
+            signature,
+            paths: groupPaths(
+              pieces.map((p) => ({
+                gridRow: p.gridRow,
+                gridCol: p.gridCol,
+                x: p.x - originX,
+                y: p.y - originY,
+                edges: pieceEdges(edgeGrid, p.gridRow, p.gridCol),
+              })),
+              PIECE_SIZE,
+            ),
+          };
+          groupCacheRef.current.set(first.groupId, entry);
+        }
+        const { filled, outline, seams } = entry.paths;
 
         context.save();
-        context.translate(piece.x, piece.y);
-        context.clip(path);
+        context.translate(originX, originY);
 
+        // Un solo recorte y un solo `drawImage` para el grupo entero.
+        //
+        // El **origen** de la imagen sale de la celda mínima del grupo en la cuadrícula, que es de
+        // donde viene esa porción de foto. El **destino** sale de su posición en el tablero, ya
+        // aplicada por el `translate`. Son cajas distintas en cuanto alguien mueve el grupo.
+        context.save();
+        context.clip(filled);
         if (image && sourcePieceWidth > 0) {
-          // Región de origen ampliada por la holgura, y destino ampliado igual: el recorte por
-          // path se queda con la forma de la pieza y descarta el resto.
           context.drawImage(
             image,
-            piece.gridCol * sourcePieceWidth - sourceOverflowX,
-            piece.gridRow * sourcePieceHeight - sourceOverflowY,
-            sourcePieceWidth + sourceOverflowX * 2,
-            sourcePieceHeight + sourceOverflowY * 2,
+            minCol * sourcePieceWidth - sourceOverflowX,
+            minRow * sourcePieceHeight - sourceOverflowY,
+            spanCols * sourcePieceWidth + sourceOverflowX * 2,
+            spanRows * sourcePieceHeight + sourceOverflowY * 2,
             -overflow,
             -overflow,
-            PIECE_SIZE + overflow * 2,
-            PIECE_SIZE + overflow * 2,
+            spanCols * PIECE_SIZE + overflow * 2,
+            spanRows * PIECE_SIZE + overflow * 2,
           );
         } else {
           context.fillStyle = '#c9bfae';
-          context.fillRect(-overflow, -overflow, PIECE_SIZE + overflow * 2, PIECE_SIZE + overflow * 2);
+          context.fillRect(
+            -overflow,
+            -overflow,
+            spanCols * PIECE_SIZE + overflow * 2,
+            spanRows * PIECE_SIZE + overflow * 2,
+          );
         }
         context.restore();
 
-        // Contorno con el path, no con strokeRect: la pieza ya no es un rectángulo.
-        //
-        // Sobre el cartón claro hace falta más contraste que sobre el fondo oscuro de antes: un
-        // contorno oscuro fino y una sombra corta, que es lo que despega la pieza del tablero y
-        // deja leer su silueta (FR-013). Las piezas ya unidas llevan el contorno más tenue para
-        // que un grupo se lea como un bloque y no como piezas sueltas pegadas.
-        const inGroup = groupSizes.get(piece.groupId) ?? 1;
-        context.save();
-        context.translate(piece.x, piece.y);
-
-        if (inGroup === 1) {
-          context.shadowColor = 'rgba(0,0,0,0.35)';
-          context.shadowBlur = 6 / scale;
-          context.shadowOffsetY = 2 / scale;
+        // Las juntas interiores, encima: pasan de ser un artefacto a ser una línea de corte.
+        if (pieces.length > 1) {
+          context.strokeStyle = 'rgba(0,0,0,0.28)';
+          context.lineWidth = 1 / scale;
+          context.stroke(seams);
         }
-        context.strokeStyle = inGroup > 1 ? 'rgba(0,0,0,0.30)' : 'rgba(0,0,0,0.65)';
-        context.lineWidth = (inGroup > 1 ? 1 : 1.5) / scale;
-        context.stroke(path);
+
+        // El contorno del grupo, con su sombra corta.
+        context.shadowColor = 'rgba(0,0,0,0.35)';
+        context.shadowBlur = 6 / scale;
+        context.shadowOffsetY = 2 / scale;
+        context.strokeStyle = 'rgba(0,0,0,0.55)';
+        context.lineWidth = 1.5 / scale;
+        context.stroke(outline);
         context.shadowColor = 'transparent';
         context.shadowBlur = 0;
         context.shadowOffsetY = 0;
 
-        // Estado ocupado (FR-012 de 001): contorno y alias de quien la tiene.
-        if (piece.capturedBy) {
-          const isMine = piece.capturedBy === currentPlayerRef.current;
-          context.strokeStyle = isMine ? '#4ade80' : '#fbbf24';
+        // Ocupado (FR-012 de 001). La Fase 6 lo convierte en halo con relieve.
+        if (first.capturedBy) {
+          context.strokeStyle = first.capturedBy === currentPlayerRef.current ? '#4ade80' : '#fbbf24';
           context.lineWidth = 3 / scale;
-          context.stroke(path);
+          context.stroke(outline);
         }
         context.restore();
 
-        if (piece.capturedBy && piece.capturedBy !== currentPlayerRef.current) {
-          const alias = aliasRef.current.get(piece.capturedBy) ?? 'otro jugador';
+        if (first.capturedBy && first.capturedBy !== currentPlayerRef.current) {
+          const alias = aliasRef.current.get(first.capturedBy) ?? 'otro jugador';
           context.font = `${12 / scale}px system-ui, sans-serif`;
           context.textBaseline = 'bottom';
           const label = ` ${alias} `;
           const metrics = context.measureText(label);
           context.fillStyle = 'rgba(0,0,0,0.75)';
-          context.fillRect(piece.x, piece.y - 18 / scale, metrics.width, 16 / scale);
+          context.fillRect(originX, originY - 18 / scale, metrics.width, 16 / scale);
           context.fillStyle = '#fbbf24';
-          context.fillText(label, piece.x, piece.y - 4 / scale);
+          context.fillText(label, originX, originY - 4 / scale);
         }
       }
 
@@ -267,7 +317,7 @@ export function BoardCanvas({
     return () => {
       if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
     };
-  }, [gridRows, gridCols, piecePaths]);
+  }, [gridRows, gridCols, edgeGrid]);
 
   /** Traduce coordenadas de pantalla a unidades de tablero. */
   function toBoard(event: React.PointerEvent<HTMLCanvasElement>): { x: number; y: number } {
