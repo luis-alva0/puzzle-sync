@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BoardCanvas } from '@/components/BoardCanvas';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { playSnapClick } from '@/lib/audio/click';
+import { isSoundMuted, subscribeToSoundPreference } from '@/lib/audio/preference';
 import { PIECE_SIZE } from '@/lib/puzzle/geometry';
 import {
   applyConfirmedPiece,
@@ -94,9 +96,40 @@ export function Board({
     syncRef.current = sync;
   }, [sync]);
 
+  // La preferencia de sonido se lee en una ref y no en estado: la consultan los manejadores de
+  // eventos, no el render, y no hay que repintar el tablero porque alguien silencie el clic.
+  const mutedRef = useRef(false);
+  useEffect(() => {
+    mutedRef.current = isSoundMuted();
+    return subscribeToSoundPreference(() => {
+      mutedRef.current = isSoundMuted();
+    });
+  }, []);
+
   useEffect(() => {
     onReady?.({
-      applyConfirmed: (piece) => setSync((current) => applyConfirmedPiece(current, piece)),
+      applyConfirmed: (piece) =>
+        setSync((current) => {
+          /*
+           * Encaje ajeno (FR-018a).
+           *
+           * `merged_group_ids` solo llega del RPC local, así que la fusión de otro jugador hay
+           * que deducirla: una pieza confirmada que **cambia de grupo** acaba de unirse a otro
+           * bloque. Un movimiento normal no cambia el `groupId`.
+           */
+          const before = current.confirmed.get(piece.id);
+          if (before && before.groupId !== piece.groupId) {
+            playSnapClick({ muted: mutedRef.current });
+          }
+          return applyConfirmedPiece(current, piece);
+        }),
+      /*
+       * Reemplazo completo tras recuperar el estado (FR-018b).
+       *
+       * Aquí cambian de grupo muchas piezas a la vez sin que nadie acabe de encajar nada: son
+       * encajes que ya ocurrieron mientras no estábamos. **No suenan**, o volver de una
+       * desconexión sería una traca.
+       */
       replacePieces: (next) => setSync(createBoardSync(next)),
       applyDragHint: (groupId, dx, dy) =>
         setSync((current) => applyProvisionalDrag(current, groupId, { x: dx, y: dy })),
@@ -215,6 +248,12 @@ export function Board({
 
       if (error) {
         console.warn('[board] no se pudo soltar la pieza:', error.message);
+      }
+
+      // Encaje propio: suena **una sola vez** aunque la cascada haya unido varios grupos
+      // (FR-020). El limitador de `playSnapClick` se encarga del resto.
+      if ((data?.merged_group_ids?.length ?? 0) > 0) {
+        playSnapClick({ muted: mutedRef.current });
       }
 
       // Se descartan las pistas provisionales del grupo soltado y de todos los que absorbió

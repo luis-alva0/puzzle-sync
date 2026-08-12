@@ -160,14 +160,14 @@ un bloque y ver un solo halo rodeándolo.
 
 **Independent Test**: encajar dos piezas y oír un clic; soltar sin encajar y no oír nada.
 
-- [ ] T037 [P] [US5] Crear `lib/audio/click.ts` con el clic sintetizado de research R7: una envolvente corta de ruido filtrado, sin ningún archivo (FR-018c)
-- [ ] T038 [P] [US5] Crear el contexto de audio en `lib/audio/click.ts` **en el primer encaje** y no al montar el tablero: los navegadores suspenden los contextos creados sin interacción previa
-- [ ] T039 [US5] Añadir a `lib/audio/click.ts` el limitador de research R7: como mucho un sonido cada 150 ms (FR-020a)
-- [ ] T040 [P] [US5] Crear `tests/unit/audio-click.test.ts` cubriendo el limitador —dos llamadas seguidas suenan una vez, dos separadas suenan dos— y que un fallo al reproducir no propaga excepción (FR-022)
-- [ ] T041 [US5] Disparar el sonido en `components/Board.tsx` cuando la confirmación de encaje devuelva grupos fusionados: **una sola vez por confirmación**, aunque la cascada una varios grupos (FR-020)
-- [ ] T042 [US5] Detectar en `components/Board.tsx` el **encaje ajeno** (FR-018a): `merged_group_ids` solo llega del RPC local, así que la fusión de otro jugador hay que deducirla de que el `groupId` de una pieza confirmada cambie a un grupo distinto del que tenía. Sin esta tarea, la respuesta de la clarificación no llega al código
-- [ ] T043 [US5] Distinguir en `components/Board.tsx` los encajes que acaban de ocurrir de los que se descubren al recuperar el estado tras una desconexión, y **no sonar** en el segundo caso (FR-018b). Es el mismo camino que T040a: una recarga cambia el `groupId` de muchas piezas a la vez sin que nadie acabe de encajar nada
-- [ ] T044 [US5] Añadir el interruptor de sonido a `components/BoardMenu.tsx`, guardando la preferencia en el navegador como se guarda el alias (FR-021)
+- [X] T037 [P] [US5] Crear `lib/audio/click.ts` con el clic sintetizado de research R7: una envolvente corta de ruido filtrado, sin ningún archivo (FR-018c)
+- [X] T038 [P] [US5] Crear el contexto de audio en `lib/audio/click.ts` **en el primer encaje** y no al montar el tablero: los navegadores suspenden los contextos creados sin interacción previa
+- [X] T039 [US5] Añadir a `lib/audio/click.ts` el limitador de research R7: como mucho un sonido cada 150 ms (FR-020a)
+- [X] T040 [P] [US5] Crear `tests/unit/audio-click.test.ts` cubriendo el limitador —dos llamadas seguidas suenan una vez, dos separadas suenan dos— y que un fallo al reproducir no propaga excepción (FR-022)
+- [X] T041 [US5] Disparar el sonido en `components/Board.tsx` cuando la confirmación de encaje devuelva grupos fusionados: **una sola vez por confirmación**, aunque la cascada una varios grupos (FR-020)
+- [X] T042 [US5] Detectar en `components/Board.tsx` el **encaje ajeno** (FR-018a): `merged_group_ids` solo llega del RPC local, así que la fusión de otro jugador hay que deducirla de que el `groupId` de una pieza confirmada cambie a un grupo distinto del que tenía. Sin esta tarea, la respuesta de la clarificación no llega al código
+- [X] T043 [US5] Distinguir en `components/Board.tsx` los encajes que acaban de ocurrir de los que se descubren al recuperar el estado tras una desconexión, y **no sonar** en el segundo caso (FR-018b). Es el mismo camino que T040a: una recarga cambia el `groupId` de muchas piezas a la vez sin que nadie acabe de encajar nada
+- [X] T044 [US5] Añadir el interruptor de sonido a `components/BoardMenu.tsx`, guardando la preferencia en el navegador como se guarda el alias (FR-021)
 
 **Checkpoint**: el encaje suena, propio y ajeno, y se puede silenciar.
 

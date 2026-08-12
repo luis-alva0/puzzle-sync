@@ -1,8 +1,14 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { PlayerList } from '@/components/PlayerList';
+import {
+  isSoundMuted,
+  setSoundMuted,
+  soundMutedServerSnapshot,
+  subscribeToSoundPreference,
+} from '@/lib/audio/preference';
 import type { PlayerSummary } from '@/types/board';
 
 /**
@@ -26,6 +32,14 @@ interface BoardMenuProps {
 export function BoardMenu({ code, players, maxPlayers, currentPlayerId }: BoardMenuProps) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  // La preferencia vive fuera de React, en el navegador. `useSyncExternalStore` la lee sin estado
+  // propio ni efecto que lo fije al montar, y su instantánea de servidor evita que el HTML
+  // renderizado difiera del hidratado.
+  const muted = useSyncExternalStore(
+    subscribeToSoundPreference,
+    isSoundMuted,
+    soundMutedServerSnapshot,
+  );
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   // Cerrar al pulsar fuera o con Escape (FR-027). Escape además devuelve el foco al botón, que es
@@ -110,6 +124,17 @@ export function BoardMenu({ code, players, maxPlayers, currentPlayerId }: BoardM
           </div>
 
           <PlayerList players={players} maxPlayers={maxPlayers} currentPlayerId={currentPlayerId} />
+
+          <label
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
+          >
+            <input
+              type="checkbox"
+              checked={!muted}
+              onChange={(event) => setSoundMuted(!event.target.checked)}
+            />
+            Sonido al encajar
+          </label>
 
           <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
             <Link href="/" role="menuitem" onClick={() => setOpen(false)}>
