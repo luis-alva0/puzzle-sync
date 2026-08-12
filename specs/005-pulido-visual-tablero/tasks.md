@@ -47,7 +47,7 @@ commit, con scope descriptivo y sin rango.
 
 ## Phase 1: Setup
 
-- [ ] T001 Confirmar el punto de partida ejecutando `npm run lint`, `npm run typecheck` y `npm test`, y anotar el número de pruebas en verde como referencia para el final
+- [X] T001 Confirmar el punto de partida ejecutando `npm run lint`, `npm run typecheck` y `npm test`, y anotar el número de pruebas en verde como referencia para el final
 
 ---
 
