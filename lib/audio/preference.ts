@@ -43,8 +43,3 @@ export function subscribeToSoundPreference(listener: () => void): () => void {
   window.addEventListener(EVENT, listener);
   return () => window.removeEventListener(EVENT, listener);
 }
-
-/** Instantánea para el servidor: allí no hay preferencia guardada, así que el sonido está activo. */
-export function soundMutedServerSnapshot(): boolean {
-  return false;
-}

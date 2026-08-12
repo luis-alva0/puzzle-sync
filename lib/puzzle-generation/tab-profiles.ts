@@ -36,10 +36,6 @@ export interface ProfilePoint {
  * subida. Cada terna son los dos controles de una curva cúbica y su punto final.
  */
 export interface TabProfile {
-  /** Semiancho del cuello, la parte más estrecha. */
-  neckHalfWidth: number;
-  /** Semiancho de la cabeza, la parte más ancha. */
-  headHalfWidth: number;
   /** Tramos de la subida: `[control1, control2, final]`, en orden. */
   rise: ReadonlyArray<readonly [ProfilePoint, ProfilePoint, ProfilePoint]>;
 }
@@ -54,8 +50,6 @@ export interface TabProfile {
 export const TAB_PROFILES: readonly TabProfile[] = [
   // 0 — el clásico: cuello marcado, cabeza redonda.
   {
-    neckHalfWidth: 0.09,
-    headHalfWidth: 0.17,
     rise: [
       [
         { t: -0.19, d: 0.0 },
@@ -71,8 +65,6 @@ export const TAB_PROFILES: readonly TabProfile[] = [
   },
   // 1 — cuello más estrecho y cabeza más grande: la más «de troquel».
   {
-    neckHalfWidth: 0.075,
-    headHalfWidth: 0.185,
     rise: [
       [
         { t: -0.2, d: 0.0 },
@@ -88,8 +80,6 @@ export const TAB_PROFILES: readonly TabProfile[] = [
   },
   // 2 — más achatada, cabeza ancha y baja.
   {
-    neckHalfWidth: 0.1,
-    headHalfWidth: 0.16,
     rise: [
       [
         { t: -0.18, d: 0.0 },
@@ -105,8 +95,6 @@ export const TAB_PROFILES: readonly TabProfile[] = [
   },
   // 3 — cuello largo, la que más se estrecha antes de abrir.
   {
-    neckHalfWidth: 0.08,
-    headHalfWidth: 0.175,
     rise: [
       [
         { t: -0.21, d: 0.0 },
@@ -122,18 +110,12 @@ export const TAB_PROFILES: readonly TabProfile[] = [
   },
 ];
 
-/** Cuántos perfiles hay. Lo usa la elección por hash de `edges.ts`. */
-export const PROFILE_COUNT = TAB_PROFILES.length;
-
 /**
- * Profundidad máxima que alcanza cualquier perfil, en fracción del lado.
+ * Profundidad que alcanza una lengüeta. Todos los perfiles llegan a la cima (`d: 1`), y una prueba
+ * lo comprueba, así que es `TAB_DEPTH` sin más.
  *
- * De aquí sale `tabOverflow`, y por tanto el espacio que el dibujado reserva alrededor de la celda
- * y el que el empaquetado reserva alrededor de la pieza. **Derivarlo en lugar de escribirlo evita
- * que medir y dibujar discrepen** si algún día un perfil sobresale más.
+ * De aquí sale `tabOverflow`: el espacio que el dibujado reserva alrededor de la celda y el que el
+ * empaquetado reserva alrededor de la pieza. Que salgan de la misma fuente es lo que impide que
+ * medir y dibujar discrepen.
  */
-export const MAX_PROFILE_DEPTH = TAB_DEPTH * Math.max(...TAB_PROFILES.map(profileDepth));
-
-function profileDepth(profile: TabProfile): number {
-  return Math.max(...profile.rise.flatMap((segment) => segment.map((point) => point.d)));
-}
+export const MAX_PROFILE_DEPTH = TAB_DEPTH;

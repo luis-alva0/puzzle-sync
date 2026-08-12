@@ -253,15 +253,16 @@ function pack(gridRows: number, gridCols: number, shapeSeed: number, scatterSeed
   // Grosor del anillo, resuelto para que el tablero tienda a 16:10 y crecido hasta que quepan
   // todas. Termina siempre: cada vuelta pide más área y la cantidad de piezas es fija.
   const holeArea = holeWidth * holeHeight;
-  const pieceArea = ordered.reduce(
-    (sum, p) => sum + (p.extent.width + GUTTER) * (p.extent.height + GUTTER),
-    0,
-  );
-  const minSide = Math.max(...ordered.map((p) => p.extent.width)) + GUTTER;
-  const minCap = Math.max(...ordered.map((p) => p.extent.height)) + GUTTER;
+  let needed = 0;
+  let minSide = 0;
+  let minCap = 0;
+  for (const { extent } of ordered) {
+    needed += (extent.width + GUTTER) * (extent.height + GUTTER);
+    minSide = Math.max(minSide, extent.width + GUTTER);
+    minCap = Math.max(minCap, extent.height + GUTTER);
+  }
 
-  let needed = pieceArea;
-  for (let attempt = 0; attempt < 400; attempt++) {
+  for (let i = 0; i < 400; i++) {
     // Del área total y la proporción salen las dos dimensiones, y de ahí los dos grosores.
     const height = Math.sqrt((holeArea + needed) / TARGET_ASPECT);
     const width = height * TARGET_ASPECT;

@@ -75,9 +75,8 @@ function traceEdge(
   // Bajada: los mismos tramos en orden inverso y reflejados. La lengüeta es simétrica, así que
   // describir solo la subida basta y garantiza que las dos mitades encajan.
   for (let i = profile.rise.length - 1; i >= 0; i--) {
-    const [c1, c2, end] = profile.rise[i]!;
+    const [c1, c2] = profile.rise[i]!;
     const from = i === 0 ? profile.rise[0]![0]! : profile.rise[i - 1]![2]!;
-    void end;
     const p1 = at(c2, true);
     const p2 = at(c1, true);
     const p3 = at(from, true);
@@ -133,21 +132,17 @@ export interface GroupPaths {
 /** Traza un lado suelto como subtrazado abierto, sin cerrar la figura. */
 function traceSide(path: Path2D, member: GroupMember, side: Side, size: number): void {
   const { x, y } = member;
-  const e = member.edges;
+  // De dónde a dónde va cada lado, y con qué sentido. El mismo recorrido que `piecePath`.
+  const spec = {
+    top: [x, y, x + size, y, -1],
+    right: [x + size, y, x + size, y + size, 1],
+    bottom: [x + size, y + size, x, y + size, 1],
+    left: [x, y + size, x, y, -1],
+  } as const;
 
-  if (side === 'top') {
-    path.moveTo(x, y);
-    traceEdge(path, x, y, x + size, y, e.top, -1, size);
-  } else if (side === 'right') {
-    path.moveTo(x + size, y);
-    traceEdge(path, x + size, y, x + size, y + size, e.right, 1, size);
-  } else if (side === 'bottom') {
-    path.moveTo(x + size, y + size);
-    traceEdge(path, x + size, y + size, x, y + size, e.bottom, 1, size);
-  } else {
-    path.moveTo(x, y + size);
-    traceEdge(path, x, y + size, x, y, e.left, -1, size);
-  }
+  const [x0, y0, x1, y1, direction] = spec[side];
+  path.moveTo(x0, y0);
+  traceEdge(path, x0, y0, x1, y1, member.edges[side], direction, size);
 }
 
 /**

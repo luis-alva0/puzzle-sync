@@ -3,12 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { PlayerList } from '@/components/PlayerList';
-import {
-  isSoundMuted,
-  setSoundMuted,
-  soundMutedServerSnapshot,
-  subscribeToSoundPreference,
-} from '@/lib/audio/preference';
+import { isSoundMuted, setSoundMuted, subscribeToSoundPreference } from '@/lib/audio/preference';
 import type { PlayerSummary } from '@/types/board';
 
 /**
@@ -35,11 +30,8 @@ export function BoardMenu({ code, players, maxPlayers, currentPlayerId }: BoardM
   // La preferencia vive fuera de React, en el navegador. `useSyncExternalStore` la lee sin estado
   // propio ni efecto que lo fije al montar, y su instantánea de servidor evita que el HTML
   // renderizado difiera del hidratado.
-  const muted = useSyncExternalStore(
-    subscribeToSoundPreference,
-    isSoundMuted,
-    soundMutedServerSnapshot,
-  );
+  // En el servidor no hay preferencia guardada: el sonido está activo.
+  const muted = useSyncExternalStore(subscribeToSoundPreference, isSoundMuted, () => false);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   // Cerrar al pulsar fuera o con Escape (FR-027). Escape además devuelve el foco al botón, que es

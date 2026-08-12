@@ -1,11 +1,24 @@
 import { describe, it, expect } from 'vitest';
 import {
   MAX_PROFILE_DEPTH,
-  PROFILE_COUNT,
   TAB_DEPTH,
   TAB_PROFILES,
   type TabProfile,
 } from '@/lib/puzzle-generation/tab-profiles';
+
+/**
+ * Semiancho del cuello y de la cabeza, **medidos sobre la curva**.
+ *
+ * El cuello es donde la subida arranca a despegarse: el final del primer tramo. La cabeza es lo
+ * más ancho que llega la curva ya arriba. Antes esto eran dos campos declarados a mano en cada
+ * perfil, y la prueba comprobaba los números escritos en vez de la forma: un perfil sin cuello
+ * habría pasado igual.
+ */
+function widths(profile: TabProfile) {
+  const neck = Math.abs(profile.rise[0]!.at(-1)!.t);
+  const head = Math.max(...profile.rise.at(-1)!.map((point) => Math.abs(point.t)));
+  return { neck, head };
+}
 
 /**
  * El catálogo de perfiles de lengüeta.
@@ -17,8 +30,8 @@ import {
 
 describe('catálogo de perfiles', () => {
   it('tiene entre dos y seis perfiles (FR-010)', () => {
-    expect(PROFILE_COUNT).toBeGreaterThanOrEqual(2);
-    expect(PROFILE_COUNT).toBeLessThanOrEqual(6);
+    expect(TAB_PROFILES.length).toBeGreaterThanOrEqual(2);
+    expect(TAB_PROFILES.length).toBeLessThanOrEqual(6);
   });
 
   it('la profundidad es la del 22 % acordado con el empaquetado', () => {
@@ -30,14 +43,11 @@ describe('catálogo de perfiles', () => {
 describe.each(TAB_PROFILES.map((profile, index) => [index, profile] as const))(
   'perfil %i',
   (_index, profile: TabProfile) => {
-    it('**el cuello es más estrecho que la cabeza** (FR-009)', () => {
-      expect(profile.neckHalfWidth).toBeLessThan(profile.headHalfWidth);
-    });
-
-    it('el cuello se estrecha de forma apreciable, no de milímetro', () => {
-      // Un cuello un 1 % más estrecho cumpliría la prueba anterior y seguiría leyéndose como
-      // joroba. Se exige que sea al menos un 20 % más estrecho que la cabeza.
-      expect(profile.neckHalfWidth).toBeLessThan(profile.headHalfWidth * 0.8);
+    it('**el cuello es apreciablemente más estrecho que la cabeza** (FR-009)', () => {
+      // Medido sobre la curva. Un 20 % de estrechamiento como mínimo: menos que eso se sigue
+      // leyendo como joroba, que es justo lo que esta funcionalidad viene a corregir.
+      const { neck, head } = widths(profile);
+      expect(neck).toBeLessThan(head * 0.8);
     });
 
     it('arranca sobre la línea del borde', () => {
@@ -73,13 +83,12 @@ describe.each(TAB_PROFILES.map((profile, index) => [index, profile] as const))(
 );
 
 describe('MAX_PROFILE_DEPTH', () => {
-  it('se deriva del catálogo, no está escrita a mano', () => {
-    const manual = TAB_DEPTH * Math.max(...TAB_PROFILES.flatMap((p) => p.rise.flatMap((s) => s.map((q) => q.d))));
-    expect(MAX_PROFILE_DEPTH).toBeCloseTo(manual, 10);
-  });
-
-  it('los perfiles llegan justo a la profundidad nominal', () => {
-    expect(MAX_PROFILE_DEPTH).toBeCloseTo(TAB_DEPTH, 6);
+  it('ningún perfil sobresale más de lo que reserva', () => {
+    // `MAX_PROFILE_DEPTH` vale `TAB_DEPTH` porque todos los perfiles llegan a la cima. Si alguno
+    // se pasara, el dibujado lo recortaría y el empaquetado reservaría de menos.
+    const deepest = Math.max(...TAB_PROFILES.flatMap((p) => p.rise.flatMap((s) => s.map((q) => q.d))));
+    expect(deepest).toBeCloseTo(1, 6);
+    expect(MAX_PROFILE_DEPTH).toBe(TAB_DEPTH);
   });
 });
 

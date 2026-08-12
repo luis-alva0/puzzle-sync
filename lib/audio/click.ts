@@ -46,19 +46,25 @@ function noiseBuffer(ctx: AudioContext): AudioBuffer {
 }
 
 /**
+ * ¿Toca sonar?
+ *
+ * Es la única parte de este módulo que se puede probar: lo demás necesita un navegador. Separarla
+ * no es ceremonia — antes el limitador vivía dentro de `playSnapClick` y **su prueba no probaba
+ * nada**, porque sin `AudioContext` la función salía antes de tocar el contador.
+ */
+export function shouldPlay(now: number, lastPlayedAt: number): boolean {
+  return now - lastPlayedAt >= MIN_GAP_MS;
+}
+
+/**
  * Reproduce el clic, si toca.
  *
- * Devuelve `true` si sonó y `false` si se descartó por el limitador o porque el navegador no deja.
- * **Nunca lanza**: un fallo de audio no puede impedir que dos piezas encajen.
- *
- * `now` se puede inyectar para poder probar el limitador sin esperar.
+ * Devuelve `true` si sonó y `false` si se descartó. **Nunca lanza**: un fallo de audio no puede
+ * impedir que dos piezas encajen.
  */
 export function playSnapClick(options: { muted?: boolean; now?: number } = {}): boolean {
   const { muted = false, now = Date.now() } = options;
-  if (muted) return false;
-
-  // Limitador: varios encajes en el mismo instante suenan una vez.
-  if (now - lastPlayedAt < MIN_GAP_MS) return false;
+  if (muted || !shouldPlay(now, lastPlayedAt)) return false;
 
   try {
     const ctx = audioContext();
@@ -90,9 +96,4 @@ export function playSnapClick(options: { muted?: boolean; now?: number } = {}): 
     // El navegador puede negarse a reproducir. El encaje ya ocurrió: no hay nada que deshacer.
     return false;
   }
-}
-
-/** Reinicia el limitador. Solo para pruebas. */
-export function resetClickLimiter(): void {
-  lastPlayedAt = 0;
 }

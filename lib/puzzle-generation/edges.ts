@@ -1,5 +1,5 @@
 import { hashCoords } from '@/lib/puzzle-generation/prng';
-import { PROFILE_COUNT } from '@/lib/puzzle-generation/tab-profiles';
+import { TAB_PROFILES } from '@/lib/puzzle-generation/tab-profiles';
 import type { Edge, EdgeGrid, PieceEdges } from '@/types/puzzle';
 
 /**
@@ -38,7 +38,7 @@ function interiorEdge(seed: number, row: number, col: number, axis: number): Edg
     offset: (((hash >>> 1) & 0x0f) - 7.5) / 125,
     // Cuál de los perfiles del catálogo. Antes aquí se sorteaba una anchura continua; ahora se
     // elige entre formas concretas que se pueden mirar y afinar una a una.
-    profile: (hash >>> 5) % PROFILE_COUNT,
+    profile: (hash >>> 5) % TAB_PROFILES.length,
   };
 }
 
