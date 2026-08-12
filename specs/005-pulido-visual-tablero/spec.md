@@ -15,6 +15,7 @@
 - Q: Cuando otro jugador encaja dos piezas, ¿suena también en mi pantalla? → A: Sí. Suena todo encaje de la sala, propio o ajeno: el progreso es común y enterarse de que el compañero avanza es parte de jugar juntos.
 - Q: Para que las piezas se vean un 25 % más grandes, ¿vale la pena sustituir la rejilla de huecos uniforme por un empaquetado por filas de anchura variable? → A: Sí. La rejilla uniforme fija el paso según la pieza más ancha posible; el empaquetado por filas usa la anchura real de cada una y sigue garantizando el no solape por construcción.
 - Q: Con el contorno plano convertido en relieve, ¿cómo se muestra que una pieza está capturada? → A: El relieve se mantiene siempre y la captura añade un halo de color por fuera del contorno. Las dos señales conviven en canales distintos.
+- Q: ¿El clic del encaje es un archivo de audio del repositorio o se genera con código? → A: Se genera con código. Sin archivo que licenciar en un repositorio público, sin recurso que cargar y sin bytes en la descarga.
 
 ---
 
@@ -271,6 +272,8 @@ diferencia entre jugables e incómodas.
 **Sonido**
 
 - **FR-018**: Al producirse un encaje DEBE reproducirse un sonido breve.
+- **FR-018c**: El sonido DEBE generarse en el navegador, sin ningún archivo de audio en el
+  repositorio ni descarga asociada.
 - **FR-018a**: DEBE sonar tanto el encaje propio como el que hace otro jugador de la sala.
 - **FR-018b**: Los encajes que se descubren al recuperar el estado tras una desconexión NO DEBEN
   sonar: no acaban de ocurrir.
@@ -336,8 +339,14 @@ diferencia entre jugables e incómodas.
 - **A-001**: Las causas localizadas en el Contexto se dan por buenas: el arreglo del arrastre pasa
   por hacer coincidir lo que se envía con lo que se interpreta al pintar, y las costuras hay que
   buscarlas en el dibujado y no en la geometría de encaje.
-- **A-002**: El sonido es un archivo corto incluido en el proyecto. No se añade ninguna librería
-  de audio: el navegador reproduce sonido de serie.
+- **A-002**: El sonido se sintetiza en el navegador —una envolvente corta, del orden de 40 ms— en
+  lugar de venir de un archivo. Tres motivos, en este orden: el repositorio es público y un audio
+  arrastra su licencia y su procedencia; el Principio I pide no añadir piezas que mantener; y sin
+  recurso que precargar, SC-004 se cumple sin esperar a nada. No se añade ninguna librería: el
+  navegador sintetiza audio de serie.
+- **A-002a**: El sonido resultante convence como clic seco, no como chasquido de cartón. Es el
+  precio aceptado por no traer un archivo. Si algún día se quiere el sonido de verdad, cambiar la
+  síntesis por un archivo es una sustitución local, no un rediseño.
 - **A-003**: La preferencia de silencio se guarda en el navegador, como el alias. No viaja al
   servidor ni se comparte.
 - **A-003a**: El encaje ajeno se detecta con lo que ya llega por el canal de tiempo real; no hace
