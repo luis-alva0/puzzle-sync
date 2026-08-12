@@ -105,12 +105,12 @@ soltarlo. Ni salta ni se recentra.
 
 **No depende de la US1**: se puede hacer en paralelo.
 
-- [ ] T018 [P] [US2] Cambiar `PieceDragPayload` en `types/realtime.ts` de `{x, y}` a `{dx, dy}` según [contracts/realtime-drag.md](./contracts/realtime-drag.md)
-- [ ] T019 [US2] Añadir a `tests/unit/boardSync.test.ts` **la prueba que hoy fallaría**: un grupo de tres en fila arrastrado agarrando la pieza **del medio**; las tres se desplazan lo mismo y la del medio queda donde la dejó el puntero
-- [ ] T020 [US2] Añadir a `tests/unit/boardSync.test.ts` que el desplazamiento se aplica a todas las piezas del grupo y a ninguna de otro, y que un mensaje sobre un grupo desconocido se ignora (FR-004, FR-006)
-- [ ] T021 [US2] Reescribir `applyProvisionalDrag` y `renderPieces` en `lib/realtime/boardSync.ts` para guardar y aplicar un desplazamiento, **eliminando la búsqueda del ancla**: el arreglo quita código
-- [ ] T022 [US2] Calcular el desplazamiento en `components/Board.tsx` respecto de la posición **confirmada** de la pieza agarrada, recalculándolo en cada movimiento en lugar de acumularlo (FR-005, FR-007)
-- [ ] T023 [US2] Adaptar el emisor y el receptor de `lib/realtime/channel.ts` al formato nuevo
+- [X] T018 [P] [US2] Cambiar `PieceDragPayload` en `types/realtime.ts` de `{x, y}` a `{dx, dy}` según [contracts/realtime-drag.md](./contracts/realtime-drag.md)
+- [X] T019 [US2] Añadir a `tests/unit/boardSync.test.ts` **la prueba que hoy fallaría**: un grupo de tres en fila arrastrado agarrando la pieza **del medio**; las tres se desplazan lo mismo y la del medio queda donde la dejó el puntero
+- [X] T020 [US2] Añadir a `tests/unit/boardSync.test.ts` que el desplazamiento se aplica a todas las piezas del grupo y a ninguna de otro, y que un mensaje sobre un grupo desconocido se ignora (FR-004, FR-006)
+- [X] T021 [US2] Reescribir `applyProvisionalDrag` y `renderPieces` en `lib/realtime/boardSync.ts` para guardar y aplicar un desplazamiento, **eliminando la búsqueda del ancla**: el arreglo quita código
+- [X] T022 [US2] Calcular el desplazamiento en `components/Board.tsx` respecto de la posición **confirmada** de la pieza agarrada, recalculándolo en cada movimiento en lugar de acumularlo (FR-005, FR-007)
+- [X] T023 [US2] Adaptar el emisor y el receptor de `lib/realtime/channel.ts` al formato nuevo
 - [ ] T024 [US2] Verificar con dos navegadores que un bloque agarrado por cualquier pieza se mueve entero en ambas pantallas, y que al soltar no se recentra (FR-008, SC-002) — **requiere navegador**
 
 **Checkpoint**: arrastrar bloques deja de tener saltos.

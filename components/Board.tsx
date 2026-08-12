@@ -40,8 +40,8 @@ export interface BoardApi {
   applyConfirmed: (piece: Piece) => void;
   /** Reemplazo completo tras `GET /state`. */
   replacePieces: (pieces: Piece[]) => void;
-  /** Pista visual de otro jugador arrastrando. Sin autoridad. */
-  applyDragHint: (groupId: string, x: number, y: number) => void;
+  /** Pista visual de otro jugador arrastrando: un **desplazamiento**. Sin autoridad. */
+  applyDragHint: (groupId: string, dx: number, dy: number) => void;
   /** Otro jugador soltó: se deja de interpolar. */
   clearDragHint: (groupId: string) => void;
 }
@@ -66,7 +66,9 @@ interface DragState {
   /** Desplazamiento entre el puntero y la esquina de la pieza, para que no salte al tomarla. */
   offsetX: number;
   offsetY: number;
-  lastPersistAt: number;
+  lastPersistAt: number;  /** Posición confirmada de la pieza agarrada al empezar: el origen del desplazamiento. */
+  originX: number;
+  originY: number;
 }
 
 export function Board({
@@ -96,8 +98,8 @@ export function Board({
     onReady?.({
       applyConfirmed: (piece) => setSync((current) => applyConfirmedPiece(current, piece)),
       replacePieces: (next) => setSync(createBoardSync(next)),
-      applyDragHint: (groupId, x, y) =>
-        setSync((current) => applyProvisionalDrag(current, groupId, { x, y })),
+      applyDragHint: (groupId, dx, dy) =>
+        setSync((current) => applyProvisionalDrag(current, groupId, { x: dx, y: dy })),
       clearDragHint: (groupId) => setSync((current) => clearProvisional(current, groupId)),
     });
   }, [onReady]);
@@ -131,6 +133,10 @@ export function Board({
         groupId: piece.groupId,
         offsetX: x - piece.x,
         offsetY: y - piece.y,
+        // Posición confirmada de la pieza agarrada al empezar. Es el origen desde el que se mide
+        // el desplazamiento, y no se mueve durante el arrastre.
+        originX: piece.x,
+        originY: piece.y,
         lastPersistAt: 0,
       };
 
@@ -160,10 +166,16 @@ export function Board({
       const targetX = x - drag.offsetX;
       const targetY = y - drag.offsetY;
 
-      // Pintado local inmediato: el arrastre no puede depender de la latencia de red.
-      setSync((current) => applyProvisionalDrag(current, drag.groupId, { x: targetX, y: targetY }));
+      // Desplazamiento respecto de la posición **confirmada** de la pieza agarrada, recalculado
+      // en cada movimiento en lugar de acumularse: la confirmada no cambia mientras dura el
+      // arrastre, así que un arrastre largo no acumula error.
+      const dx = targetX - drag.originX;
+      const dy = targetY - drag.originY;
 
-      channel?.broadcastDrag({ groupId: drag.groupId, x: targetX, y: targetY, playerId });
+      // Pintado local inmediato: el arrastre no puede depender de la latencia de red.
+      setSync((current) => applyProvisionalDrag(current, drag.groupId, { x: dx, y: dy }));
+
+      channel?.broadcastDrag({ groupId: drag.groupId, dx, dy, playerId });
 
       const now = Date.now();
       if (now - drag.lastPersistAt >= MOVE_PERSIST_INTERVAL_MS) {

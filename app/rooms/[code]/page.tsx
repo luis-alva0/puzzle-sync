@@ -95,7 +95,7 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
           // Pista visual sin autoridad; se ignoran los propios eventos.
           onPieceDrag: (payload) => {
             if (payload.playerId === joined.playerId) return;
-            boardApiRef.current?.applyDragHint(payload.groupId, payload.x, payload.y);
+            boardApiRef.current?.applyDragHint(payload.groupId, payload.dx, payload.dy);
           },
           onPieceDrop: (payload) => {
             if (payload.playerId === joined.playerId) return;

@@ -17,7 +17,7 @@ import type { Piece } from '@/types/board';
  * Principio VI exige poder probar sin infraestructura.
  */
 
-export interface ProvisionalPosition {
+export interface ProvisionalOffset {
   x: number;
   y: number;
 }
@@ -26,7 +26,7 @@ export interface BoardSyncState {
   /** Estado confirmado, indexado por id de pieza. */
   confirmed: Map<string, Piece>;
   /** Desplazamiento provisional por grupo, aplicado solo al pintar. */
-  provisional: Map<string, ProvisionalPosition>;
+  provisional: Map<string, ProvisionalOffset>;
 }
 
 /**
@@ -69,13 +69,13 @@ export function applyConfirmedPiece(state: BoardSyncState, piece: Piece): BoardS
 export function applyProvisionalDrag(
   state: BoardSyncState,
   groupId: string,
-  position: ProvisionalPosition,
+  offset: ProvisionalOffset,
 ): BoardSyncState {
   const groupExists = [...state.confirmed.values()].some((piece) => piece.groupId === groupId);
   if (!groupExists) return state;
 
   const provisional = new Map(state.provisional);
-  provisional.set(groupId, position);
+  provisional.set(groupId, offset);
   return { confirmed: state.confirmed, provisional };
 }
 
@@ -88,37 +88,21 @@ export function clearProvisional(state: BoardSyncState, groupId: string): BoardS
 }
 
 /**
- * Piezas tal como deben pintarse: lo confirmado, desplazado por lo provisional.
+ * Piezas tal como deben pintarse: lo confirmado, más el desplazamiento provisional de su grupo.
  *
- * El desplazamiento se calcula respecto del **ancla** del grupo —la pieza de menor fila y
- * columna— para que todas las piezas del grupo se muevan juntas conservando su posición
- * relativa.
+ * **No hay ancla que buscar.** El provisional es un desplazamiento, así que se suma tal cual a
+ * cada pieza del grupo y todas se mueven lo mismo conservando su posición relativa. La versión
+ * anterior guardaba una posición absoluta y tenía que adivinar de qué pieza era: elegía el ancla
+ * —la de menor fila y columna— mientras el emisor mandaba la pieza agarrada, y de ahí salía el
+ * salto al arrastrar un bloque por cualquier otra pieza.
  */
 export function renderPieces(state: BoardSyncState): Piece[] {
   const pieces = [...state.confirmed.values()];
   if (state.provisional.size === 0) return pieces;
 
-  const anchors = new Map<string, Piece>();
-  for (const piece of pieces) {
-    if (!state.provisional.has(piece.groupId)) continue;
-    const current = anchors.get(piece.groupId);
-    if (
-      !current ||
-      piece.gridRow < current.gridRow ||
-      (piece.gridRow === current.gridRow && piece.gridCol < current.gridCol)
-    ) {
-      anchors.set(piece.groupId, piece);
-    }
-  }
-
   return pieces.map((piece) => {
-    const hint = state.provisional.get(piece.groupId);
-    const anchor = anchors.get(piece.groupId);
-    if (!hint || !anchor) return piece;
-    return {
-      ...piece,
-      x: piece.x + (hint.x - anchor.x),
-      y: piece.y + (hint.y - anchor.y),
-    };
+    const offset = state.provisional.get(piece.groupId);
+    if (!offset) return piece;
+    return { ...piece, x: piece.x + offset.x, y: piece.y + offset.y };
   });
 }

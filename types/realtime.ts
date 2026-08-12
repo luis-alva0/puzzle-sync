@@ -26,8 +26,16 @@ export const HEARTBEAT_INTERVAL_MS = 10_000;
 /** Posición provisional de un grupo mientras alguien lo arrastra. Sin autoridad. */
 export interface PieceDragPayload {
   groupId: string;
-  x: number;
-  y: number;
+  /**
+   * **Desplazamiento** respecto de la posición confirmada de cada pieza del grupo, no una
+   * posición absoluta.
+   *
+   * La versión anterior mandaba `x, y` sin decir de qué pieza eran: el emisor entendía la pieza
+   * agarrada y el receptor el ancla del grupo, así que agarrar cualquier pieza que no fuera la de
+   * arriba a la izquierda descolocaba el bloque. Un desplazamiento no admite dos lecturas.
+   */
+  dx: number;
+  dy: number;
   /** Quien emite. El receptor ignora sus propios eventos. */
   playerId: string;
 }
