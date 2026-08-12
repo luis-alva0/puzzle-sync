@@ -123,9 +123,9 @@ soltarlo. Ni salta ni se recentra.
 
 **Independent Test**: mirar una pieza suelta y ver el cuello estrecharse antes de la cabeza.
 
-- [ ] T025 [US3] Reescribir `traceEdge` en `lib/puzzle-generation/path.ts` para recorrer los puntos de control del perfil elegido en lugar de las dos curvas de la joroba actual
-- [ ] T026 [US3] Conservar en `lib/puzzle-generation/path.ts` que el mismo borde recorrido desde lados opuestos produzca lengüeta y hueco complementarios: es la propiedad que hace seguro cambiar de perfiles (FR-011)
-- [ ] T027 [US3] Añadir a `tests/unit/tab-profiles.test.ts` la complementariedad numérica de cada perfil, con la misma comprobación que se usó para descartar la geometría como causa de las costuras
+- [X] T025 [US3] Reescribir `traceEdge` en `lib/puzzle-generation/path.ts` para recorrer los puntos de control del perfil elegido en lugar de las dos curvas de la joroba actual
+- [X] T026 [US3] Conservar en `lib/puzzle-generation/path.ts` que el mismo borde recorrido desde lados opuestos produzca lengüeta y hueco complementarios: es la propiedad que hace seguro cambiar de perfiles (FR-011)
+- [X] T027 [US3] Añadir a `tests/unit/tab-profiles.test.ts` la complementariedad numérica de cada perfil, con la misma comprobación que se usó para descartar la geometría como causa de las costuras
 - [ ] T028 [US3] Verificar sobre una sala real que las lengüetas tienen cuello, que se reconocen varios perfiles repetidos por el tablero y que las piezas del contorno exterior conservan sus lados rectos (FR-012) — **requiere navegador**
 - [ ] T029 [US3] Verificar con **500 piezas** que la silueta sigue leyéndose como pieza de rompecabezas al tamaño más pequeño que admite la aplicación (FR-013) (SC-003) — **requiere navegador**
 

@@ -1,4 +1,9 @@
-import { MAX_PROFILE_DEPTH } from '@/lib/puzzle-generation/tab-profiles';
+import {
+  MAX_PROFILE_DEPTH,
+  TAB_DEPTH,
+  TAB_PROFILES,
+  type ProfilePoint,
+} from '@/lib/puzzle-generation/tab-profiles';
 import type { Edge, PieceEdges } from '@/types/puzzle';
 
 /**
@@ -17,7 +22,12 @@ import type { Edge, PieceEdges } from '@/types/puzzle';
  *
  * `direction` marca hacia dónde sobresale la lengüeta en perpendicular al borde; combinado con
  * `edge.sign`, es lo que hace que el mismo borde leído desde los dos lados produzca una lengüeta
- * y su hueco complementario.
+ * y su hueco complementario. **Esa propiedad es lo que hace seguro cambiar de perfiles**: los dos
+ * lados leen el mismo objeto `Edge`, así que usan el mismo perfil por construcción.
+ *
+ * La forma sale del catálogo de `tab-profiles.ts`, que describe medio recorrido —arranque, cuello
+ * y cabeza— y se refleja para la bajada. La versión anterior trazaba dos curvas sueltas sin
+ * cuello, y por eso las piezas leían como flores.
  */
 function traceEdge(
   path: Path2D,
@@ -34,36 +44,45 @@ function traceEdge(
     return;
   }
 
-  // Vector del borde y su perpendicular.
+  // Vector del borde y su perpendicular unitaria.
   const dx = x1 - x0;
   const dy = y1 - y0;
   const nx = -dy / size;
   const ny = dx / size;
 
-  const bulge = MAX_PROFILE_DEPTH * size * edge.sign * direction;
+  const depth = TAB_DEPTH * size * edge.sign * direction;
   const center = 0.5 + edge.offset;
-  const half = 0.2; // provisional: la Fase 5 lo sustituye por el perfil
+  const profile = TAB_PROFILES[edge.profile % TAB_PROFILES.length]!;
 
-  // Punto sobre el borde a la fracción `t`, desplazado `out` en perpendicular.
-  const at = (t: number, out: number) => ({
-    x: x0 + dx * t + nx * out,
-    y: y0 + dy * t + ny * out,
-  });
+  /** Punto del perfil llevado al borde. `mirror` refleja la subida para bajar por el otro lado. */
+  const at = (point: ProfilePoint, mirror: boolean) => {
+    const t = center + (mirror ? -point.t : point.t);
+    const out = point.d * depth;
+    return { x: x0 + dx * t + nx * out, y: y0 + dy * t + ny * out };
+  };
 
-  const start = at(center - half, 0);
-  const peak = at(center, bulge);
-  const end = at(center + half, 0);
-
+  // Subida: del arranque sobre el borde hasta la cima.
+  const start = at(profile.rise[0]![0]!, false);
   path.lineTo(start.x, start.y);
 
-  // Dos curvas cúbicas: la subida hasta la cima de la lengüeta y la bajada.
-  const c1 = at(center - half * 0.6, bulge * 1.15);
-  const c2 = at(center - half * 0.2, bulge);
-  path.bezierCurveTo(c1.x, c1.y, c2.x, c2.y, peak.x, peak.y);
+  for (const [c1, c2, end] of profile.rise) {
+    const p1 = at(c1, false);
+    const p2 = at(c2, false);
+    const p3 = at(end, false);
+    path.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
+  }
 
-  const c3 = at(center + half * 0.2, bulge);
-  const c4 = at(center + half * 0.6, bulge * 1.15);
-  path.bezierCurveTo(c3.x, c3.y, c4.x, c4.y, end.x, end.y);
+  // Bajada: los mismos tramos en orden inverso y reflejados. La lengüeta es simétrica, así que
+  // describir solo la subida basta y garantiza que las dos mitades encajan.
+  for (let i = profile.rise.length - 1; i >= 0; i--) {
+    const [c1, c2, end] = profile.rise[i]!;
+    const from = i === 0 ? profile.rise[0]![0]! : profile.rise[i - 1]![2]!;
+    void end;
+    const p1 = at(c2, true);
+    const p2 = at(c1, true);
+    const p3 = at(from, true);
+    path.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
+  }
 
   path.lineTo(x1, y1);
 }

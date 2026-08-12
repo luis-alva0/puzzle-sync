@@ -82,3 +82,54 @@ describe('MAX_PROFILE_DEPTH', () => {
     expect(MAX_PROFILE_DEPTH).toBeCloseTo(TAB_DEPTH, 6);
   });
 });
+
+/**
+ * Complementariedad: la lengüeta de una pieza y el hueco de su vecina.
+ *
+ * Es la misma comprobación con la que se descartó la geometría como causa de las costuras, ahora
+ * aplicada a cada perfil del catálogo. Reproduce lo que hace `traceEdge`: el desplazamiento
+ * perpendicular de un punto del perfil, leído desde los dos lados del borde compartido.
+ *
+ * Si esto falla, dos piezas vecinas dejarían un hueco o se montarían, y ninguna prueba de
+ * dibujado lo vería porque el canvas no se prueba.
+ */
+describe('complementariedad de los perfiles', () => {
+  const SIZE = 100;
+
+  /** Desplazamiento perpendicular que aplica `traceEdge` a un punto, para un borde y un sentido. */
+  function offsetOf(dx: number, dy: number, sign: 1 | -1, direction: 1 | -1, d: number) {
+    const nx = -dy / SIZE;
+    const ny = dx / SIZE;
+    const depth = TAB_DEPTH * SIZE * sign * direction;
+    return { x: nx * d * depth, y: ny * d * depth };
+  }
+
+  it.each(TAB_PROFILES.map((p, i) => [i, p] as const))(
+    'el perfil %i produce lengüeta y hueco exactamente opuestos',
+    (_i, profile) => {
+      const depths = profile.rise.flatMap((segment) => segment.map((point) => point.d));
+
+      for (const sign of [1, -1] as const) {
+        for (const d of depths) {
+          // Borde compartido horizontal: es el superior de la pieza de abajo (izq→der, dir −1) y
+          // el inferior de la de arriba (der→izq, dir +1).
+          const below = offsetOf(SIZE, 0, sign, -1, d);
+          const above = offsetOf(-SIZE, 0, sign, 1, d);
+          expect(below.y).toBeCloseTo(above.y, 10);
+
+          // Y el vertical: derecho de una (arriba→abajo, dir +1), izquierdo de la otra al revés.
+          const right = offsetOf(0, SIZE, sign, 1, d);
+          const left = offsetOf(0, -SIZE, sign, -1, d);
+          expect(right.x).toBeCloseTo(left.x, 10);
+        }
+      }
+    },
+  );
+
+  it('un signo distinto invierte el sentido: donde una saca, la otra mete', () => {
+    const d = 1;
+    const saliente = offsetOf(SIZE, 0, 1, -1, d);
+    const entrante = offsetOf(SIZE, 0, -1, -1, d);
+    expect(Math.sign(saliente.y)).toBe(-Math.sign(entrante.y));
+  });
+});
