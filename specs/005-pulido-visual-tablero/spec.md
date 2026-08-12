@@ -13,6 +13,7 @@
 ### Session 2026-08-11
 
 - Q: Cuando otro jugador encaja dos piezas, ¿suena también en mi pantalla? → A: Sí. Suena todo encaje de la sala, propio o ajeno: el progreso es común y enterarse de que el compañero avanza es parte de jugar juntos.
+- Q: Para que las piezas se vean un 25 % más grandes, ¿vale la pena sustituir la rejilla de huecos uniforme por un empaquetado por filas de anchura variable? → A: Sí. La rejilla uniforme fija el paso según la pieza más ancha posible; el empaquetado por filas usa la anchura real de cada una y sigue garantizando el no solape por construcción.
 
 ---
 
@@ -277,9 +278,12 @@ diferencia entre jugables e incómodas.
 - **FR-025**: La barra DEBE ir en un color derivado del tablero, no en un color que contraste con
   él.
 - **FR-026**: NO DEBE dibujarse ningún contorno alrededor del área central de armado.
-- **FR-027**: La separación entre piezas de la banda DEBE reducirse aprovechando que una pieza
-  solo ocupa espacio extra por los lados donde de verdad tiene lengüeta, manteniendo la garantía
-  de que ninguna se solapa.
+- **FR-027**: Las piezas de la banda DEBEN colocarse **por filas de anchura variable**, ocupando
+  cada una solo el espacio que de verdad necesita según por qué lados le sale lengüeta.
+- **FR-027a**: La colocación DEBE seguir garantizando el no solape **por construcción**, sin
+  comparar piezas entre sí y sin ningún bucle de reintento que pueda no terminar.
+- **FR-027b**: La colocación DEBE seguir siendo determinista: la misma semilla produce la misma
+  disposición, y todos los jugadores ven lo mismo.
 
 **Lo que no cambia**
 
@@ -331,8 +335,18 @@ diferencia entre jugables e incómodas.
   jugadores sigan viendo lo mismo.
 - **A-005**: El relieve se dibuja, no se toma de imágenes pregeneradas: el rompecabezas se corta
   en el navegador y no hay recursos por pieza.
-- **A-006**: La banda se aprieta calculando el espacio que ocupa cada pieza según dónde tiene
-  lengüeta de verdad. Una pieza sin lengüetas laterales no necesita reservar sitio para ellas.
+- **A-006**: La rejilla de huecos uniforme que introdujo la feature 004 **se sustituye**. El
+  motivo, medido: el paso único lo fija siempre la pieza más ancha posible —lengüeta saliente en
+  dos lados opuestos, 148 unidades— aunque la pieza media ocupe 124, porque cada lado tiene
+  lengüeta hacia fuera solo la mitad de las veces. Mientras el paso sea uno solo, calcular la caja
+  real de cada pieza no sirve de nada.
+
+  El reemplazo coloca las piezas en filas, una tras otra, sumando anchuras reales. Sigue sin haber
+  detección de colisiones —dentro de una fila las piezas no pueden solaparse porque se colocan
+  consecutivas— y sigue terminando siempre, que eran las dos razones por las que 004 eligió la
+  rejilla.
+- **A-006a**: El ~25 % de SC-006 viene solo del empaquetado. Quitar el marco oscuro y adelgazar la
+  barra (FR-023, FR-024) aporta su propio ~10 % por separado.
 - **A-007**: Sigue sin haber desplazamiento ni ampliación del tablero: el tablero entero cabe en
   la ventana, como decidió la feature 004.
 
