@@ -273,27 +273,67 @@ export function BoardCanvas({
 
         // Las juntas interiores, encima: pasan de ser un artefacto a ser una línea de corte.
         if (pieces.length > 1) {
-          context.strokeStyle = 'rgba(0,0,0,0.28)';
+          context.strokeStyle = 'rgba(0,0,0,0.26)';
           context.lineWidth = 1 / scale;
           context.stroke(seams);
         }
 
-        // El contorno del grupo, con su sombra corta.
-        context.shadowColor = 'rgba(0,0,0,0.35)';
-        context.shadowBlur = 6 / scale;
-        context.shadowOffsetY = 2 / scale;
-        context.strokeStyle = 'rgba(0,0,0,0.55)';
-        context.lineWidth = 1.5 / scale;
+        /*
+         * Relieve del borde (FR-014).
+         *
+         * Dos trazos del **contorno exterior** dentro del recorte: uno claro desplazado arriba a
+         * la izquierda y otro oscuro abajo a la derecha. El recorte hace el trabajo: un trazo
+         * grueso centrado en el contorno se queda en su mitad interior, que es justo el bisel, y
+         * no invade ni al vecino ni al tablero. Por eso el relieve nunca puede tapar más que el
+         * borde de la propia pieza (FR-017).
+         *
+         * Se usa `outline` y no el trazado compuesto: con el compuesto se biselarían también las
+         * juntas interiores, y un bloque con todas sus costuras marcadas como bordes es lo
+         * contrario de lo que pide FR-016.
+         *
+         * El grosor va en unidades de tablero, así que se escala con la pieza: con 500 piezas el
+         * bisel baja de un píxel y se desvanece solo, que es lo correcto a ese tamaño.
+         */
+        const bevel = PIECE_SIZE * 0.045;
+        context.save();
+        context.clip(filled);
+        context.lineWidth = bevel;
+        context.strokeStyle = 'rgba(255,255,255,0.5)';
+        context.translate(-bevel * 0.35, -bevel * 0.35);
         context.stroke(outline);
-        context.shadowColor = 'transparent';
-        context.shadowBlur = 0;
-        context.shadowOffsetY = 0;
+        context.strokeStyle = 'rgba(0,0,0,0.35)';
+        context.translate(bevel * 0.7, bevel * 0.7);
+        context.stroke(outline);
+        context.restore();
 
-        // Ocupado (FR-012 de 001). La Fase 6 lo convierte en halo con relieve.
+        // Contorno y sombra corta del grupo, que lo despegan del tablero (FR-015, FR-016).
+        context.save();
+        context.shadowColor = 'rgba(0,0,0,0.3)';
+        context.shadowBlur = 5 / scale;
+        context.shadowOffsetY = 2 / scale;
+        context.strokeStyle = 'rgba(0,0,0,0.5)';
+        context.lineWidth = 1.2 / scale;
+        context.stroke(outline);
+        context.restore();
+
+        /*
+         * Ocupada (FR-017a a FR-017c).
+         *
+         * Un **halo por fuera** del contorno, no un contorno de color que sustituya al relieve: la
+         * pieza que estás moviendo es justo la que no puede verse peor que las demás. Se dibuja
+         * después de la sombra y con ella apagada, para que los dos no se mezclen en un borrón
+         * alrededor del bloque.
+         *
+         * Rodea el contorno **del grupo**: un bloque de veinte piezas con veinte halos sería
+         * ilegible.
+         */
         if (first.capturedBy) {
-          context.strokeStyle = first.capturedBy === currentPlayerRef.current ? '#4ade80' : '#fbbf24';
-          context.lineWidth = 3 / scale;
+          const isMine = first.capturedBy === currentPlayerRef.current;
+          context.save();
+          context.lineWidth = 5 / scale;
+          context.strokeStyle = isMine ? 'rgba(74,222,128,0.85)' : 'rgba(251,191,36,0.85)';
           context.stroke(outline);
+          context.restore();
         }
         context.restore();
 

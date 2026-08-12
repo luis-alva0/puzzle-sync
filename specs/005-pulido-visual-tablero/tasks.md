@@ -142,11 +142,11 @@ un bloque y ver un solo halo rodeándolo.
 
 **Depende de la Fase 3**: sin el dibujado por grupo no hay contorno de grupo que biselar.
 
-- [ ] T030 [US4] Añadir a `components/BoardCanvas.tsx` el bisel interior de cada grupo: dos trazos del **trazado exterior** dentro del recorte, uno claro desplazado arriba a la izquierda y otro oscuro abajo a la derecha (research R5, FR-014). Usar el trazado compuesto aquí biselaría también las juntas
-- [ ] T031 [US4] Escalar el grosor del bisel con el tamaño de pieza en pantalla en `components/BoardCanvas.tsx`, de modo que con 500 piezas se desvanezca solo en lugar de ensuciar la silueta
-- [ ] T032 [US4] Sustituir en `components/BoardCanvas.tsx` la sombra por pieza por una sombra corta del **trazado exterior** del grupo (FR-015, FR-016)
-- [ ] T033 [US4] Sustituir en `components/BoardCanvas.tsx` el contorno de color de la pieza capturada por un **halo por fuera** del trazado exterior del grupo, conservando el relieve debajo (FR-017a, FR-017c)
-- [ ] T034 [US4] Mantener en `components/BoardCanvas.tsx` la distinción entre captura propia y ajena y la etiqueta del alias que ya existen (FR-017b, FR-028a)
+- [X] T030 [US4] Añadir a `components/BoardCanvas.tsx` el bisel interior de cada grupo: dos trazos del **trazado exterior** dentro del recorte, uno claro desplazado arriba a la izquierda y otro oscuro abajo a la derecha (research R5, FR-014). Usar el trazado compuesto aquí biselaría también las juntas
+- [X] T031 [US4] Escalar el grosor del bisel con el tamaño de pieza en pantalla en `components/BoardCanvas.tsx`, de modo que con 500 piezas se desvanezca solo en lugar de ensuciar la silueta
+- [X] T032 [US4] Sustituir en `components/BoardCanvas.tsx` la sombra por pieza por una sombra corta del **trazado exterior** del grupo (FR-015, FR-016)
+- [X] T033 [US4] Sustituir en `components/BoardCanvas.tsx` el contorno de color de la pieza capturada por un **halo por fuera** del trazado exterior del grupo, conservando el relieve debajo (FR-017a, FR-017c)
+- [X] T034 [US4] Mantener en `components/BoardCanvas.tsx` la distinción entre captura propia y ajena y la etiqueta del alias que ya existen (FR-017b, FR-028a)
 - [ ] T035 [US4] Verificar que una pieza capturada por otro jugador conserva su relieve y gana el halo, y que un bloque capturado muestra **un solo** halo rodeándolo entero — **requiere navegador**
 - [ ] T036 [US4] Verificar que el halo y la sombra no se mezclan en un borrón alrededor del contorno de un grupo capturado — **requiere navegador**
 
