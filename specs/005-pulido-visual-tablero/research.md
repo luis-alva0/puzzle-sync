@@ -101,9 +101,26 @@ Hay un detalle que hace que esto funcione: los contornos de dos piezas vecinas *
 exactamente** el borde, y la lengüeta de una está dentro del hueco de la otra. Con `nonzero` no
 queda ningún agujero entre ellas.
 
-Para el trazo del contorno exterior —relieve y halo— se recorre el mismo `Path2D`: `stroke()`
-sobre él dibuja también las juntas interiores, así que el relieve del **borde** se consigue
-trazando por dentro del recorte, que es como se hacen los biseles en canvas (ver R5).
+**El trazado compuesto no sirve para el relieve, y esto se pasó por alto al escribir R3.**
+`stroke()` sobre él recorre *todos* los subtrazados, así que biselaría las juntas interiores igual
+que el borde exterior: un bloque con todas sus costuras marcadas como si fueran bordes, que es lo
+contrario de lo que pide FR-016. Recortar el trazo no lo arregla, porque las juntas interiores
+están dentro del recorte y se dibujarían enteras.
+
+Hacen falta **tres trazados por grupo**, no uno:
+
+| Trazado | Para qué | Cómo se construye |
+|---|---|---|
+| Compuesto | Recortar y rellenar la imagen | `addPath` de las cuatro caras de cada pieza |
+| **Exterior** | Relieve, sombra y halo | Solo los lados **sin vecino dentro del grupo** |
+| **Juntas** | Líneas de corte (FR-003) | Solo los lados **con vecino dentro del grupo**, cada uno una vez |
+
+Saber si un lado es exterior es una consulta al propio grupo: la pieza `(r, c)` tiene vecino por la
+derecha si `(r, c+1)` está en el mismo grupo. Para no trazar cada junta dos veces, solo la dibuja
+la pieza de la izquierda y la de arriba.
+
+Los tres se construyen en el mismo recorrido y se cachean juntos: es un bucle sobre las piezas del
+grupo, no tres.
 
 **Alternatives considered**:
 

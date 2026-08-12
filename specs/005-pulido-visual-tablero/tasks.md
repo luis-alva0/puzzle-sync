@@ -32,13 +32,13 @@ de la fase y un único `git commit`.
 |---|---|---|
 | 1. Setup | T001 | `chore(setup): confirmar punto de partida limpio - T001` |
 | 2. Foundational | T002–T008 | `feat(foundational): catalogo de perfiles de lenguetas con cuello - T002-T008` |
-| 3. US1 | T009–T016 | `fix(US1): dibujar por grupo para eliminar las costuras - T009-T016` |
-| 4. US2 | T017–T023 | `fix(US2): mover grupos con desplazamiento en vez de posicion - T017-T023` |
-| 5. US3 | T024–T028 | `feat(US3): siluetas con cuello y cabeza en el tablero - T024-T028` |
-| 6. US4 | T029–T035 | `feat(US4): relieve de carton y halo de captura por grupo - T029-T035` |
-| 7. US5 | T036–T042 | `feat(US5): clic sintetizado al encajar, con limitador - T036-T042` |
-| 8. US6 | T043–T051 | `feat(US6): empaquetado por filas y tablero a ventana completa - T043-T051` |
-| 9. Polish | T052–T060 | `chore(polish): verificar rendimiento y comparar con la referencia - T052-T060` |
+| 3. US1 | T009–T017 | `fix(US1): dibujar por grupo para eliminar las costuras - T009-T017` |
+| 4. US2 | T018–T024 | `fix(US2): mover grupos con desplazamiento en vez de posicion - T018-T024` |
+| 5. US3 | T025–T029 | `feat(US3): siluetas con cuello y cabeza en el tablero - T025-T029` |
+| 6. US4 | T030–T036 | `feat(US4): relieve de carton y halo de captura por grupo - T030-T036` |
+| 7. US5 | T037–T044 | `feat(US5): clic sintetizado al encajar, con limitador - T037-T044` |
+| 8. US6 | T045–T054 | `feat(US6): empaquetado por filas y tablero a ventana completa - T045-T054` |
+| 9. Polish | T055–T063 | `chore(polish): verificar rendimiento y comparar con la referencia - T055-T063` |
 
 Las correcciones que aparezcan al verificar y no pertenezcan a ninguna fase van en su propio
 commit, con scope descriptivo y sin rango.
@@ -59,7 +59,7 @@ profundidad de la lengüeta después de calcular el empaquetado obligaría a reh
 
 **⚠️ Ninguna historia puede empezar antes de terminar esta fase.**
 
-- [ ] T002 Crear `lib/puzzle-generation/tab-profiles.ts` con el catálogo de **cuatro** perfiles de research R4: cada uno una lista de puntos de control normalizados, con cuello más estrecho que la cabeza (FR-009)
+- [ ] T002 Crear `lib/puzzle-generation/tab-profiles.ts` con el catálogo de **cuatro** perfiles de research R4: cada uno una lista de puntos de control normalizados, con cuello más estrecho que la cabeza (FR-009) (FR-010)
 - [ ] T003 Crear `tests/unit/tab-profiles.test.ts` afirmando, para cada perfil, que **el ancho del cuello es menor que el de la cabeza** —es lo que separa una lengüeta de la joroba actual— y que el perfil empieza y acaba sobre la línea del borde
 - [ ] T004 Añadir a `tests/unit/tab-profiles.test.ts` que ningún perfil supera la profundidad que reserva `tabOverflow`, o las lengüetas saldrían recortadas al dibujarse
 - [ ] T005 Cambiar `Edge` en `types/puzzle.ts`: el campo `size` pasa a ser `profile`, el índice del perfil elegido (data-model)
@@ -83,13 +83,14 @@ ningún punto; sí la línea del corte.
 además de por ser P1.
 
 - [ ] T009 [US1] Añadir a `lib/puzzle-generation/path.ts` una función que componga el contorno de un grupo con `Path2D.addPath()` y una matriz de traslación por pieza, apoyándose en la regla de relleno `nonzero` para que los contornos que se tocan cuenten como una sola figura (research R3)
-- [ ] T010 [US1] Agrupar las piezas por `groupId` en `components/BoardCanvas.tsx` antes del bucle de dibujado, en lugar de recorrer piezas sueltas
-- [ ] T011 [US1] Dibujar cada grupo en `components/BoardCanvas.tsx` con **un solo** `clip()` y **un solo** `drawImage()` sobre la caja envolvente del grupo, en vez de uno por pieza (FR-001)
-- [ ] T012 [US1] Calcular en `components/BoardCanvas.tsx` la región de imagen de origen que corresponde a la caja del grupo, de modo que la foto sea continua a través de las juntas (FR-002)
-- [ ] T013 [US1] Dibujar las juntas interiores en `components/BoardCanvas.tsx` **encima** del grupo, como líneas de corte: dejan de ser un artefacto y pasan a ser una decisión (FR-003)
-- [ ] T014 [US1] Cachear el contorno de cada grupo en `components/BoardCanvas.tsx`, invalidándolo cuando cambie la composición del grupo, para no reconstruirlo en cada frame
-- [ ] T015 [US1] Verificar sobre una sala real que dos piezas unidas no dejan ver el fondo en ningún punto de la junta, y que un bloque de cinco muestra la imagen continua — **requiere navegador**
-- [ ] T016 [US1] Verificar que una pieza suelta —un grupo de una— se sigue dibujando bien: es el caso que el camino de grupo no puede olvidar — **requiere navegador**
+- [ ] T010 [US1] Añadir a `lib/puzzle-generation/path.ts` los **otros dos trazados** del grupo, en el mismo recorrido: el **exterior**, con los lados sin vecino dentro del grupo, y el de **juntas**, con los lados que sí lo tienen, cada uno trazado una sola vez (research R3). Sin esta separación el relieve biselaría las costuras interiores igual que el borde, que es lo contrario de FR-016
+- [ ] T011 [US1] Agrupar las piezas por `groupId` en `components/BoardCanvas.tsx` antes del bucle de dibujado, en lugar de recorrer piezas sueltas
+- [ ] T012 [US1] Dibujar cada grupo en `components/BoardCanvas.tsx` con **un solo** `clip()` y **un solo** `drawImage()` sobre la caja envolvente del grupo, en vez de uno por pieza (FR-001) (SC-001)
+- [ ] T013 [US1] Calcular en `components/BoardCanvas.tsx` la región de imagen de origen que corresponde a la caja del grupo, de modo que la foto sea continua a través de las juntas (FR-002)
+- [ ] T014 [US1] Dibujar el **trazado de juntas** en `components/BoardCanvas.tsx` encima del grupo, como líneas de corte: dejan de ser un artefacto y pasan a ser una decisión (FR-003)
+- [ ] T015 [US1] Cachear **los tres trazados** de cada grupo en `components/BoardCanvas.tsx`, invalidándolos cuando cambie la composición del grupo, para no reconstruirlos en cada frame
+- [ ] T016 [US1] Verificar sobre una sala real que dos piezas unidas no dejan ver el fondo en ningún punto de la junta, y que un bloque de cinco muestra la imagen continua — **requiere navegador**
+- [ ] T017 [US1] Verificar que una pieza suelta —un grupo de una— se sigue dibujando bien: es el caso que el camino de grupo no puede olvidar — **requiere navegador**
 
 **Checkpoint**: las piezas unidas se ven como una sola superficie. Es el MVP de esta funcionalidad.
 
@@ -104,13 +105,13 @@ soltarlo. Ni salta ni se recentra.
 
 **No depende de la US1**: se puede hacer en paralelo.
 
-- [ ] T017 [P] [US2] Cambiar `PieceDragPayload` en `types/realtime.ts` de `{x, y}` a `{dx, dy}` según [contracts/realtime-drag.md](./contracts/realtime-drag.md)
-- [ ] T018 [US2] Añadir a `tests/unit/boardSync.test.ts` **la prueba que hoy fallaría**: un grupo de tres en fila arrastrado agarrando la pieza **del medio**; las tres se desplazan lo mismo y la del medio queda donde la dejó el puntero
-- [ ] T019 [US2] Añadir a `tests/unit/boardSync.test.ts` que el desplazamiento se aplica a todas las piezas del grupo y a ninguna de otro, y que un mensaje sobre un grupo desconocido se ignora
-- [ ] T020 [US2] Reescribir `applyProvisionalDrag` y `renderPieces` en `lib/realtime/boardSync.ts` para guardar y aplicar un desplazamiento, **eliminando la búsqueda del ancla**: el arreglo quita código
-- [ ] T021 [US2] Calcular el desplazamiento en `components/Board.tsx` respecto de la posición **confirmada** de la pieza agarrada, recalculándolo en cada movimiento en lugar de acumularlo
-- [ ] T022 [US2] Adaptar el emisor y el receptor de `lib/realtime/channel.ts` al formato nuevo
-- [ ] T023 [US2] Verificar con dos navegadores que un bloque agarrado por cualquier pieza se mueve entero en ambas pantallas, y que al soltar no se recentra — **requiere navegador**
+- [ ] T018 [P] [US2] Cambiar `PieceDragPayload` en `types/realtime.ts` de `{x, y}` a `{dx, dy}` según [contracts/realtime-drag.md](./contracts/realtime-drag.md)
+- [ ] T019 [US2] Añadir a `tests/unit/boardSync.test.ts` **la prueba que hoy fallaría**: un grupo de tres en fila arrastrado agarrando la pieza **del medio**; las tres se desplazan lo mismo y la del medio queda donde la dejó el puntero
+- [ ] T020 [US2] Añadir a `tests/unit/boardSync.test.ts` que el desplazamiento se aplica a todas las piezas del grupo y a ninguna de otro, y que un mensaje sobre un grupo desconocido se ignora (FR-004, FR-006)
+- [ ] T021 [US2] Reescribir `applyProvisionalDrag` y `renderPieces` en `lib/realtime/boardSync.ts` para guardar y aplicar un desplazamiento, **eliminando la búsqueda del ancla**: el arreglo quita código
+- [ ] T022 [US2] Calcular el desplazamiento en `components/Board.tsx` respecto de la posición **confirmada** de la pieza agarrada, recalculándolo en cada movimiento en lugar de acumularlo (FR-005, FR-007)
+- [ ] T023 [US2] Adaptar el emisor y el receptor de `lib/realtime/channel.ts` al formato nuevo
+- [ ] T024 [US2] Verificar con dos navegadores que un bloque agarrado por cualquier pieza se mueve entero en ambas pantallas, y que al soltar no se recentra (FR-008, SC-002) — **requiere navegador**
 
 **Checkpoint**: arrastrar bloques deja de tener saltos.
 
@@ -122,11 +123,11 @@ soltarlo. Ni salta ni se recentra.
 
 **Independent Test**: mirar una pieza suelta y ver el cuello estrecharse antes de la cabeza.
 
-- [ ] T024 [US3] Reescribir `traceEdge` en `lib/puzzle-generation/path.ts` para recorrer los puntos de control del perfil elegido en lugar de las dos curvas de la joroba actual
-- [ ] T025 [US3] Conservar en `lib/puzzle-generation/path.ts` que el mismo borde recorrido desde lados opuestos produzca lengüeta y hueco complementarios: es la propiedad que hace seguro cambiar de perfiles (FR-011)
-- [ ] T026 [US3] Añadir a `tests/unit/tab-profiles.test.ts` la complementariedad numérica de cada perfil, con la misma comprobación que se usó para descartar la geometría como causa de las costuras
-- [ ] T027 [US3] Verificar sobre una sala real que las lengüetas tienen cuello, que se reconocen varios perfiles repetidos por el tablero y que las piezas del contorno exterior conservan sus lados rectos — **requiere navegador**
-- [ ] T028 [US3] Verificar con **500 piezas** que la silueta sigue leyéndose como pieza de rompecabezas al tamaño más pequeño que admite la aplicación (FR-013) — **requiere navegador**
+- [ ] T025 [US3] Reescribir `traceEdge` en `lib/puzzle-generation/path.ts` para recorrer los puntos de control del perfil elegido en lugar de las dos curvas de la joroba actual
+- [ ] T026 [US3] Conservar en `lib/puzzle-generation/path.ts` que el mismo borde recorrido desde lados opuestos produzca lengüeta y hueco complementarios: es la propiedad que hace seguro cambiar de perfiles (FR-011)
+- [ ] T027 [US3] Añadir a `tests/unit/tab-profiles.test.ts` la complementariedad numérica de cada perfil, con la misma comprobación que se usó para descartar la geometría como causa de las costuras
+- [ ] T028 [US3] Verificar sobre una sala real que las lengüetas tienen cuello, que se reconocen varios perfiles repetidos por el tablero y que las piezas del contorno exterior conservan sus lados rectos (FR-012) — **requiere navegador**
+- [ ] T029 [US3] Verificar con **500 piezas** que la silueta sigue leyéndose como pieza de rompecabezas al tamaño más pequeño que admite la aplicación (FR-013) (SC-003) — **requiere navegador**
 
 **Checkpoint**: las piezas dejan de parecer flores.
 
@@ -141,13 +142,13 @@ un bloque y ver un solo halo rodeándolo.
 
 **Depende de la Fase 3**: sin el dibujado por grupo no hay contorno de grupo que biselar.
 
-- [ ] T029 [US4] Añadir a `components/BoardCanvas.tsx` el bisel interior de cada grupo: dos trazos del contorno **dentro del recorte**, uno claro desplazado arriba a la izquierda y otro oscuro abajo a la derecha (research R5, FR-014)
-- [ ] T030 [US4] Escalar el grosor del bisel con el tamaño de pieza en pantalla en `components/BoardCanvas.tsx`, de modo que con 500 piezas se desvanezca solo en lugar de ensuciar la silueta
-- [ ] T031 [US4] Sustituir en `components/BoardCanvas.tsx` la sombra por pieza por una sombra corta del contorno del grupo (FR-015, FR-016)
-- [ ] T032 [US4] Sustituir en `components/BoardCanvas.tsx` el contorno de color de la pieza capturada por un **halo por fuera** del contorno del grupo, conservando el relieve debajo (FR-017a, FR-017c)
-- [ ] T033 [US4] Mantener en `components/BoardCanvas.tsx` la distinción entre captura propia y ajena y la etiqueta del alias que ya existen (FR-017b, FR-028a)
-- [ ] T034 [US4] Verificar que una pieza capturada por otro jugador conserva su relieve y gana el halo, y que un bloque capturado muestra **un solo** halo rodeándolo entero — **requiere navegador**
-- [ ] T035 [US4] Verificar que el halo y la sombra no se mezclan en un borrón alrededor del contorno de un grupo capturado — **requiere navegador**
+- [ ] T030 [US4] Añadir a `components/BoardCanvas.tsx` el bisel interior de cada grupo: dos trazos del **trazado exterior** dentro del recorte, uno claro desplazado arriba a la izquierda y otro oscuro abajo a la derecha (research R5, FR-014). Usar el trazado compuesto aquí biselaría también las juntas
+- [ ] T031 [US4] Escalar el grosor del bisel con el tamaño de pieza en pantalla en `components/BoardCanvas.tsx`, de modo que con 500 piezas se desvanezca solo en lugar de ensuciar la silueta
+- [ ] T032 [US4] Sustituir en `components/BoardCanvas.tsx` la sombra por pieza por una sombra corta del **trazado exterior** del grupo (FR-015, FR-016)
+- [ ] T033 [US4] Sustituir en `components/BoardCanvas.tsx` el contorno de color de la pieza capturada por un **halo por fuera** del trazado exterior del grupo, conservando el relieve debajo (FR-017a, FR-017c)
+- [ ] T034 [US4] Mantener en `components/BoardCanvas.tsx` la distinción entre captura propia y ajena y la etiqueta del alias que ya existen (FR-017b, FR-028a)
+- [ ] T035 [US4] Verificar que una pieza capturada por otro jugador conserva su relieve y gana el halo, y que un bloque capturado muestra **un solo** halo rodeándolo entero — **requiere navegador**
+- [ ] T036 [US4] Verificar que el halo y la sombra no se mezclan en un borrón alrededor del contorno de un grupo capturado — **requiere navegador**
 
 **Checkpoint**: el tablero parece cartón sobre una mesa.
 
@@ -159,13 +160,14 @@ un bloque y ver un solo halo rodeándolo.
 
 **Independent Test**: encajar dos piezas y oír un clic; soltar sin encajar y no oír nada.
 
-- [ ] T036 [P] [US5] Crear `lib/audio/click.ts` con el clic sintetizado de research R7: una envolvente corta de ruido filtrado, sin ningún archivo
-- [ ] T037 [P] [US5] Crear el contexto de audio en `lib/audio/click.ts` **en el primer encaje** y no al montar el tablero: los navegadores suspenden los contextos creados sin interacción previa
-- [ ] T038 [US5] Añadir a `lib/audio/click.ts` el limitador de research R7: como mucho un sonido cada 150 ms (FR-020a)
-- [ ] T039 [P] [US5] Crear `tests/unit/audio-click.test.ts` cubriendo el limitador —dos llamadas seguidas suenan una vez, dos separadas suenan dos— y que un fallo al reproducir no propaga excepción (FR-022)
-- [ ] T040 [US5] Disparar el sonido en `components/Board.tsx` cuando la confirmación de encaje devuelva grupos fusionados: **una sola vez por confirmación**, aunque la cascada una varios grupos (FR-020)
-- [ ] T041 [US5] Distinguir en `components/Board.tsx` los encajes que acaban de ocurrir de los que se descubren al recuperar el estado tras una desconexión, y **no sonar** en el segundo caso (FR-018b)
-- [ ] T042 [US5] Añadir el interruptor de sonido a `components/BoardMenu.tsx`, guardando la preferencia en el navegador como se guarda el alias (FR-021)
+- [ ] T037 [P] [US5] Crear `lib/audio/click.ts` con el clic sintetizado de research R7: una envolvente corta de ruido filtrado, sin ningún archivo (FR-018c)
+- [ ] T038 [P] [US5] Crear el contexto de audio en `lib/audio/click.ts` **en el primer encaje** y no al montar el tablero: los navegadores suspenden los contextos creados sin interacción previa
+- [ ] T039 [US5] Añadir a `lib/audio/click.ts` el limitador de research R7: como mucho un sonido cada 150 ms (FR-020a)
+- [ ] T040 [P] [US5] Crear `tests/unit/audio-click.test.ts` cubriendo el limitador —dos llamadas seguidas suenan una vez, dos separadas suenan dos— y que un fallo al reproducir no propaga excepción (FR-022)
+- [ ] T041 [US5] Disparar el sonido en `components/Board.tsx` cuando la confirmación de encaje devuelva grupos fusionados: **una sola vez por confirmación**, aunque la cascada una varios grupos (FR-020)
+- [ ] T042 [US5] Detectar en `components/Board.tsx` el **encaje ajeno** (FR-018a): `merged_group_ids` solo llega del RPC local, así que la fusión de otro jugador hay que deducirla de que el `groupId` de una pieza confirmada cambie a un grupo distinto del que tenía. Sin esta tarea, la respuesta de la clarificación no llega al código
+- [ ] T043 [US5] Distinguir en `components/Board.tsx` los encajes que acaban de ocurrir de los que se descubren al recuperar el estado tras una desconexión, y **no sonar** en el segundo caso (FR-018b). Es el mismo camino que T040a: una recarga cambia el `groupId` de muchas piezas a la vez sin que nadie acabe de encajar nada
+- [ ] T044 [US5] Añadir el interruptor de sonido a `components/BoardMenu.tsx`, guardando la preferencia en el navegador como se guarda el alias (FR-021)
 
 **Checkpoint**: el encaje suena, propio y ajeno, y se puede silenciar.
 
@@ -180,15 +182,16 @@ cuarto más grandes.
 
 **Depende de la Fase 2**: el empaquetado mide las piezas con los perfiles nuevos.
 
-- [ ] T043 [US6] Implementar `pieceExtent(edges)` en `lib/puzzle/board-layout.ts` según [contracts/band-packing.md](./contracts/band-packing.md): una pieza suma `tabOverflow` por cada lado con lengüeta **saliente**, y nada por los huecos entrantes
-- [ ] T044 [US6] Añadir a `tests/unit/board-layout.test.ts` las garantías de `pieceExtent`: los tres tamaños posibles por eje, y que una pieza de esquina con dos lados rectos nunca supere `PIECE_SIZE + tabOverflow` por eje. **Si subestima, las piezas se tocarán**
-- [ ] T045 [US6] Reescribir el reparto de `lib/puzzle/board-layout.ts` como empaquetado por filas agrupadas por altura (research R6), eliminando `bandSlots` y `SLOT_PITCH`
-- [ ] T046 [US6] Derivar el tamaño del tablero del empaquetado en `lib/puzzle/board-layout.ts` en lugar de calcularlo por adelantado, y retirar los contadores de rejilla de `BoardSize`
-- [ ] T047 [US6] Adaptar `tests/unit/board-layout.test.ts` a la firma de dos semillas, **conservando el aserto de no solape** sobre las cajas envolventes reales
-- [ ] T048 [US6] Añadir a `tests/unit/board-layout.test.ts` la prueba de que el empaquetado aprovecha: el área del tablero debe ser sensiblemente menor que la del peor caso uniforme, o SC-006 no se cumple
-- [ ] T049 [US6] Actualizar los tres llamadores a la firma de dos semillas: `app/api/rooms/route.ts`, `tests/integration/helpers.ts` y `tests/integration/play-count.test.ts`
-- [ ] T050 [US6] Quitar el marco en `app/rooms/[code]/page.tsx`: sin relleno ni fondo propio, el tablero llega a los bordes izquierdo, derecho e inferior (FR-023)
-- [ ] T051 [US6] Adelgazar `components/BoardToolbar.tsx` y teñirla de un tono derivado del cartón, pegada al tablero (FR-024, FR-025); y retirar de `components/BoardCanvas.tsx` el rectángulo del área central (FR-026)
+- [ ] T045 [US6] Implementar `pieceExtent(edges)` en `lib/puzzle/board-layout.ts` según [contracts/band-packing.md](./contracts/band-packing.md): una pieza suma `tabOverflow` por cada lado con lengüeta **saliente**, y nada por los huecos entrantes
+- [ ] T046 [US6] Añadir a `tests/unit/board-layout.test.ts` las garantías de `pieceExtent`: los tres tamaños posibles por eje, y que una pieza de esquina con dos lados rectos nunca supere `PIECE_SIZE + tabOverflow` por eje. **Si subestima, las piezas se tocarán**
+- [ ] T047 [US6] Reescribir el reparto de `lib/puzzle/board-layout.ts` como empaquetado por filas agrupadas por altura (research R6), eliminando `bandSlots` y `SLOT_PITCH` (FR-027a)
+- [ ] T048 [US6] Derivar el tamaño del tablero del empaquetado en `lib/puzzle/board-layout.ts` en lugar de calcularlo por adelantado, y retirar los contadores de rejilla de `BoardSize`
+- [ ] T049 [US6] Adaptar `tests/unit/board-layout.test.ts` a la firma de dos semillas, conservando **el aserto de no solape** sobre las cajas envolventes reales y **el del determinismo** —mismas semillas, misma disposición—, que es lo que sostiene FR-027b y FR-029 (FR-030)
+- [ ] T050 [US6] Añadir a `tests/unit/board-layout.test.ts` la prueba de que el empaquetado aprovecha: el área del tablero **no supera el 65 %** de la que daría el paso uniforme del peor caso. El umbral sale de la estimación de research R6 —60 %— con margen; sin número, la aserción no puede fallar de forma útil
+- [ ] T051 [US6] Actualizar los tres llamadores a la firma de dos semillas: `app/api/rooms/route.ts`, `tests/integration/helpers.ts` y `tests/integration/play-count.test.ts`
+- [ ] T052 [US6] Quitar el marco en `app/rooms/[code]/page.tsx`: sin relleno ni fondo propio, el tablero llega a los bordes izquierdo, derecho e inferior (FR-023)
+- [ ] T053 [US6] Verificar con **dos navegadores** que tras reescribir el empaquetado la disposición inicial sigue siendo idéntica en ambos (FR-029). Es justo lo que la reescritura puede romper y ninguna unitaria lo ve — **requiere navegador**
+- [ ] T054 [US6] Adelgazar `components/BoardToolbar.tsx` y teñirla de un tono derivado del cartón, pegada al tablero (FR-024, FR-025); y retirar de `components/BoardCanvas.tsx` el rectángulo del área central (FR-026)
 
 **Checkpoint**: el tablero llena la ventana y las piezas son más grandes.
 
@@ -196,15 +199,15 @@ cuarto más grandes.
 
 ## Phase 9: Polish & Cross-Cutting Concerns
 
-- [ ] T052 **Medir SC-006** con 104 piezas y comparar con la captura anterior. Research R6 estima un 29 % con solo cuatro puntos de margen sobre el 25 % exigido, y **la tabla equivalente de la feature 004 salió un 10-15 % optimista**. Si no llega, ajustar el criterio en `spec.md` en lugar de forzar el número — **requiere navegador**
-- [ ] T053 [P] Actualizar la tabla de tamaños de [research.md](./research.md) con las cifras medidas, como se hizo en la feature 004
-- [ ] T054 Medir SC-007 arrastrando un bloque de 20 piezas en un rompecabezas de 150. Dibujar por grupo debería **mejorar** el rendimiento; si baja, el sospechoso es el contorno del grupo reconstruyéndose por frame — **requiere navegador**
-- [ ] T055 Verificar SC-005: el tablero ocupa al menos el 92 % del alto de la ventana y el 100 % del ancho — **requiere navegador**
-- [ ] T056 Verificar los tres casos del sonido: cascada que suena una vez, encaje ajeno que suena, y vuelta de una desconexión que **no** suena — **requiere navegador**
-- [ ] T057 Ejecutar `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:db` y `npm run build`, confirmando que las tres pruebas de integración que construyen salas siguen en verde
-- [ ] T058 Comparar con la referencia (SC-008): abrir jigsawexplorer al lado y preguntar a alguien cuál tiene las piezas «de verdad». Anotar **qué** lo delató si acierta — **requiere navegador**
-- [ ] T059 Ejecutar la validación completa de [quickstart.md](./quickstart.md), los 9 escenarios — **requiere navegador**
-- [ ] T060 Revisar el cumplimiento de la constitución antes del merge y actualizar la tabla de trampas conocidas de `README.md` con lo que aparezca al implementar
+- [ ] T055 **Medir SC-006** con 104 piezas y comparar con la captura anterior. Research R6 estima un 29 % con solo cuatro puntos de margen sobre el 25 % exigido, y **la tabla equivalente de la feature 004 salió un 10-15 % optimista**. Si no llega, ajustar el criterio en `spec.md` en lugar de forzar el número — **requiere navegador**
+- [ ] T056 [P] Actualizar la tabla de tamaños de [research.md](./research.md) con las cifras medidas, como se hizo en la feature 004
+- [ ] T057 Medir SC-007 arrastrando un bloque de 20 piezas en un rompecabezas de 150. Dibujar por grupo debería **mejorar** el rendimiento; si baja, el sospechoso es el contorno del grupo reconstruyéndose por frame — **requiere navegador**
+- [ ] T058 Verificar SC-005: el tablero ocupa al menos el 92 % del alto de la ventana y el 100 % del ancho — **requiere navegador**
+- [ ] T059 Verificar los cinco casos del sonido: cascada que suena una vez, encaje ajeno que suena, vuelta de una desconexión que **no** suena, soltar sin encajar que **no** suena (FR-019), y los tiempos de SC-004 y SC-004a —100 ms el propio, 1 s el ajeno, nunca dos solapados— — **requiere navegador**
+- [ ] T060 Ejecutar `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:db` y `npm run build`, confirmando que las tres pruebas de integración que construyen salas siguen en verde
+- [ ] T061 Comparar con la referencia (SC-008): abrir jigsawexplorer al lado y preguntar a alguien cuál tiene las piezas «de verdad». Anotar **qué** lo delató si acierta — **requiere navegador**
+- [ ] T062 Ejecutar la validación completa de [quickstart.md](./quickstart.md), los 9 escenarios — **requiere navegador**
+- [ ] T063 Revisar el cumplimiento de la constitución antes del merge y actualizar la tabla de trampas conocidas de `README.md` con lo que aparezca al implementar
 
 ---
 
@@ -241,10 +244,13 @@ Phase 2 (Foundational: perfiles de lengüeta)   ← BLOQUEA todo
 ### Parallel Opportunities
 
 - **T003 y T004**: dos garantías del mismo catálogo.
-- **Fases 3, 4, 5, 7 en paralelo** tras la Fase 2: el dibujado por grupo, el arrastre, las
-  siluetas y el sonido no comparten archivos. Es el mayor ahorro disponible.
-- **T036, T037 y T039**: el sonido y su prueba.
-- **T017**: el cambio de tipo, aislado del resto de su fase.
+- **Fases 3 y 4 en paralelo** tras la Fase 2: el dibujado por grupo y el arrastre no comparten
+  ningún archivo. Es el único paralelismo real entre fases.
+- **Las fases 5 y 7 NO son paralelizables** con las anteriores, aunque lo parezca: la 5 reescribe
+  `lib/puzzle-generation/path.ts`, que la 3 también toca, y la 7 modifica `components/Board.tsx`,
+  que la 4 también toca. Van después de la 3 y de la 4 respectivamente.
+- **T037, T038 y T040**: el sonido y su prueba.
+- **T018**: el cambio de tipo, aislado del resto de su fase.
 
 ---
 
@@ -270,16 +276,22 @@ el defecto que más estorba jugando, y es la fase más barata de las que quedan.
 
 ### Lo que hay que vigilar
 
-**T043 es la tarea con más riesgo silencioso.** Si `pieceExtent` **subestima**, las piezas se
-tocarán y el aserto de no solape de T047 lo cazará; pero si **sobrestima**, todo pasa en verde y
-SC-006 simplemente no llega, sin que nada avise. Por eso T048 comprueba explícitamente que el
+**T045 es la tarea con más riesgo silencioso.** Si `pieceExtent` **subestima**, las piezas se
+tocarán y el aserto de no solape de T049 lo cazará; pero si **sobrestima**, todo pasa en verde y
+SC-006 simplemente no llega, sin que nada avise. Por eso T050 comprueba explícitamente que el
 empaquetado aprovecha, y no solo que es correcto.
 
-**T052 puede desmentir el diseño.** El margen entre el 29 % estimado y el 25 % exigido es de
+**T055 puede desmentir el diseño.** El margen entre el 29 % estimado y el 25 % exigido es de
 cuatro puntos, y la estimación equivalente de la feature 004 se quedó corta. La instrucción es
 ajustar el criterio, no forzar el número: un SC que se cumple a base de retorcer la
 implementación no mide nada.
 
-**T016 existe porque el camino de grupo puede olvidar el caso de una sola pieza.** Al principio de
+**T010 es el hallazgo que el diseño se dejó.** La investigación resolvió el recorte del grupo con
+un trazado compuesto y dio por hecho que el mismo trazado servía para el relieve. No sirve:
+recorrerlo con `stroke()` bisela también las juntas interiores, y un bloque con todas sus costuras
+marcadas como bordes es justo lo que FR-016 prohíbe. Por eso hay **tres** trazados por grupo y no
+uno. Si el relieve sale raro, es el primer sitio donde mirar.
+
+**T017 existe porque el camino de grupo puede olvidar el caso de una sola pieza.** Al principio de
 la partida **todos** los grupos son de una pieza; si ese camino se rompe, el tablero aparece vacío
 y no habrá ninguna prueba unitaria que lo diga.
