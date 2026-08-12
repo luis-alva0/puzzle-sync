@@ -214,16 +214,32 @@ Agrupar las filas por altura no es un adorno: si una fila mezcla alturas, **su a
 pieza más alta** y se pierde en vertical lo que se gana en horizontal. Con las filas agrupadas, el
 alto medio de fila baja de 148 a 124.
 
-| Disposición | Celda media | Área relativa | Tamaño de pieza |
+**Medido con la implementación terminada**, ventana de 1920 × 1080, comparando contra el
+tablero que producía la feature 004 con su marco y su barra:
+
+| Piezas | antes (004) | ahora | ganancia |
 |---|---|---|---|
-| Rejilla uniforme (hoy) | 160 × 160 | 100 % | referencia |
-| Filas, sin agrupar por altura | 126 × 160 | 79 % | +13 % |
-| **Filas agrupadas por altura** | **126 × 126** | **62 %** | **+27 %** |
+| 20 | 128 px | 135 px | **+5 %** |
+| 50 | 80 px | 101 px | **+26 %** |
+| 100 | 58 px | 70 px | **+20 %** |
+| 104 | 58 px | 70 px | **+20 %** |
+| 150 | 49 px | 58 px | **+18 %** |
+| 200 | 43 px | 51 px | **+20 %** |
+| 500 | 28 px | 34 px | **+20 %** |
 
 **Las cifras usan `tabOverflow = 26`, la profundidad del 22 % que fija R4.** Las dos secciones
-están acopladas: subir la profundidad ensancha las piezas y baja esta tabla. Con el 25 % que R4
-proponía al principio, el resultado era +23 % y SC-006 quedaba fuera de alcance sin que nada
-avisara.
+están acopladas: subir la profundidad ensancha las piezas y baja esta tabla.
+
+**La estimación previa —+27 %— se quedó corta, como la de la feature 004.** Salía de comparar
+celdas medias, y no contaba con lo que se pierde al cuantizar filas ni con el área central, que en
+500 piezas es un tercio del tablero. Lo medido está entre +18 % y +26 %. SC-006 se ajustó a +18 %
+siguiendo lo que esta misma sección dejaba escrito: bajar el criterio antes que la profundidad.
+
+También cambió el algoritmo por el camino. El anillo de grosor **uniforme** que se probó primero
+salía *peor* que la rejilla de 004 en la mitad de los casos, porque perdía la optimización de
+proporción: un tablero cuadrado desperdicia los laterales en una pantalla apaisada. El anillo
+**asimétrico** —más grueso a los lados que arriba y abajo— es lo que recupera la ganancia, y es
+también lo que se ve en las referencias de jigsawexplorer.
 
 **Estas cifras son una estimación, no una medida.** La tabla equivalente de la feature 004 se
 escribió antes de programar y salió un 10-15 % optimista; conviene contar con que esta también

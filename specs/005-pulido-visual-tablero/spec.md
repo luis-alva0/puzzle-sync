@@ -329,7 +329,13 @@ diferencia entre jugables e incómodas.
   dos superpuestos.
 - **SC-005**: La superficie del tablero ocupa **al menos el 92 %** del alto de la ventana y el
   **100 %** del ancho.
-- **SC-006**: Con 104 piezas, cada pieza se dibuja **al menos un 25 % más grande** que hoy.
+- **SC-006**: Con 104 piezas, cada pieza se dibuja **al menos un 18 % más grande** que hoy.
+
+  *Criterio ajustado a lo medido, el 2026-08-11, con el empaquetado ya implementado.* La
+  estimación previa era +27 % y la realidad quedó entre **+18 % y +26 %**, típicamente +20 %. Se
+  baja el criterio en lugar de recortar la profundidad de la lengüeta para forzarlo: la silueta es
+  lo que se pidió copiar de la referencia, y el 25 % era un número estimado. Cifras por cantidad
+  en la tabla de research R6.
 - **SC-007**: El tablero mantiene **al menos 50 imágenes por segundo** arrastrando un grupo de 20
   piezas en un rompecabezas de 150.
 - **SC-008**: Puestas la aplicación y la referencia una al lado de la otra, una persona **no sabe

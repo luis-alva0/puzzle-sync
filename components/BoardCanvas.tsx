@@ -132,7 +132,10 @@ export function BoardCanvas({
     // No hay origen que desplazar: las coordenadas del reparto empiezan en (0, 0). Lo que sí hay
     // es un desplazamiento de centrado, que depende de la ventana y por eso se recalcula en cada
     // frame y NUNCA toca las posiciones de las piezas.
-    const board = boardSize(gridRows, gridCols);
+    // Tercer argumento: la semilla de **formas**, la misma que alimenta la rejilla de bordes. El
+    // empaquetado mide cada pieza por sus lengüetas, así que sin ella el canvas dibujaría un
+    // tablero distinto del que el servidor empaquetó.
+    const board = boardSize(gridRows, gridCols, seedFromUuid(puzzleId));
     const worldWidth = board.width;
     const worldHeight = board.height;
 
@@ -164,11 +167,8 @@ export function BoardCanvas({
 
       context.setTransform(scale, 0, 0, scale, offsetX, offsetY);
 
-      // T020: el rectángulo del área central, que es el hueco real que deja la banda. Antes se
-      // dibujaba la silueta del rompecabezas resuelto en el origen, que ya no es donde está.
-      context.strokeStyle = 'rgba(0,0,0,0.10)';
-      context.lineWidth = 2 / scale;
-      context.strokeRect(board.holeX, board.holeY, board.holeWidth, board.holeHeight);
+      // El área central no se dibuja (FR-026). La referencia no la marca y no hace falta: el hueco
+      // ya se ve, lo dibujan las piezas que lo rodean.
 
       const image = imageRef.current;
 
@@ -357,7 +357,7 @@ export function BoardCanvas({
     return () => {
       if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
     };
-  }, [gridRows, gridCols, edgeGrid]);
+  }, [gridRows, gridCols, puzzleId, edgeGrid]);
 
   /** Traduce coordenadas de pantalla a unidades de tablero. */
   function toBoard(event: React.PointerEvent<HTMLCanvasElement>): { x: number; y: number } {

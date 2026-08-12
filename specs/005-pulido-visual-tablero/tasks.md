@@ -182,17 +182,17 @@ cuarto más grandes.
 
 **Depende de la Fase 2**: el empaquetado mide las piezas con los perfiles nuevos.
 
-- [ ] T045 [US6] Implementar `pieceExtent(edges)` en `lib/puzzle/board-layout.ts` según [contracts/band-packing.md](./contracts/band-packing.md): una pieza suma `tabOverflow` por cada lado con lengüeta **saliente**, y nada por los huecos entrantes
-- [ ] T046 [US6] Añadir a `tests/unit/board-layout.test.ts` las garantías de `pieceExtent`: los tres tamaños posibles por eje, y que una pieza de esquina con dos lados rectos nunca supere `PIECE_SIZE + tabOverflow` por eje. **Si subestima, las piezas se tocarán**
-- [ ] T047 [US6] Reescribir el reparto de `lib/puzzle/board-layout.ts` como empaquetado por filas agrupadas por altura (research R6), eliminando `bandSlots` y `SLOT_PITCH` (FR-027a)
-- [ ] T048 [US6] Derivar el tamaño del tablero del empaquetado en `lib/puzzle/board-layout.ts` en lugar de calcularlo por adelantado, y retirar los contadores de rejilla de `BoardSize`
-- [ ] T049 [US6] Adaptar `tests/unit/board-layout.test.ts` a la firma de dos semillas, conservando **el aserto de no solape** sobre las cajas envolventes reales y **el del determinismo** —mismas semillas, misma disposición—, que es lo que sostiene FR-027b y FR-029 (FR-030)
-- [ ] T050 [US6] Añadir a `tests/unit/board-layout.test.ts` la prueba de que el empaquetado aprovecha: el área del tablero **no supera el 70 %** de la que daría el paso uniforme del peor caso. El umbral comprueba que el empaquetado sirve —lo uniforme sería el 100 %—, **no es un sustituto de SC-006**: eso se mide en el navegador en T056. Confundirlos fue lo que hizo que el umbral anterior del 65 % quedara por debajo de lo alcanzable
-- [ ] T051 [US6] Actualizar los tres llamadores a la firma de dos semillas: `app/api/rooms/route.ts`, `tests/integration/helpers.ts` y `tests/integration/play-count.test.ts`
-- [ ] T052 [US6] Quitar el marco en `app/rooms/[code]/page.tsx`: sin relleno ni fondo propio, el tablero llega a los bordes izquierdo, derecho e inferior (FR-023)
+- [X] T045 [US6] Implementar `pieceExtent(edges)` en `lib/puzzle/board-layout.ts` según [contracts/band-packing.md](./contracts/band-packing.md): una pieza suma `tabOverflow` por cada lado con lengüeta **saliente**, y nada por los huecos entrantes
+- [X] T046 [US6] Añadir a `tests/unit/board-layout.test.ts` las garantías de `pieceExtent`: los tres tamaños posibles por eje, y que una pieza de esquina con dos lados rectos nunca supere `PIECE_SIZE + tabOverflow` por eje. **Si subestima, las piezas se tocarán**
+- [X] T047 [US6] Reescribir el reparto de `lib/puzzle/board-layout.ts` como empaquetado por filas agrupadas por altura (research R6), eliminando `bandSlots` y `SLOT_PITCH` (FR-027a)
+- [X] T048 [US6] Derivar el tamaño del tablero del empaquetado en `lib/puzzle/board-layout.ts` en lugar de calcularlo por adelantado, y retirar los contadores de rejilla de `BoardSize`
+- [X] T049 [US6] Adaptar `tests/unit/board-layout.test.ts` a la firma de dos semillas, conservando **el aserto de no solape** sobre las cajas envolventes reales y **el del determinismo** —mismas semillas, misma disposición—, que es lo que sostiene FR-027b y FR-029 (FR-030)
+- [X] T050 [US6] Añadir a `tests/unit/board-layout.test.ts` la prueba de que el empaquetado aprovecha: el área del tablero **no supera el 70 %** de la que daría el paso uniforme del peor caso. El umbral comprueba que el empaquetado sirve —lo uniforme sería el 100 %—, **no es un sustituto de SC-006**: eso se mide en el navegador en T056. Confundirlos fue lo que hizo que el umbral anterior del 65 % quedara por debajo de lo alcanzable
+- [X] T051 [US6] Actualizar los tres llamadores a la firma de dos semillas: `app/api/rooms/route.ts`, `tests/integration/helpers.ts` y `tests/integration/play-count.test.ts`
+- [X] T052 [US6] Quitar el marco en `app/rooms/[code]/page.tsx`: sin relleno ni fondo propio, el tablero llega a los bordes izquierdo, derecho e inferior (FR-023)
 - [ ] T053 [US6] Verificar con **dos navegadores** que tras reescribir el empaquetado la disposición inicial sigue siendo idéntica en ambos (FR-029). Es justo lo que la reescritura puede romper y ninguna unitaria lo ve — **requiere navegador**
-- [ ] T054 [US6] Actualizar la llamada a `boardSize` de `components/BoardCanvas.tsx` a la firma de tres argumentos, pasando `seedFromUuid(puzzleId)` como semilla de formas —la misma que ya usa para la rejilla de bordes—. **Es el cuarto llamador**, y T051 solo cubre los tres de `layoutPieces`: si se pasa la semilla equivocada, el canvas dibuja un tablero distinto del que empaquetó el servidor
-- [ ] T055 [US6] Adelgazar `components/BoardToolbar.tsx` y teñirla de un tono derivado del cartón, pegada al tablero (FR-024, FR-025); y retirar de `components/BoardCanvas.tsx` el rectángulo del área central (FR-026)
+- [X] T054 [US6] Actualizar la llamada a `boardSize` de `components/BoardCanvas.tsx` a la firma de tres argumentos, pasando `seedFromUuid(puzzleId)` como semilla de formas —la misma que ya usa para la rejilla de bordes—. **Es el cuarto llamador**, y T051 solo cubre los tres de `layoutPieces`: si se pasa la semilla equivocada, el canvas dibuja un tablero distinto del que empaquetó el servidor
+- [X] T055 [US6] Adelgazar `components/BoardToolbar.tsx` y teñirla de un tono derivado del cartón, pegada al tablero (FR-024, FR-025); y retirar de `components/BoardCanvas.tsx` el rectángulo del área central (FR-026)
 
 **Checkpoint**: el tablero llena la ventana y las piezas son más grandes.
 

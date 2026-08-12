@@ -3,6 +3,7 @@ import { apiError, withErrorHandling } from '@/lib/api/errors';
 import { validateAlias } from '@/lib/rooms/alias';
 import { generateRoomCode } from '@/lib/rooms/code';
 import { layoutPieces } from '@/lib/puzzle/board-layout';
+import { seedFromUuid } from '@/lib/puzzle-generation/prng';
 import type { CreateRoomRequest, CreateRoomResponse } from '@/types/api';
 
 /** Intentos de generar un código antes de rendirse. Ver comentario en `insertRoom`. */
@@ -41,7 +42,15 @@ export const POST = withErrorHandling(async (request: Request): Promise<Response
   if (!puzzle) return apiError('PUZZLE_NOT_FOUND');
 
   // La dispersión se calcula aquí, en TypeScript testeable, y viaja a la función atómica.
-  const pieces = layoutPieces(puzzle.grid_rows, puzzle.grid_cols, Date.now() % 2_147_483_647);
+  // Dos semillas distintas y no intercambiables: la de **formas** sale del UUID del rompecabezas
+  // y es la misma en todas sus salas —las piezas tienen la misma forma siempre—; la de **reparto**
+  // cambia en cada sala, para que dos partidas del mismo rompecabezas no empiecen igual.
+  const pieces = layoutPieces(
+    puzzle.grid_rows,
+    puzzle.grid_cols,
+    seedFromUuid(body.puzzleId),
+    Date.now() % 2_147_483_647,
+  );
 
   // La unicidad del código la garantiza la restricción UNIQUE de la base de datos, no el
   // generador. Reintentar ante colisión es más simple y más correcto que consultar antes:

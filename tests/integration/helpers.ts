@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { layoutPieces } from '@/lib/puzzle/board-layout';
+import { seedFromUuid } from '@/lib/puzzle-generation/prng';
 import { generateRoomCode } from '@/lib/rooms/code';
 
 /**
@@ -95,7 +96,7 @@ export async function setupRoom(
       p_auth_user_id: sessions[0]!.authUserId,
       p_alias: 'jugador-1',
       p_code: code,
-      p_pieces: layoutPieces(gridRows, gridCols, 42),
+      p_pieces: layoutPieces(gridRows, gridCols, seedFromUuid(puzzle.id), 42),
     })
     .single<{ room_id: string; player_id: string }>();
   if (createError) throw createError;

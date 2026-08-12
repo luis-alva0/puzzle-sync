@@ -82,12 +82,16 @@ export function BoardToolbar({
   return (
     <header
       style={{
+        // Franja delgada del color del tablero (FR-024, FR-025). En azul marino sobre cartón
+        // claro competía con las piezas; teñida del mismo material desaparece cuando no la miras,
+        // que es lo que uno quiere de una barra de herramientas.
         display: 'flex',
         alignItems: 'center',
-        gap: '0.75rem',
-        padding: '0.4rem 0.75rem',
-        background: 'var(--surface, rgba(0,0,0,0.25))',
-        borderRadius: 'var(--radius)',
+        gap: '0.6rem',
+        padding: '0.25rem 0.6rem',
+        minHeight: '2.2rem',
+        background: 'var(--board-bar)',
+        color: 'var(--board-bar-text)',
         flexShrink: 0,
       }}
     >

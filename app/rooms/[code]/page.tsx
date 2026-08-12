@@ -213,12 +213,14 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
     <main
       ref={shellRef}
       style={{
+        // Sin relleno, sin hueco entre barra y tablero y sin fondo propio: el marco oscuro se
+        // comía cerca de un 10 % del alto útil, y ese alto es tamaño de pieza (FR-023).
         height: '100dvh',
         display: 'flex',
         flexDirection: 'column',
-        padding: '0.6rem',
-        gap: '0.6rem',
-        background: 'var(--bg)',
+        padding: 0,
+        gap: 0,
+        overflow: 'hidden',
       }}
     >
       <BoardToolbar

@@ -1,159 +1,64 @@
 import { PIECE_SIZE, solvedSize } from '@/lib/puzzle/geometry';
+import { buildEdgeGrid, pieceEdges } from '@/lib/puzzle-generation/edges';
 import { tabOverflow } from '@/lib/puzzle-generation/path';
 import { splitmix32 } from '@/lib/puzzle-generation/prng';
+import type { PieceEdges } from '@/types/puzzle';
 
 /**
  * Dónde empieza cada pieza y qué tamaño tiene el tablero que las contiene.
  *
  * Las piezas se reparten en una **banda alrededor del borde**, dejando libre un área central del
- * tamaño del rompecabezas armado. La banda es una rejilla de huecos y cada pieza ocupa uno: de ahí
- * sale la garantía que justifica esta funcionalidad —**dos piezas nunca se solapan**— sin ninguna
- * detección de colisiones y sin ningún bucle que pueda no terminar (research R1).
+ * tamaño del rompecabezas armado. Dentro de la banda se colocan **en filas, una tras otra**,
+ * ocupando cada una solo el espacio que de verdad necesita.
  *
- * Todo aquí es función pura. `boardSize` la llaman **el servidor y el navegador**: el primero para
- * repartir, el segundo para saber qué área dibujar. Si cada uno calculase el suyo, las piezas
- * acabarían colocadas donde nadie las pinta, que es el fallo que este módulo existe para evitar.
+ * **De ahí sale la garantía que justifica todo esto: dos piezas nunca se solapan.** No hay
+ * detección de colisiones ni bucle que pueda no terminar; dentro de una fila las piezas van
+ * consecutivas, y cada fila empieza donde acabó la anterior.
  *
- * Nada consulta `window` ni el DOM. El tamaño del tablero **no puede depender de la ventana** o
- * dos jugadores verían disposiciones distintas (FR-006, FR-030).
+ * Sustituye a la rejilla de huecos uniforme de la feature 004. Aquella también garantizaba el no
+ * solape, pero al precio de que el paso lo fijara siempre **la pieza más ancha posible**: 160
+ * unidades, cuando la media ocupa 126. Un paso único no puede aprovechar que la mayoría de las
+ * piezas son más estrechas.
+ *
+ * `boardSize` la llaman **el servidor y el navegador**. Si cada uno calculase el suyo, las piezas
+ * acabarían colocadas donde nadie las pinta. Nada aquí consulta `window` ni el DOM.
  */
 
-/**
- * Separación entre huecos de la rejilla, en unidades de tablero.
- *
- * Una pieza no ocupa `PIECE_SIZE`: sus lengüetas sobresalen `tabOverflow` por cada lado, así que
- * su caja envolvente en el peor caso —lengüeta saliente en los dos lados opuestos— mide
- * `PIECE_SIZE + 2 × tabOverflow`. Espaciar los huecos `PIECE_SIZE` dejaría las lengüetas invadiendo
- * al vecino: piezas visualmente solapadas.
- *
- * Se deriva de `tabOverflow` en lugar de escribirse a mano para que siga siendo correcto si algún
- * día cambia la profundidad de la lengüeta (research R2).
- */
-export const PIECE_BOUNDS = PIECE_SIZE + tabOverflow(PIECE_SIZE) * 2;
+/** Cuánto sobresale una lengüeta, en unidades de tablero. */
+const OVERFLOW = tabOverflow(PIECE_SIZE);
 
-/** Holgura sobre la caja envolvente. Es el margen dentro del que se sacude cada pieza. */
-const SLOT_SLACK = PIECE_SIZE * 0.12;
-
-/** Paso de la rejilla de huecos. */
-export const SLOT_PITCH = PIECE_BOUNDS + SLOT_SLACK;
+/** Separación entre piezas contiguas, para que se vean sueltas y no pegadas. */
+const GUTTER = PIECE_SIZE * 0.08;
 
 /**
  * Proporción a la que tiende el tablero.
  *
- * No es la del rompecabezas: es lo que decide cuán grandes se ven las piezas. Con escala uniforme,
+ * No es la del rompecabezas: es lo que decide cuán grandes se ven las piezas. Con escala uniforme
  * el factor lo fija el eje más apretado, así que un tablero cuadrado en una pantalla apaisada
- * desperdicia los laterales y encoge las piezas sin necesidad. 16:10 es un punto intermedio fijo
- * entre 16:9 y 4:3 — fijo porque tomarlo de la ventana real rompería FR-006 (research R3).
+ * desperdicia los laterales. 16:10 es un punto fijo entre 16:9 y 4:3 — fijo, porque tomarlo de la
+ * ventana haría que dos jugadores vieran disposiciones distintas.
+ *
+ * De aquí sale que **la banda salga más gruesa a los lados que arriba y abajo**, que es lo que se
+ * ve en las referencias de jigsawexplorer y que al principio parece un descuido suyo.
  */
 const TARGET_ASPECT = 1.6;
 
 export interface BoardSize {
-  /** Tamaño total del tablero, en unidades de tablero. */
   width: number;
   height: number;
-  /** Área central libre de piezas, donde se arma. */
   holeX: number;
   holeY: number;
   holeWidth: number;
   holeHeight: number;
-  /** Huecos de la rejilla a lo ancho y a lo alto, incluidos los del área central. */
-  slotCols: number;
-  slotRows: number;
-  /** Huecos de la rejilla que caen dentro del área central, y por tanto no se usan. */
-  holeSlotCols: number;
-  holeSlotRows: number;
 }
 
-function assertGrid(gridRows: number, gridCols: number): void {
-  if (!Number.isInteger(gridRows) || !Number.isInteger(gridCols) || gridRows < 1 || gridCols < 1) {
-    throw new RangeError('La cuadrícula necesita al menos una fila y una columna');
-  }
-}
-
-/**
- * Tamaño del tablero y del área central para una cuadrícula dada.
- *
- * El área central ocupa un número entero de huecos, de modo que la banda encaje con ella sin
- * medias casillas. Crece desde ahí hasta que la banda tenga huecos para todas las piezas.
- */
-export function boardSize(gridRows: number, gridCols: number): BoardSize {
-  assertGrid(gridRows, gridCols);
-
-  const solved = solvedSize(gridRows, gridCols);
-  const pieceCount = gridRows * gridCols;
-
-  // El área central se redondea hacia arriba a huecos completos, así que nunca es menor que el
-  // rompecabezas armado (FR-003).
-  const holeSlotCols = Math.ceil(solved.width / SLOT_PITCH);
-  const holeSlotRows = Math.ceil(solved.height / SLOT_PITCH);
-  const holeSlots = holeSlotCols * holeSlotRows;
-
-  // Crecer desde la proporción objetivo hasta que la banda dé abasto. El bucle termina siempre:
-  // cada vuelta añade una fila, y los huecos crecen más deprisa que el área central, que es fija.
-  let slotRows = Math.max(holeSlotRows + 2, Math.ceil(Math.sqrt((holeSlots + pieceCount) / TARGET_ASPECT)));
-  let slotCols = Math.max(holeSlotCols + 2, Math.ceil(slotRows * TARGET_ASPECT));
-
-  while (slotCols * slotRows - holeSlots < pieceCount) {
-    slotRows += 1;
-    slotCols = Math.max(holeSlotCols + 2, Math.ceil(slotRows * TARGET_ASPECT));
-  }
-
-  // La banda debe tener el mismo grosor a ambos lados, o el área central queda a caballo entre
-  // dos huecos: el rectángulo centrado no coincidiría con los huecos excluidos y quedarían medios
-  // huecos dentro del área. Ajustar la paridad centra y alinea de una vez, a costa de una fila o
-  // una columna más.
-  if ((slotCols - holeSlotCols) % 2 !== 0) slotCols += 1;
-  if ((slotRows - holeSlotRows) % 2 !== 0) slotRows += 1;
-
-  const width = slotCols * SLOT_PITCH;
-  const height = slotRows * SLOT_PITCH;
-
-  // Los huecos del área central se reservaron redondeando hacia arriba, así que el área nunca
-  // queda por debajo del rompecabezas armado (FR-003).
-  const holeWidth = holeSlotCols * SLOT_PITCH;
-  const holeHeight = holeSlotRows * SLOT_PITCH;
-
-  return {
-    width,
-    height,
-    holeX: (width - holeWidth) / 2,
-    holeY: (height - holeHeight) / 2,
-    holeWidth,
-    holeHeight,
-    slotCols,
-    slotRows,
-    holeSlotCols,
-    holeSlotRows,
-  };
-}
-
-export interface Slot {
-  x: number;
-  y: number;
-}
-
-/**
- * Huecos disponibles de la banda, en orden de lectura.
- *
- * Se recorre la rejilla completa y se descartan los que caen dentro del área central. El orden es
- * determinista; el desorden lo introduce la permutación de `layoutPieces`, no este recorrido.
- */
-export function bandSlots(board: BoardSize): Slot[] {
-  // Exacto sin redondear: `boardSize` fuerza que la banda tenga el mismo grosor a ambos lados.
-  const firstHoleCol = (board.slotCols - board.holeSlotCols) / 2;
-  const firstHoleRow = (board.slotRows - board.holeSlotRows) / 2;
-  const lastHoleCol = firstHoleCol + board.holeSlotCols - 1;
-  const lastHoleRow = firstHoleRow + board.holeSlotRows - 1;
-
-  const slots: Slot[] = [];
-  for (let row = 0; row < board.slotRows; row++) {
-    const insideRows = row >= firstHoleRow && row <= lastHoleRow;
-    for (let col = 0; col < board.slotCols; col++) {
-      if (insideRows && col >= firstHoleCol && col <= lastHoleCol) continue;
-      slots.push({ x: col * SLOT_PITCH, y: row * SLOT_PITCH });
-    }
-  }
-  return slots;
+export interface PieceExtent {
+  /** Ancho real: solo suman las lengüetas que **salen** hacia los lados. */
+  width: number;
+  height: number;
+  /** Dónde queda la esquina de la celda dentro de la caja envolvente. */
+  insetX: number;
+  insetY: number;
 }
 
 export interface ScatteredPiece {
@@ -163,18 +68,52 @@ export interface ScatteredPiece {
   y: number;
 }
 
-/**
- * Permutación determinista de `0..count-1`.
- *
- * Fisher-Yates alimentado por `splitmix32`, el mismo generador que ya usa la generación de formas.
- * Determinista porque el resultado viaja al servidor como estado compartido y las pruebas
- * necesitan reproducirlo (research R4).
- */
-function shuffledIndices(count: number, seed: number): number[] {
-  const order = Array.from({ length: count }, (_, index) => index);
-  let state = seed >>> 0;
+function assertGrid(gridRows: number, gridCols: number): void {
+  if (!Number.isInteger(gridRows) || !Number.isInteger(gridCols) || gridRows < 1 || gridCols < 1) {
+    throw new RangeError('La cuadrícula necesita al menos una fila y una columna');
+  }
+}
 
-  for (let i = count - 1; i > 0; i--) {
+/**
+ * Cuánto ocupa de verdad una pieza.
+ *
+ * Una lengüeta **saliente** añade su holgura por ese lado; un hueco **entrante** no ocupa nada,
+ * porque se mete hacia dentro. Los lados rectos del perímetro tampoco.
+ *
+ * Es el dato que la rejilla uniforme no tenía, y por eso reservaba siempre el peor caso. **Si esta
+ * función subestima, las piezas se tocarán**; si sobrestima, se desperdicia espacio y las piezas
+ * salen más pequeñas de lo necesario. Lo primero lo caza la prueba de no solape; lo segundo, la de
+ * aprovechamiento.
+ */
+export function pieceExtent(edges: PieceEdges): PieceExtent {
+  // `sign` combinado con el sentido de trazado decide hacia dónde sobresale. La convención es la
+  // de `piecePath`: arriba e izquierda se recorren al revés, y por eso llevan dirección −1.
+  const out = (sign: number, direction: 1 | -1) => (sign * direction < 0 ? OVERFLOW : 0);
+
+  const left = out(edges.left.sign, -1);
+  const right = out(edges.right.sign, 1);
+  const top = out(edges.top.sign, -1);
+  const bottom = out(edges.bottom.sign, 1);
+
+  return {
+    width: PIECE_SIZE + left + right,
+    height: PIECE_SIZE + top + bottom,
+    insetX: left,
+    insetY: top,
+  };
+}
+
+interface Placement {
+  gridRow: number;
+  gridCol: number;
+  extent: PieceExtent;
+}
+
+/** Permutación determinista, con Fisher-Yates alimentado por `splitmix32`. */
+function shuffled<T>(items: readonly T[], seed: number): T[] {
+  const order = [...items];
+  let state = seed >>> 0;
+  for (let i = order.length - 1; i > 0; i--) {
     state = splitmix32(state);
     const j = state % (i + 1);
     [order[i], order[j]] = [order[j]!, order[i]!];
@@ -183,60 +122,198 @@ function shuffledIndices(count: number, seed: number): number[] {
 }
 
 /**
- * Posiciones iniciales de todas las piezas.
+ * Coloca las piezas en un anillo de grosor uniforme alrededor del hueco.
  *
- * Cada pieza cae en un hueco distinto de la banda, con una sacudida menor que la holgura del
- * hueco: la irregularidad evita que la banda parezca una tabla, y al ser menor que la holgura
- * **no puede provocar solapes**.
+ * Las cuatro regiones —arriba, abajo, izquierda y derecha— se rellenan con filas de izquierda a
+ * derecha. Un anillo de grosor uniforme desperdicia mucho menos que dar a cada región el alto que
+ * le apetezca: la primera versión de esto dejaba que la franja superior se llevara casi todas las
+ * piezas, y el tablero salía más grande que con la rejilla que venía a sustituir.
  *
- * Las piezas se barajan antes de asignarlas para que dos vecinas en la imagen no acaben vecinas en
- * la banda (FR-008). Sin barajar, el rompecabezas aparecería medio ordenado alrededor del borde.
- *
- * **Ninguna pareja arranca encajada, y sale gratis.** `release_piece` encaja de forma *relativa*:
- * dos vecinas de cuadrícula se unen cuando su separación se acerca a `PIECE_SIZE` (100) dentro de
- * la tolerancia (25), es decir cuando cae en `[75, 125]`. Las separaciones que produce esta
- * rejilla son múltiplos de `SLOT_PITCH` (160) más una sacudida de ±12 como mucho: `[-12, 12]`,
- * `[148, 172]`, `[308, 332]`… Ninguna toca `[75, 125]`, así que el encaje es imposible en la
- * disposición inicial por construcción, sin necesidad de comprobar ni corregir nada.
+ * Devuelve `null` si no caben, para que quien llama engorde el anillo y reintente.
  */
-export function layoutPieces(gridRows: number, gridCols: number, seed = 1): ScatteredPiece[] {
-  const board = boardSize(gridRows, gridCols); // valida la cuadrícula
+function layIntoBand(
+  pieces: readonly Placement[],
+  holeWidth: number,
+  holeHeight: number,
+  sideThickness: number,
+  capThickness: number,
+) {
+  const boardWidth = holeWidth + sideThickness * 2;
+  const boardHeight = holeHeight + capThickness * 2;
+  const placed = new Map<string, { x: number; y: number }>();
+  let index = 0;
 
-  const slots = bandSlots(board);
-  const pieceCount = gridRows * gridCols;
+  /** Rellena un rectángulo con filas. Se detiene al agotar las piezas o el alto. */
+  const fillRegion = (originX: number, originY: number, width: number, height: number) => {
+    let y = originY;
+    while (index < pieces.length) {
+      const row: Placement[] = [];
+      let rowWidth = 0;
+      let rowHeight = 0;
+      let i = index;
 
-  if (slots.length < pieceCount) {
-    // Inalcanzable: `boardSize` crece hasta que la banda da abasto. Se comprueba porque si esa
-    // invariante se rompiera, el síntoma sería piezas apiladas en el mismo hueco.
-    throw new RangeError(`La banda tiene ${slots.length} huecos para ${pieceCount} piezas`);
-  }
+      while (i < pieces.length) {
+        const next = pieces[i]!;
+        const advance = next.extent.width + GUTTER;
+        if (row.length > 0 && rowWidth + advance > width) break;
+        row.push(next);
+        rowWidth += advance;
+        rowHeight = Math.max(rowHeight, next.extent.height);
+        i++;
+      }
 
-  const order = shuffledIndices(slots.length, seed);
+      if (row.length === 0) break;
+      if (rowWidth - GUTTER > width) break; // ni una pieza cabe de ancho
+      if (y + rowHeight > originY + height) break;
 
-  // `x` e `y` son la esquina de la **celda**, pero la caja envolvente empieza `overflow` antes,
-  // porque las lengüetas sobresalen. Sin este desplazamiento las piezas de la primera fila y la
-  // primera columna asoman fuera del tablero.
-  const overflow = (PIECE_BOUNDS - PIECE_SIZE) / 2;
+      let x = originX;
+      for (const piece of row) {
+        placed.set(`${piece.gridRow},${piece.gridCol}`, {
+          x: x + piece.extent.insetX,
+          y: y + piece.extent.insetY,
+        });
+        x += piece.extent.width + GUTTER;
+      }
+      index = i;
+      y += rowHeight + GUTTER;
+    }
+  };
 
-  const pieces: ScatteredPiece[] = [];
+  // Anillo: franja de arriba, columnas laterales a la altura del hueco, franja de abajo.
+  fillRegion(0, 0, boardWidth, capThickness);
+  fillRegion(0, capThickness, sideThickness, holeHeight);
+  fillRegion(sideThickness + holeWidth, capThickness, sideThickness, holeHeight);
+  fillRegion(0, capThickness + holeHeight, boardWidth, capThickness);
 
-  for (let gridRow = 0; gridRow < gridRows; gridRow++) {
-    for (let gridCol = 0; gridCol < gridCols; gridCol++) {
-      const index = gridRow * gridCols + gridCol;
-      const slot = slots[order[index]!]!;
+  if (index < pieces.length) return null;
 
-      // Dos valores independientes por pieza, derivados de la posición en el reparto.
-      const noiseX = splitmix32(seed + index * 2 + 1) / 0x1_0000_0000;
-      const noiseY = splitmix32(seed + index * 2 + 2) / 0x1_0000_0000;
+  return {
+    width: boardWidth,
+    height: boardHeight,
+    holeX: sideThickness,
+    holeY: capThickness,
+    placed,
+  };
+}
 
-      // La caja envolvente queda dentro del hueco: `slot.x + [0, slack]`. La sacudida se mueve por
-      // esa holgura y por eso nunca puede invadir el hueco vecino.
-      const x = slot.x + overflow + noiseX * SLOT_SLACK;
-      const y = slot.y + overflow + noiseY * SLOT_SLACK;
+/**
+ * Reparte y mide. Lo usan `boardSize` y `layoutPieces`, para que las dos vean el mismo tablero.
+ *
+ * **Las filas se agrupan por altura.** No es un adorno: si una fila mezcla alturas, su alto es el
+ * de la pieza más alta, y se pierde en vertical lo que se gana en horizontal. Barajar antes y
+ * ordenar después conserva el desorden dentro de cada altura, así que dos piezas vecinas en la
+ * imagen siguen sin acabar vecinas en la banda.
+ */
+function pack(gridRows: number, gridCols: number, shapeSeed: number, scatterSeed: number) {
+  const grid = buildEdgeGrid(shapeSeed, gridRows, gridCols);
 
-      pieces.push({ gridRow, gridCol, x, y });
+  const pieces: Placement[] = [];
+  for (let row = 0; row < gridRows; row++) {
+    for (let col = 0; col < gridCols; col++) {
+      pieces.push({ gridRow: row, gridCol: col, extent: pieceExtent(pieceEdges(grid, row, col)) });
     }
   }
 
+  /*
+   * El orden de empaquetado **no puede depender de la semilla de reparto**.
+   *
+   * Si dependiera, `boardSize` —que el canvas llama sin conocer esa semilla— calcularía un
+   * tablero distinto del que empaquetó el servidor, y las piezas quedarían colocadas fuera de lo
+   * que se dibuja. Lo cazó la prueba de «todas caen dentro del tablero».
+   *
+   * Se separa en dos: la **geometría** sale de ordenar por tamaño, que solo depende de las formas;
+   * y el **desorden** se consigue permutando identidades **entre piezas de idéntico tamaño**, que
+   * son intercambiables y por tanto no mueven ni un píxel del tablero.
+   */
+  const ordered = [...pieces].sort(
+    (a, b) => a.extent.height - b.extent.height || a.extent.width - b.extent.width,
+  );
+
+  for (let start = 0; start < ordered.length; ) {
+    let end = start + 1;
+    while (
+      end < ordered.length &&
+      ordered[end]!.extent.width === ordered[start]!.extent.width &&
+      ordered[end]!.extent.height === ordered[start]!.extent.height
+    ) {
+      end++;
+    }
+    // Permutar dentro del tramo: mismas cajas, distintas piezas dentro de ellas.
+    const mixed = shuffled(ordered.slice(start, end), scatterSeed + start);
+    for (let i = start; i < end; i++) ordered[i] = mixed[i - start]!;
+    start = end;
+  }
+
+  const solved = solvedSize(gridRows, gridCols);
+  const holeWidth = solved.width + OVERFLOW * 2;
+  const holeHeight = solved.height + OVERFLOW * 2;
+
+  // Ancho lateral de partida, tanteado desde el área que ocupan las piezas, y ampliado hasta que
+  // quepan. Termina siempre: cada vuelta agranda la banda y la cantidad de piezas es fija.
+  // Grosor del anillo, resuelto para que el tablero tienda a 16:10 y crecido hasta que quepan
+  // todas. Termina siempre: cada vuelta pide más área y la cantidad de piezas es fija.
+  const holeArea = holeWidth * holeHeight;
+  const pieceArea = ordered.reduce(
+    (sum, p) => sum + (p.extent.width + GUTTER) * (p.extent.height + GUTTER),
+    0,
+  );
+  const minSide = Math.max(...ordered.map((p) => p.extent.width)) + GUTTER;
+  const minCap = Math.max(...ordered.map((p) => p.extent.height)) + GUTTER;
+
+  let needed = pieceArea;
+  for (let attempt = 0; attempt < 400; attempt++) {
+    // Del área total y la proporción salen las dos dimensiones, y de ahí los dos grosores.
+    const height = Math.sqrt((holeArea + needed) / TARGET_ASPECT);
+    const width = height * TARGET_ASPECT;
+    const sideThickness = Math.max(minSide, (width - holeWidth) / 2);
+    const capThickness = Math.max(minCap, (height - holeHeight) / 2);
+
+    const laid = layIntoBand(ordered, holeWidth, holeHeight, sideThickness, capThickness);
+    if (laid) return { ...laid, holeWidth, holeHeight };
+    needed *= 1.05;
+  }
+  throw new RangeError('No se pudo empaquetar la banda');
+}
+
+/** Tamaño del tablero y del área central. Ver [contracts/band-packing.md]. */
+export function boardSize(gridRows: number, gridCols: number, shapeSeed: number): BoardSize {
+  assertGrid(gridRows, gridCols);
+  const packed = pack(gridRows, gridCols, shapeSeed, 1);
+  return {
+    width: packed.width,
+    height: packed.height,
+    holeX: packed.holeX,
+    holeY: packed.holeY,
+    holeWidth: packed.holeWidth,
+    holeHeight: packed.holeHeight,
+  };
+}
+
+/**
+ * Posiciones iniciales de todas las piezas.
+ *
+ * **Ninguna pareja arranca encajada, y sale gratis.** `release_piece` une dos vecinas cuando su
+ * separación se acerca a `PIECE_SIZE` (100) dentro de la tolerancia (25), es decir cuando cae en
+ * `[75, 125]` en **los dos ejes a la vez**. En una fila las piezas van separadas al menos
+ * `PIECE_SIZE + GUTTER` en horizontal y comparten la vertical, así que para encajar tendrían que
+ * estar además desplazadas justo una celda en vertical, cosa que la fila impide.
+ */
+export function layoutPieces(
+  gridRows: number,
+  gridCols: number,
+  shapeSeed: number,
+  scatterSeed = 1,
+): ScatteredPiece[] {
+  assertGrid(gridRows, gridCols);
+  const { placed } = pack(gridRows, gridCols, shapeSeed, scatterSeed);
+
+  const pieces: ScatteredPiece[] = [];
+  for (let gridRow = 0; gridRow < gridRows; gridRow++) {
+    for (let gridCol = 0; gridCol < gridCols; gridCol++) {
+      const at = placed.get(`${gridRow},${gridCol}`);
+      if (!at) throw new RangeError(`La pieza (${gridRow}, ${gridCol}) no se colocó`);
+      pieces.push({ gridRow, gridCol, x: at.x, y: at.y });
+    }
+  }
   return pieces;
 }

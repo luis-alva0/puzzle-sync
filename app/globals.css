@@ -121,3 +121,14 @@ a {
     display: block;
   }
 }
+
+/*
+ * Barra del tablero, teñida del cartón.
+ *
+ * Un tono más oscuro que la superficie para que se distinga sin competir con las piezas. El valor
+ * de fondo tiene que seguir a `BOARD_BACKGROUND` de `components/BoardCanvas.tsx`.
+ */
+:root {
+  --board-bar: #8a6f58;
+  --board-bar-text: #f4ece3;
+}
