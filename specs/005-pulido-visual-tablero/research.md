@@ -140,8 +140,22 @@ dos lados: la complementariedad se mantiene estructural.
 
 **Rationale**: la lengüeta actual es una joroba: **34 % de ancho, 20 % de profundidad y sin
 cuello**. Por eso las piezas leen como flores. Una lengüeta de rompecabezas real se estrecha antes
-de ensancharse —cuello de un 20 % del lado, cabeza de un 35 %, profundidad de un 25 %— y ese
-estrechamiento es lo que hace reconocible la silueta incluso pequeña.
+de ensancharse —cuello de un 20 % del lado, cabeza de un 35 %— y **ese estrechamiento, no la
+profundidad, es lo que hace reconocible la silueta** incluso pequeña.
+
+**Profundidad: 22 %**, y el número está elegido, no heredado. La primera versión de R4 decía 25 %
+sin más criterio que sonar realista, y ahí había una contradicción con R6 que nadie vio: una
+lengüeta más profunda ensancha la pieza, y eso se come lo que el empaquetado gana.
+
+| Profundidad | `tabOverflow` | Celda media | Pieza en pantalla |
+|---|---|---|---|
+| 20 % (hoy, sin cuello) | 24 | 124 | +29 % |
+| **22 %** | **26** | **126** | **+27 %** |
+| 25 % (R4 inicial) | 30 | 130 | +23 % ✗ |
+
+Con el 25 % inicial, SC-006 —que pide +25 %— **era inalcanzable por diseño**. El 22 % lo cumple
+con dos puntos de margen y conserva lo que de verdad importa, que es el cuello. Cualquier cambio
+futuro de esta profundidad **tiene que rehacer la tabla de R6**: están acopladas.
 
 Cuatro es suficiente para que el tablero no parezca repetitivo y pocos para poder mirarlos uno a
 uno y afinarlos a mano, que es lo que pide FR-010. Con cuatro perfiles, dos signos y el
@@ -203,14 +217,22 @@ alto medio de fila baja de 148 a 124.
 | Disposición | Celda media | Área relativa | Tamaño de pieza |
 |---|---|---|---|
 | Rejilla uniforme (hoy) | 160 × 160 | 100 % | referencia |
-| Filas, sin agrupar por altura | 124 × 148 | 72 % | +18 % |
-| **Filas agrupadas por altura** | **124 × 124** | **60 %** | **+29 %** |
+| Filas, sin agrupar por altura | 126 × 160 | 79 % | +13 % |
+| **Filas agrupadas por altura** | **126 × 126** | **62 %** | **+27 %** |
+
+**Las cifras usan `tabOverflow = 26`, la profundidad del 22 % que fija R4.** Las dos secciones
+están acopladas: subir la profundidad ensancha las piezas y baja esta tabla. Con el 25 % que R4
+proponía al principio, el resultado era +23 % y SC-006 quedaba fuera de alcance sin que nada
+avisara.
 
 **Estas cifras son una estimación, no una medida.** La tabla equivalente de la feature 004 se
 escribió antes de programar y salió un 10-15 % optimista; conviene contar con que esta también
-pueda quedarse corta. SC-006 pide un 25 % y el margen es de cuatro puntos, así que **hay que medir
-en cuanto exista el empaquetado** y, si no llega, ajustar el criterio en lugar de forzar el
-número.
+pueda quedarse corta. SC-006 pide un 25 % y **el margen es de dos puntos**, así que hay que medir
+en cuanto exista el empaquetado.
+
+Si no llega, el orden de preferencia es: **bajar el criterio de SC-006 a lo medido**, no bajar más
+la profundidad de la lengüeta. La silueta es lo que el usuario pidió copiar de la referencia; el
+25 % es un número que puse yo.
 
 La garantía de FR-030 se mantiene por construcción y sin comparar piezas entre sí: dentro de una
 fila se colocan consecutivas sumando anchuras, y las filas no se solapan porque cada una empieza

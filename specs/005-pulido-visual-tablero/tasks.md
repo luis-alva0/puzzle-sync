@@ -37,8 +37,8 @@ de la fase y un único `git commit`.
 | 5. US3 | T025–T029 | `feat(US3): siluetas con cuello y cabeza en el tablero - T025-T029` |
 | 6. US4 | T030–T036 | `feat(US4): relieve de carton y halo de captura por grupo - T030-T036` |
 | 7. US5 | T037–T044 | `feat(US5): clic sintetizado al encajar, con limitador - T037-T044` |
-| 8. US6 | T045–T054 | `feat(US6): empaquetado por filas y tablero a ventana completa - T045-T054` |
-| 9. Polish | T055–T063 | `chore(polish): verificar rendimiento y comparar con la referencia - T055-T063` |
+| 8. US6 | T045–T055 | `feat(US6): empaquetado por filas y tablero a ventana completa - T045-T055` |
+| 9. Polish | T056–T064 | `chore(polish): verificar rendimiento y comparar con la referencia - T056-T064` |
 
 Las correcciones que aparezcan al verificar y no pertenezcan a ninguna fase van en su propio
 commit, con scope descriptivo y sin rango.
@@ -59,7 +59,7 @@ profundidad de la lengüeta después de calcular el empaquetado obligaría a reh
 
 **⚠️ Ninguna historia puede empezar antes de terminar esta fase.**
 
-- [ ] T002 Crear `lib/puzzle-generation/tab-profiles.ts` con el catálogo de **cuatro** perfiles de research R4: cada uno una lista de puntos de control normalizados, con cuello más estrecho que la cabeza (FR-009) (FR-010)
+- [ ] T002 Crear `lib/puzzle-generation/tab-profiles.ts` con el catálogo de **cuatro** perfiles de research R4: cada uno una lista de puntos de control normalizados, con cuello más estrecho que la cabeza y **profundidad del 22 %** (FR-009, FR-010). El 22 % está acoplado a la tabla de research R6: cambiarlo obliga a rehacerla
 - [ ] T003 Crear `tests/unit/tab-profiles.test.ts` afirmando, para cada perfil, que **el ancho del cuello es menor que el de la cabeza** —es lo que separa una lengüeta de la joroba actual— y que el perfil empieza y acaba sobre la línea del borde
 - [ ] T004 Añadir a `tests/unit/tab-profiles.test.ts` que ningún perfil supera la profundidad que reserva `tabOverflow`, o las lengüetas saldrían recortadas al dibujarse
 - [ ] T005 Cambiar `Edge` en `types/puzzle.ts`: el campo `size` pasa a ser `profile`, el índice del perfil elegido (data-model)
@@ -84,11 +84,11 @@ además de por ser P1.
 
 - [ ] T009 [US1] Añadir a `lib/puzzle-generation/path.ts` una función que componga el contorno de un grupo con `Path2D.addPath()` y una matriz de traslación por pieza, apoyándose en la regla de relleno `nonzero` para que los contornos que se tocan cuenten como una sola figura (research R3)
 - [ ] T010 [US1] Añadir a `lib/puzzle-generation/path.ts` los **otros dos trazados** del grupo, en el mismo recorrido: el **exterior**, con los lados sin vecino dentro del grupo, y el de **juntas**, con los lados que sí lo tienen, cada uno trazado una sola vez (research R3). Sin esta separación el relieve biselaría las costuras interiores igual que el borde, que es lo contrario de FR-016
-- [ ] T011 [US1] Agrupar las piezas por `groupId` en `components/BoardCanvas.tsx` antes del bucle de dibujado, en lugar de recorrer piezas sueltas
+- [ ] T011 [US1] Agrupar las piezas por `groupId` en `components/BoardCanvas.tsx` antes del bucle de dibujado, en lugar de recorrer piezas sueltas, y dibujar **al final los grupos capturados**: con relieve y sombra, un bloque arrastrado por debajo de otras piezas se ve mal
 - [ ] T012 [US1] Dibujar cada grupo en `components/BoardCanvas.tsx` con **un solo** `clip()` y **un solo** `drawImage()` sobre la caja envolvente del grupo, en vez de uno por pieza (FR-001) (SC-001)
-- [ ] T013 [US1] Calcular en `components/BoardCanvas.tsx` la región de imagen de origen que corresponde a la caja del grupo, de modo que la foto sea continua a través de las juntas (FR-002)
+- [ ] T013 [US1] Calcular en `components/BoardCanvas.tsx` la región de imagen del grupo: el **origen** sale de su celda mínima en la cuadrícula —de ahí viene la foto— y el **destino**, de su posición actual en el tablero. Son cajas distintas en cuanto alguien mueve el grupo, y confundirlas descuadra la imagen (FR-002)
 - [ ] T014 [US1] Dibujar el **trazado de juntas** en `components/BoardCanvas.tsx` encima del grupo, como líneas de corte: dejan de ser un artefacto y pasan a ser una decisión (FR-003)
-- [ ] T015 [US1] Cachear **los tres trazados** de cada grupo en `components/BoardCanvas.tsx`, invalidándolos cuando cambie la composición del grupo, para no reconstruirlos en cada frame
+- [ ] T015 [US1] Cachear **los tres trazados** de cada grupo en `components/BoardCanvas.tsx` en **coordenadas relativas al origen del grupo**, trasladándolos al pintar, e invalidarlos solo cuando cambie la composición. Si se construyeran en coordenadas absolutas, el caché no se invalidaría al arrastrar —la composición no cambia— y **el grupo se dibujaría congelado** mientras lo mueves
 - [ ] T016 [US1] Verificar sobre una sala real que dos piezas unidas no dejan ver el fondo en ningún punto de la junta, y que un bloque de cinco muestra la imagen continua — **requiere navegador**
 - [ ] T017 [US1] Verificar que una pieza suelta —un grupo de una— se sigue dibujando bien: es el caso que el camino de grupo no puede olvidar — **requiere navegador**
 
@@ -187,11 +187,12 @@ cuarto más grandes.
 - [ ] T047 [US6] Reescribir el reparto de `lib/puzzle/board-layout.ts` como empaquetado por filas agrupadas por altura (research R6), eliminando `bandSlots` y `SLOT_PITCH` (FR-027a)
 - [ ] T048 [US6] Derivar el tamaño del tablero del empaquetado en `lib/puzzle/board-layout.ts` en lugar de calcularlo por adelantado, y retirar los contadores de rejilla de `BoardSize`
 - [ ] T049 [US6] Adaptar `tests/unit/board-layout.test.ts` a la firma de dos semillas, conservando **el aserto de no solape** sobre las cajas envolventes reales y **el del determinismo** —mismas semillas, misma disposición—, que es lo que sostiene FR-027b y FR-029 (FR-030)
-- [ ] T050 [US6] Añadir a `tests/unit/board-layout.test.ts` la prueba de que el empaquetado aprovecha: el área del tablero **no supera el 65 %** de la que daría el paso uniforme del peor caso. El umbral sale de la estimación de research R6 —60 %— con margen; sin número, la aserción no puede fallar de forma útil
+- [ ] T050 [US6] Añadir a `tests/unit/board-layout.test.ts` la prueba de que el empaquetado aprovecha: el área del tablero **no supera el 70 %** de la que daría el paso uniforme del peor caso. El umbral comprueba que el empaquetado sirve —lo uniforme sería el 100 %—, **no es un sustituto de SC-006**: eso se mide en el navegador en T056. Confundirlos fue lo que hizo que el umbral anterior del 65 % quedara por debajo de lo alcanzable
 - [ ] T051 [US6] Actualizar los tres llamadores a la firma de dos semillas: `app/api/rooms/route.ts`, `tests/integration/helpers.ts` y `tests/integration/play-count.test.ts`
 - [ ] T052 [US6] Quitar el marco en `app/rooms/[code]/page.tsx`: sin relleno ni fondo propio, el tablero llega a los bordes izquierdo, derecho e inferior (FR-023)
 - [ ] T053 [US6] Verificar con **dos navegadores** que tras reescribir el empaquetado la disposición inicial sigue siendo idéntica en ambos (FR-029). Es justo lo que la reescritura puede romper y ninguna unitaria lo ve — **requiere navegador**
-- [ ] T054 [US6] Adelgazar `components/BoardToolbar.tsx` y teñirla de un tono derivado del cartón, pegada al tablero (FR-024, FR-025); y retirar de `components/BoardCanvas.tsx` el rectángulo del área central (FR-026)
+- [ ] T054 [US6] Actualizar la llamada a `boardSize` de `components/BoardCanvas.tsx` a la firma de tres argumentos, pasando `seedFromUuid(puzzleId)` como semilla de formas —la misma que ya usa para la rejilla de bordes—. **Es el cuarto llamador**, y T051 solo cubre los tres de `layoutPieces`: si se pasa la semilla equivocada, el canvas dibuja un tablero distinto del que empaquetó el servidor
+- [ ] T055 [US6] Adelgazar `components/BoardToolbar.tsx` y teñirla de un tono derivado del cartón, pegada al tablero (FR-024, FR-025); y retirar de `components/BoardCanvas.tsx` el rectángulo del área central (FR-026)
 
 **Checkpoint**: el tablero llena la ventana y las piezas son más grandes.
 
@@ -199,15 +200,15 @@ cuarto más grandes.
 
 ## Phase 9: Polish & Cross-Cutting Concerns
 
-- [ ] T055 **Medir SC-006** con 104 piezas y comparar con la captura anterior. Research R6 estima un 29 % con solo cuatro puntos de margen sobre el 25 % exigido, y **la tabla equivalente de la feature 004 salió un 10-15 % optimista**. Si no llega, ajustar el criterio en `spec.md` en lugar de forzar el número — **requiere navegador**
-- [ ] T056 [P] Actualizar la tabla de tamaños de [research.md](./research.md) con las cifras medidas, como se hizo en la feature 004
-- [ ] T057 Medir SC-007 arrastrando un bloque de 20 piezas en un rompecabezas de 150. Dibujar por grupo debería **mejorar** el rendimiento; si baja, el sospechoso es el contorno del grupo reconstruyéndose por frame — **requiere navegador**
-- [ ] T058 Verificar SC-005: el tablero ocupa al menos el 92 % del alto de la ventana y el 100 % del ancho — **requiere navegador**
-- [ ] T059 Verificar los cinco casos del sonido: cascada que suena una vez, encaje ajeno que suena, vuelta de una desconexión que **no** suena, soltar sin encajar que **no** suena (FR-019), y los tiempos de SC-004 y SC-004a —100 ms el propio, 1 s el ajeno, nunca dos solapados— — **requiere navegador**
-- [ ] T060 Ejecutar `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:db` y `npm run build`, confirmando que las tres pruebas de integración que construyen salas siguen en verde
-- [ ] T061 Comparar con la referencia (SC-008): abrir jigsawexplorer al lado y preguntar a alguien cuál tiene las piezas «de verdad». Anotar **qué** lo delató si acierta — **requiere navegador**
-- [ ] T062 Ejecutar la validación completa de [quickstart.md](./quickstart.md), los 9 escenarios — **requiere navegador**
-- [ ] T063 Revisar el cumplimiento de la constitución antes del merge y actualizar la tabla de trampas conocidas de `README.md` con lo que aparezca al implementar
+- [ ] T056 **Medir SC-006** con 104 piezas y comparar con la captura anterior. Research R6 estima un 29 % con solo cuatro puntos de margen sobre el 25 % exigido, y **la tabla equivalente de la feature 004 salió un 10-15 % optimista**. Si no llega, ajustar el criterio en `spec.md` en lugar de forzar el número — **requiere navegador**
+- [ ] T057 [P] Actualizar la tabla de tamaños de [research.md](./research.md) con las cifras medidas, como se hizo en la feature 004
+- [ ] T058 Medir SC-007 arrastrando un bloque de 20 piezas en un rompecabezas de 150, **y también con un rompecabezas de 500 casi completo**: ahí todas las piezas son un solo grupo y cada frame recorta y traza un trazado de 500 subtrazados, que es el caso peor real y el que SC-007 no cubre. Si ese cae, la salida está en research R3: rasterizar el grupo a un canvas fuera de pantalla. Dibujar por grupo debería **mejorar** el rendimiento; si baja, el sospechoso es el contorno del grupo reconstruyéndose por frame — **requiere navegador**
+- [ ] T059 Verificar SC-005: el tablero ocupa al menos el 92 % del alto de la ventana y el 100 % del ancho — **requiere navegador**
+- [ ] T060 Verificar los cinco casos del sonido: cascada que suena una vez, encaje ajeno que suena, vuelta de una desconexión que **no** suena, soltar sin encajar que **no** suena (FR-019), y los tiempos de SC-004 y SC-004a —100 ms el propio, 1 s el ajeno, nunca dos solapados— — **requiere navegador**
+- [ ] T061 Ejecutar `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:db` y `npm run build`, confirmando que las tres pruebas de integración que construyen salas siguen en verde
+- [ ] T062 Comparar con la referencia (SC-008): abrir jigsawexplorer al lado y preguntar a alguien cuál tiene las piezas «de verdad». Anotar **qué** lo delató si acierta — **requiere navegador**
+- [ ] T063 Ejecutar la validación completa de [quickstart.md](./quickstart.md), los 9 escenarios — **requiere navegador**
+- [ ] T064 Revisar el cumplimiento de la constitución antes del merge y actualizar la tabla de trampas conocidas de `README.md` con lo que aparezca al implementar
 
 ---
 
@@ -278,15 +279,26 @@ el defecto que más estorba jugando, y es la fase más barata de las que quedan.
 
 **T045 es la tarea con más riesgo silencioso.** Si `pieceExtent` **subestima**, las piezas se
 tocarán y el aserto de no solape de T049 lo cazará; pero si **sobrestima**, todo pasa en verde y
-SC-006 simplemente no llega, sin que nada avise. Por eso T050 comprueba explícitamente que el
-empaquetado aprovecha, y no solo que es correcto.
+SC-006 simplemente no llega, sin que nada avise. Por eso T050 comprueba que el empaquetado
+aprovecha, y no solo que es correcto.
 
-**T055 puede desmentir el diseño.** El margen entre el 29 % estimado y el 25 % exigido es de
-cuatro puntos, y la estimación equivalente de la feature 004 se quedó corta. La instrucción es
-ajustar el criterio, no forzar el número: un SC que se cumple a base de retorcer la
-implementación no mide nada.
+**T056 puede desmentir el diseño, y el margen es estrecho.** La estimación es +27 % contra el
++25 % que exige SC-006: **dos puntos**, y la tabla equivalente de la feature 004 se quedó corta
+un 10-15 %.
 
-**T010 es el hallazgo que el diseño se dejó.** La investigación resolvió el recorte del grupo con
+Si no llega, la instrucción es **bajar el criterio de SC-006 a lo medido**, no bajar la
+profundidad de la lengüeta para forzarlo. La silueta es lo que el usuario pidió copiar de la
+referencia; el 25 % es un número que puse yo. Y ojo con la tentación de mirar T050: su umbral del
+70 % comprueba que el empaquetado sirve, **no es un sustituto de SC-006**. Confundirlos ya produjo
+un umbral mal puesto una vez.
+
+**T002 y research R6 están acoplados.** La profundidad de la lengüeta —22 %— sale de equilibrar
+dos cosas que tiran en sentidos contrarios: más profunda hace la silueta más reconocible, y
+también ensancha la pieza y se come lo que gana el empaquetado. Con el 25 % que el diseño tenía al
+principio, SC-006 era inalcanzable sin que nada avisara. **Cambiar esa profundidad obliga a
+rehacer la tabla de R6.**
+
+**T010 es el otro hallazgo que el diseño se dejó.** La investigación resolvió el recorte del grupo con
 un trazado compuesto y dio por hecho que el mismo trazado servía para el relieve. No sirve:
 recorrerlo con `stroke()` bisela también las juntas interiores, y un bloque con todas sus costuras
 marcadas como bordes es justo lo que FR-016 prohíbe. Por eso hay **tres** trazados por grupo y no

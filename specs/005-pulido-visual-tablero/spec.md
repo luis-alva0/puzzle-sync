@@ -370,6 +370,11 @@ diferencia entre jugables e incómodas.
   rejilla.
 - **A-006a**: El ~25 % de SC-006 viene solo del empaquetado. Quitar el marco oscuro y adelgazar la
   barra (FR-023, FR-024) aporta su propio ~10 % por separado.
+- **A-006b**: SC-006 y la profundidad de las lengüetas **tiran en sentidos contrarios**, y el
+  diseño las equilibró en el 22 %: una lengüeta más profunda se reconoce mejor y también ensancha
+  la pieza, comiéndose lo que el empaquetado gana. La estimación queda en +27 % contra el +25 %
+  exigido, **dos puntos de margen**. Si al medir no llega, se baja el criterio de SC-006 a lo
+  medido antes que la profundidad: la silueta es lo que se pidió copiar de la referencia.
 - **A-007**: Sigue sin haber desplazamiento ni ampliación del tablero: el tablero entero cabe en
   la ventana, como decidió la feature 004.
 
