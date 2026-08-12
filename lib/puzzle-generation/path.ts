@@ -1,3 +1,4 @@
+import { MAX_PROFILE_DEPTH } from '@/lib/puzzle-generation/tab-profiles';
 import type { Edge, PieceEdges } from '@/types/puzzle';
 
 /**
@@ -10,9 +11,6 @@ import type { Edge, PieceEdges } from '@/types/puzzle';
  * es la única sin prueba unitaria: lo que hay que verificar —que dos piezas vecinas encajen— se
  * verifica sobre la rejilla de bordes, que es datos puros.
  */
-
-/** Cuánto sobresale la lengüeta respecto del lado, en fracción del lado de la pieza. */
-const TAB_DEPTH = 0.2;
 
 /**
  * Traza un borde desde `(x0, y0)` hasta `(x1, y1)`.
@@ -42,9 +40,9 @@ function traceEdge(
   const nx = -dy / size;
   const ny = dx / size;
 
-  const bulge = TAB_DEPTH * size * edge.sign * direction;
+  const bulge = MAX_PROFILE_DEPTH * size * edge.sign * direction;
   const center = 0.5 + edge.offset;
-  const half = edge.size;
+  const half = 0.2; // provisional: la Fase 5 lo sustituye por el perfil
 
   // Punto sobre el borde a la fracción `t`, desplazado `out` en perpendicular.
   const at = (t: number, out: number) => ({
@@ -90,7 +88,14 @@ export function piecePath(edges: PieceEdges, size: number): Path2D {
   return path;
 }
 
-/** Cuánto sobresale una lengüeta. El dibujado debe pintar esta holgura alrededor de la celda. */
+/**
+ * Cuánto sobresale una lengüeta, con margen.
+ *
+ * Se deriva de la profundidad máxima del catálogo de perfiles en lugar de escribirse a mano: es
+ * el número que usan **el dibujado** para saber cuánta imagen pintar alrededor de la celda y **el
+ * empaquetado** para saber cuánto ocupa una pieza. Si los dos no salieran de la misma fuente,
+ * podrían discrepar y las piezas se tocarían.
+ */
 export function tabOverflow(size: number): number {
-  return TAB_DEPTH * size * 1.2;
+  return MAX_PROFILE_DEPTH * size * 1.2;
 }

@@ -93,9 +93,15 @@ describe('bandSlots', () => {
   it.each(COUNTS)('con %i piezas ningún hueco invade el área central', (_n, rows, cols) => {
     const board = boardSize(rows, cols);
 
+    // Con tolerancia: un hueco que termina justo donde empieza el área no la invade, y el paso de
+    // la rejilla no es un número exacto en binario, así que la comparación estricta falla por el
+    // último bit.
+    const EPS = 1e-6;
     for (const slot of bandSlots(board)) {
-      const insideX = slot.x + SLOT_PITCH > board.holeX && slot.x < board.holeX + board.holeWidth;
-      const insideY = slot.y + SLOT_PITCH > board.holeY && slot.y < board.holeY + board.holeHeight;
+      const insideX =
+        slot.x + SLOT_PITCH > board.holeX + EPS && slot.x < board.holeX + board.holeWidth - EPS;
+      const insideY =
+        slot.y + SLOT_PITCH > board.holeY + EPS && slot.y < board.holeY + board.holeHeight - EPS;
       expect(insideX && insideY).toBe(false);
     }
   });

@@ -1,4 +1,5 @@
 import { hashCoords } from '@/lib/puzzle-generation/prng';
+import { PROFILE_COUNT } from '@/lib/puzzle-generation/tab-profiles';
 import type { Edge, EdgeGrid, PieceEdges } from '@/types/puzzle';
 
 /**
@@ -14,7 +15,7 @@ import type { Edge, EdgeGrid, PieceEdges } from '@/types/puzzle';
  * en cualquier navegador (contracts/piece-generation.md).
  */
 
-const STRAIGHT: Edge = { straight: true, sign: 0, offset: 0, size: 0 };
+const STRAIGHT: Edge = { straight: true, sign: 0, offset: 0, profile: 0 };
 
 /** Ejes, como número, para que `hashCoords` distinga un borde horizontal de uno vertical. */
 const AXIS_HORIZONTAL = 0;
@@ -35,8 +36,9 @@ function interiorEdge(seed: number, row: number, col: number, axis: number): Edg
     sign: (hash & 1) === 0 ? 1 : -1,
     // Desplazamiento del centro de la lengüeta: ±6 % del lado, en 16 pasos discretos.
     offset: (((hash >>> 1) & 0x0f) - 7.5) / 125,
-    // Tamaño de la lengüeta: entre el 17 % y el 24 % del lado, en 8 pasos.
-    size: 0.17 + (((hash >>> 5) & 0x07) * 0.01),
+    // Cuál de los perfiles del catálogo. Antes aquí se sorteaba una anchura continua; ahora se
+    // elige entre formas concretas que se pueden mirar y afinar una a una.
+    profile: (hash >>> 5) % PROFILE_COUNT,
   };
 }
 

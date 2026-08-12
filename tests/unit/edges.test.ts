@@ -58,7 +58,7 @@ describe('buildEdgeGrid — perímetro recto', () => {
 
   it('un borde recto no tiene signo ni tamaño', () => {
     const edge = grid.horizontal[0]![0]!;
-    expect(edge).toEqual({ straight: true, sign: 0, offset: 0, size: 0 });
+    expect(edge).toEqual({ straight: true, sign: 0, offset: 0, profile: 0 });
   });
 });
 

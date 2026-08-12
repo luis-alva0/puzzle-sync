@@ -4,26 +4,26 @@ exports[`instantánea del algoritmo > la rejilla de un UUID conocido no puede ca
 {
   "h10": {
     "offset": -0.036,
+    "profile": 1,
     "sign": 1,
-    "size": 0.18000000000000002,
     "straight": false,
   },
   "h11": {
     "offset": -0.012,
+    "profile": 2,
     "sign": 1,
-    "size": 0.19,
     "straight": false,
   },
   "v01": {
     "offset": 0.06,
+    "profile": 2,
     "sign": 1,
-    "size": 0.23,
     "straight": false,
   },
   "v11": {
     "offset": 0.028,
+    "profile": 1,
     "sign": 1,
-    "size": 0.18000000000000002,
     "straight": false,
   },
 }

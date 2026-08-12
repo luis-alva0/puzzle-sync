@@ -35,8 +35,8 @@ export interface Edge {
   sign: -1 | 0 | 1;
   /** Desplazamiento del centro de la lengüeta, en fracción del lado de la pieza. */
   offset: number;
-  /** Tamaño de la lengüeta, en fracción del lado de la pieza. */
-  size: number;
+  /** Cuál de los perfiles del catálogo usa esta lengüeta. Índice en `TAB_PROFILES`. */
+  profile: number;
 }
 
 export interface EdgeGrid {

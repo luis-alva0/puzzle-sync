@@ -59,13 +59,13 @@ profundidad de la lengüeta después de calcular el empaquetado obligaría a reh
 
 **⚠️ Ninguna historia puede empezar antes de terminar esta fase.**
 
-- [ ] T002 Crear `lib/puzzle-generation/tab-profiles.ts` con el catálogo de **cuatro** perfiles de research R4: cada uno una lista de puntos de control normalizados, con cuello más estrecho que la cabeza y **profundidad del 22 %** (FR-009, FR-010). El 22 % está acoplado a la tabla de research R6: cambiarlo obliga a rehacerla
-- [ ] T003 Crear `tests/unit/tab-profiles.test.ts` afirmando, para cada perfil, que **el ancho del cuello es menor que el de la cabeza** —es lo que separa una lengüeta de la joroba actual— y que el perfil empieza y acaba sobre la línea del borde
-- [ ] T004 Añadir a `tests/unit/tab-profiles.test.ts` que ningún perfil supera la profundidad que reserva `tabOverflow`, o las lengüetas saldrían recortadas al dibujarse
-- [ ] T005 Cambiar `Edge` en `types/puzzle.ts`: el campo `size` pasa a ser `profile`, el índice del perfil elegido (data-model)
-- [ ] T006 Adaptar `lib/puzzle-generation/edges.ts` para elegir perfil con el mismo hash que hoy elige la anchura, conservando que **el borde sea un solo objeto leído por las dos piezas vecinas**: es lo que hace la complementariedad estructural y no una coincidencia
-- [ ] T007 Actualizar `tests/unit/edges.test.ts` al campo nuevo, conservando la prueba de identidad referencial entre el borde derecho de una pieza y el izquierdo de su vecina
-- [ ] T008 Hacer que `tabOverflow` en `lib/puzzle-generation/path.ts` se derive de la profundidad máxima del catálogo en lugar de una constante suelta, para que medir y dibujar no puedan discrepar
+- [X] T002 Crear `lib/puzzle-generation/tab-profiles.ts` con el catálogo de **cuatro** perfiles de research R4: cada uno una lista de puntos de control normalizados, con cuello más estrecho que la cabeza y **profundidad del 22 %** (FR-009, FR-010). El 22 % está acoplado a la tabla de research R6: cambiarlo obliga a rehacerla
+- [X] T003 Crear `tests/unit/tab-profiles.test.ts` afirmando, para cada perfil, que **el ancho del cuello es menor que el de la cabeza** —es lo que separa una lengüeta de la joroba actual— y que el perfil empieza y acaba sobre la línea del borde
+- [X] T004 Añadir a `tests/unit/tab-profiles.test.ts` que ningún perfil supera la profundidad que reserva `tabOverflow`, o las lengüetas saldrían recortadas al dibujarse
+- [X] T005 Cambiar `Edge` en `types/puzzle.ts`: el campo `size` pasa a ser `profile`, el índice del perfil elegido (data-model)
+- [X] T006 Adaptar `lib/puzzle-generation/edges.ts` para elegir perfil con el mismo hash que hoy elige la anchura, conservando que **el borde sea un solo objeto leído por las dos piezas vecinas**: es lo que hace la complementariedad estructural y no una coincidencia
+- [X] T007 Actualizar `tests/unit/edges.test.ts` al campo nuevo, conservando la prueba de identidad referencial entre el borde derecho de una pieza y el izquierdo de su vecina
+- [X] T008 Hacer que `tabOverflow` en `lib/puzzle-generation/path.ts` se derive de la profundidad máxima del catálogo en lugar de una constante suelta, para que medir y dibujar no puedan discrepar
 
 **Checkpoint**: existen los perfiles, probados, y el resto del proyecto compila contra el campo
 nuevo. Las siluetas todavía se dibujan como antes: eso es la US3.
