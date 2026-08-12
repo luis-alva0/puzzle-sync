@@ -204,11 +204,11 @@ cuarto más grandes.
 - [ ] T057 [P] Actualizar la tabla de tamaños de [research.md](./research.md) con las cifras medidas, como se hizo en la feature 004
 - [ ] T058 Medir SC-007 arrastrando un bloque de 20 piezas en un rompecabezas de 150, **y también con un rompecabezas de 500 casi completo**: ahí todas las piezas son un solo grupo y cada frame recorta y traza un trazado de 500 subtrazados, que es el caso peor real y el que SC-007 no cubre. Si ese cae, la salida está en research R3: rasterizar el grupo a un canvas fuera de pantalla. Dibujar por grupo debería **mejorar** el rendimiento; si baja, el sospechoso es el contorno del grupo reconstruyéndose por frame — **requiere navegador**
 - [ ] T059 Verificar SC-005: el tablero ocupa al menos el 92 % del alto de la ventana y el 100 % del ancho — **requiere navegador**
-- [ ] T060 Verificar los cinco casos del sonido: cascada que suena una vez, encaje ajeno que suena, vuelta de una desconexión que **no** suena, soltar sin encajar que **no** suena (FR-019), y los tiempos de SC-004 y SC-004a —100 ms el propio, 1 s el ajeno, nunca dos solapados— — **requiere navegador**
+- [X] T060 Verificar los cinco casos del sonido: cascada que suena una vez, encaje ajeno que suena, vuelta de una desconexión que **no** suena, soltar sin encajar que **no** suena (FR-019), y los tiempos de SC-004 y SC-004a —100 ms el propio, 1 s el ajeno, nunca dos solapados— — **requiere navegador**
 - [ ] T061 Ejecutar `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:db` y `npm run build`, confirmando que las tres pruebas de integración que construyen salas siguen en verde
 - [ ] T062 Comparar con la referencia (SC-008): abrir jigsawexplorer al lado y preguntar a alguien cuál tiene las piezas «de verdad». Anotar **qué** lo delató si acierta — **requiere navegador**
 - [ ] T063 Ejecutar la validación completa de [quickstart.md](./quickstart.md), los 9 escenarios — **requiere navegador**
-- [ ] T064 Revisar el cumplimiento de la constitución antes del merge y actualizar la tabla de trampas conocidas de `README.md` con lo que aparezca al implementar
+- [X] T064 Revisar el cumplimiento de la constitución antes del merge y actualizar la tabla de trampas conocidas de `README.md` con lo que aparezca al implementar
 
 ---
 
@@ -307,3 +307,38 @@ uno. Si el relieve sale raro, es el primer sitio donde mirar.
 **T017 existe porque el camino de grupo puede olvidar el caso de una sola pieza.** Al principio de
 la partida **todos** los grupos son de una pieza; si ese camino se rompe, el tablero aparece vacío
 y no habrá ninguna prueba unitaria que lo diga.
+
+---
+
+## Estado de la implementación (2026-08-11)
+
+**47 de 64 tareas completadas.** Las 17 restantes son verificación visual: requieren un navegador y,
+dos de ellas, una segunda persona.
+
+| Tareas | Qué falta |
+|---|---|
+| T016, T017 | Costuras y el caso de una sola pieza |
+| T024 | Arrastre de bloques con dos navegadores |
+| T028, T029 | Siluetas con cuello, y a 500 piezas |
+| T035, T036 | Halo sobre relieve, y halo de grupo |
+| T053 | Misma disposición en dos navegadores |
+| T056–T059, T061–T063 | Medidas de SC-005 a SC-008, sonido y quickstart |
+
+**Verificado sin navegador**: 263 pruebas unitarias (220 → 263), 38 de integración, lint,
+typecheck, build y `check:secrets`. Y los dos guiones de extremo a extremo por HTTP: 27/27 del
+recorrido de sala y 23/23 del catálogo y administración.
+
+### Lo que la implementación desmintió del diseño
+
+Tres cosas, y las tres se corrigieron en sus documentos:
+
+1. **SC-006 no llegaba.** Estimado +27 %, medido **+18 % a +26 %**, típicamente +20 %. Se bajó el
+   criterio a +18 % en lugar de recortar la profundidad de la lengüeta, que es lo que el propio
+   plan dejaba escrito hacer.
+2. **El anillo de grosor uniforme salía peor que la rejilla que venía a sustituir**, porque perdía
+   la optimización de proporción. Hizo falta un anillo asimétrico, más grueso a los lados. Es
+   además lo que se ve en las referencias.
+3. **`boardSize` y `layoutPieces` podían calcular tableros distintos.** El orden de empaquetado
+   dependía de la semilla de reparto, que el canvas no conoce. Lo cazó la prueba de «todas caen
+   dentro del tablero», y se arregló separando la geometría —que sale del tamaño de las piezas— de
+   la identidad, que se permuta solo entre piezas idénticas.

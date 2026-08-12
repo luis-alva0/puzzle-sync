@@ -145,6 +145,12 @@ a la siguiente.
 | Cambiar el origen del canvas solo en el dibujado | El tablero se ve perfecto y el arrastre agarra donde no hay pieza | La transformación de `draw` y la de `toBoard` leen el mismo `dataset`; tocar una sin la otra las separa |
 | Poner un umbral estadístico a ojo | La prueba falla la mitad de las veces sin que nada esté roto | Medir primero la distribución. El 5 % de adyacencia inicial resultó estar **por debajo** de lo que da el azar |
 | Comprobar el encaje contra la posición correcta | Se mide algo que no es lo que decide el encaje | `release_piece` compara la **separación entre vecinas**, no la distancia a un punto fijo: el rompecabezas se puede armar en cualquier parte del tablero |
+| Recortar y pintar pieza a pieza en canvas | Costuras: el fondo asoma entre piezas unidas | El antialias del recorte deja pasar un 25 % del fondo en la junta. Se dibuja **por grupo**, con un solo `clip` |
+| Trazar el contorno compuesto de un grupo para el relieve | Las juntas interiores salen biseladas como si fueran bordes | `stroke()` recorre todos los subtrazados. Hacen falta **tres**: compuesto, exterior y juntas |
+| Mensaje de posición sin decir de qué pieza es | Emisor y receptor eligen piezas distintas y el bloque salta | Mandar un **desplazamiento**: no admite dos lecturas |
+| Cachear trazados en coordenadas absolutas | El grupo se dibuja congelado al arrastrarlo | Relativas al grupo y trasladar al pintar: la composición no cambia, la posición sí |
+| Que el tamaño del tablero dependa de la semilla de reparto | El canvas dibuja un tablero distinto del que empaquetó el servidor | La geometría solo puede depender de lo que **ambos** conocen |
+| Anillo de banda de grosor uniforme | Sale peor que una rejilla: un tablero cuadrado desperdicia los laterales | Asimétrico, más grueso a los lados, tendiendo a la proporción de la pantalla |
 
 ## Flujo de trabajo
 
